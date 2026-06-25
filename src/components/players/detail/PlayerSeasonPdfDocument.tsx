@@ -773,9 +773,15 @@ interface StatItem { label: string; value: number; positive?: boolean; negative?
 
 function StatBox({ item }: { item: StatItem }) {
   const pc = item.pct !== undefined ? pctBadgeColor(item.pct ?? null) : null;
+  // Top border: 2px verde para (C), 2px vermelho para (E), 1px cinza para neutro
+  const topBorder = item.positive
+    ? { borderTopWidth: 2, borderTopColor: C.green }
+    : item.negative
+      ? { borderTopWidth: 2, borderTopColor: C.red }
+      : { borderTopWidth: 1, borderTopColor: C.g200 };
   return (
     <View style={s.box}>
-      <View style={s.bIn}>
+      <View style={[s.bIn, topBorder]}>
         <View style={s.bTop}>
           <Text style={s.bLbl}>{item.label}</Text>
           {item.pct !== undefined && pc !== null && (
@@ -812,59 +818,60 @@ function CatBlock({ title, color, items, isLast = false, useTcStyle = false }: {
 // ─── Stat arrays ─────────────────────────────────────────────────────────────
 
 function statBlocks(t: Agg, isGK: boolean) {
+  // Labels: (C) = certo/positivo  (E) = errado/negativo  — ASCII puro, funciona em Helvetica
   const ataque: StatItem[] = [
-    { label: "Gols",          value: t.goals,            positive: true },
-    { label: "Final. Gol",    value: t.shots_on_target,  positive: true },
-    { label: "Final. Fora",   value: t.shots_off_target  },
-    { label: "Final. Bloq.",  value: t.shots_blocked     },
-    { label: "Na Trave",      value: t.shots_on_post,    positive: true },
-    { label: "Final. Total",  value: t.shots             },
-    { label: "Impedim.",      value: t.offsides,         negative: true },
-    { label: "Pên. Sofrido",  value: t.penalties_won,    positive: true },
+    { label: "Gols",            value: t.goals,            positive: true  },
+    { label: "Final. no Alvo (C)", value: t.shots_on_target,  positive: true  },
+    { label: "Final. Fora (E)",    value: t.shots_off_target, negative: true  },
+    { label: "Final. Bloq. (E)",   value: t.shots_blocked,    negative: true  },
+    { label: "Na Trave",           value: t.shots_on_post,    positive: true  },
+    { label: "Final. Total",       value: t.shots                             },
+    { label: "Impedimentos (E)",   value: t.offsides,         negative: true  },
+    { label: "Pen. Sofrido (C)",   value: t.penalties_won,    positive: true  },
   ];
   const passes: StatItem[] = [
-    { label: "Assist.",          value: t.assists,             positive: true },
-    { label: "Passes Dec.",      value: t.key_passes,          positive: true },
-    { label: "Chances",          value: t.chances_created,     positive: true },
-    { label: "Passes ✓",         value: t.passes_completed,    positive: true, pct: pctN(t.passes_completed, t.passes_total) },
-    { label: "Passes ✗",         value: t.passes_failed,       negative: true },
-    { label: "Pass. Prog.",      value: t.progressive_passes,  positive: true },
-    { label: "Passes Tot.",      value: t.passes_total         },
-    { label: "Cruzam. ✓",        value: t.crosses_success,     positive: true, pct: pctN(t.crosses_success, t.crosses_success + t.crosses_failed) },
-    { label: "Cruzam. ✗",        value: t.crosses_failed,      negative: true },
-    { label: "Passe Longo ✓",    value: t.long_passes_accurate, positive: true, pct: pctN(t.long_passes_accurate, t.long_passes_total) },
-    { label: "Passe Longo ✗",    value: t.long_passes_failed,  negative: true },
-    { label: "Passe Longo Tot.", value: t.long_passes_total    },
+    { label: "Assist.",              value: t.assists,              positive: true },
+    { label: "Passes Dec.",          value: t.key_passes,           positive: true },
+    { label: "Chances",              value: t.chances_created,      positive: true },
+    { label: "Passes (C)",           value: t.passes_completed,     positive: true, pct: pctN(t.passes_completed, t.passes_total) },
+    { label: "Passes (E)",           value: t.passes_failed,        negative: true },
+    { label: "Pass. Prog. (C)",      value: t.progressive_passes,   positive: true },
+    { label: "Passes Total",         value: t.passes_total                        },
+    { label: "Cruzamento (C)",       value: t.crosses_success,      positive: true, pct: pctN(t.crosses_success, t.crosses_success + t.crosses_failed) },
+    { label: "Cruzamento (E)",       value: t.crosses_failed,       negative: true },
+    { label: "Passe Longo (C)",      value: t.long_passes_accurate, positive: true, pct: pctN(t.long_passes_accurate, t.long_passes_total) },
+    { label: "Passe Longo (E)",      value: t.long_passes_failed,   negative: true },
+    { label: "Passe Longo Total",    value: t.long_passes_total                   },
   ];
   const dribles: StatItem[] = [
-    { label: "Dribles ✓",    value: t.dribbles_success, positive: true, pct: pctN(t.dribbles_success, t.dribbles_total) },
-    { label: "Dribles ✗",    value: t.dribbles_failed,  negative: true },
-    { label: "Dribles Tot.", value: t.dribbles_total    },
-    { label: "Faltas Sof.",  value: t.fouls_suffered    },
-    { label: "Bolas Perd.",  value: t.possession_lost,  negative: true },
+    { label: "Drible (C)",     value: t.dribbles_success, positive: true, pct: pctN(t.dribbles_success, t.dribbles_total) },
+    { label: "Drible (E)",     value: t.dribbles_failed,  negative: true },
+    { label: "Dribles Total",  value: t.dribbles_total                   },
+    { label: "Faltas Sofridas", value: t.fouls_suffered                  },
+    { label: "Posse Perdida (E)", value: t.possession_lost, negative: true },
   ];
   const defesa: StatItem[] = [
-    { label: "Roubada de Bola",  value: t.steals,           positive: true },
-    { label: "Desarmes",         value: t.tackles,           positive: true },
-    { label: "Interc.",          value: t.interceptions,     positive: true },
-    { label: "Cortes",           value: t.clearances,        positive: true },
-    { label: "Recup.",           value: t.recoveries,        positive: true },
-    { label: "Chute Bloq.",      value: t.blocked_shots,     positive: true },
-    { label: "Dribles Sofridos", value: t.was_dribbled,      negative: true },
-    { label: "Duelo Chão ✓",     value: t.ground_duels_won,  positive: true, pct: pctN(t.ground_duels_won, t.ground_duels_total) },
-    { label: "Duelo Chão ✗",     value: Math.max(0, t.ground_duels_total - t.ground_duels_won), negative: true },
-    { label: "Duelo Chão Tot.",  value: t.ground_duels_total },
-    { label: "Duelo Aéreo ✓",    value: t.aerial_duels_won,  positive: true, pct: pctN(t.aerial_duels_won, t.aerial_duels_total) },
-    { label: "Duelo Aéreo ✗",    value: Math.max(0, t.aerial_duels_total - t.aerial_duels_won), negative: true },
-    { label: "Duelo Aéreo Tot.", value: t.aerial_duels_total },
-    { label: "Faltas Com.",      value: t.fouls_committed,   negative: true },
-    { label: "Amarelos",         value: t.yellow_cards,      negative: true },
-    { label: "Vermelhos",        value: t.red_cards,         negative: true },
+    { label: "Roubada de Bola",     value: t.steals,           positive: true },
+    { label: "Desarmes",            value: t.tackles,           positive: true },
+    { label: "Interceptacoes",      value: t.interceptions,     positive: true },
+    { label: "Cortes",              value: t.clearances,        positive: true },
+    { label: "Recuperacoes",        value: t.recoveries,        positive: true },
+    { label: "Chute Bloqueado",     value: t.blocked_shots,     positive: true },
+    { label: "Driblab. Sofrido (E)", value: t.was_dribbled,     negative: true },
+    { label: "Duelo Chao (C)",      value: t.ground_duels_won,  positive: true, pct: pctN(t.ground_duels_won, t.ground_duels_total) },
+    { label: "Duelo Chao (E)",      value: Math.max(0, t.ground_duels_total - t.ground_duels_won), negative: true },
+    { label: "Duelo Chao Total",    value: t.ground_duels_total },
+    { label: "Duelo Aereo (C)",     value: t.aerial_duels_won,  positive: true, pct: pctN(t.aerial_duels_won, t.aerial_duels_total) },
+    { label: "Duelo Aereo (E)",     value: Math.max(0, t.aerial_duels_total - t.aerial_duels_won), negative: true },
+    { label: "Duelo Aereo Total",   value: t.aerial_duels_total },
+    { label: "Faltas Cometidas (E)", value: t.fouls_committed,  negative: true },
+    { label: "Amarelos (E)",        value: t.yellow_cards,      negative: true },
+    { label: "Vermelhos (E)",       value: t.red_cards,         negative: true },
     ...(isGK ? [
-      { label: "Defesas",     value: t.saves,           positive: true } as StatItem,
-      { label: "Gols Sof.",   value: t.goals_conceded,  negative: true } as StatItem,
-      { label: "Clean Sheet", value: t.clean_sheets,    positive: true } as StatItem,
-      { label: "Pên. Salvos", value: t.penalties_saved, positive: true } as StatItem,
+      { label: "Defesas (C)",    value: t.saves,           positive: true } as StatItem,
+      { label: "Gols Sofridos (E)", value: t.goals_conceded, negative: true } as StatItem,
+      { label: "Clean Sheet (C)", value: t.clean_sheets,   positive: true } as StatItem,
+      { label: "Pen. Salvos (C)", value: t.penalties_saved, positive: true } as StatItem,
     ] : []),
   ];
   return { ataque, passes, dribles, defesa };
