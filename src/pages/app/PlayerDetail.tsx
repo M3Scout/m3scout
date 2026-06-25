@@ -665,7 +665,7 @@ const PlayerDetail = () => {
       {/* ── Tab Content ───────────────────────────────────────────────────── */}
       <div className="px-4 md:px-6 py-8">
         {activeTab === "stats" ? (
-          <StatsTab playerId={player.id} playerPosition={player.position} />
+          <StatsTab playerId={player.id} playerPosition={player.position} playerName={player.full_name} />
         ) : activeTab === "market" ? (
           <MarketValueTab
             playerId={player.id}

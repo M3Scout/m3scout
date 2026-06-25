@@ -11,7 +11,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, FileDown } from "lucide-react";
 import {
   Tooltip as UiTooltip,
   TooltipContent as UiTooltipContent,
@@ -30,6 +30,8 @@ import {
 import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
 import { mergeSeasonRows } from "@/lib/mergeSeasonStats";
 import type { SeasonSource } from "@/lib/mergeSeasonStats";
+import { ExportSeasonReportModal } from "./ExportSeasonReportModal";
+import type { PublicSeasonRow } from "@/lib/mergeSeasonStats";
 
 // ─── player_stats table row (written by PlayerStatsForm) ──────────────────────
 interface PlayerStatRow {
@@ -212,10 +214,12 @@ type MetricId = typeof METRIC_OPTIONS[number]["id"];
 interface StatsTabProps {
   playerId: string;
   playerPosition?: string;
+  playerName?: string;
 }
 
-export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
+export function StatsTab({ playerId, playerPosition, playerName }: StatsTabProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricId>("ga");
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Ratings data
   const { matches: ratedMatches, averageRating, bestMatch, recentTrend, isLoading: ratingsLoading } =
@@ -693,7 +697,20 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
 
       {/* ── Detalhes por Temporada ──────────────────────────────────────────── */}
       <div className="rounded-xl border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
-        <SectionHead n="02">DETALHES POR TEMPORADA</SectionHead>
+        <div className="flex items-center justify-between pr-4">
+          <SectionHead n="02">DETALHES POR TEMPORADA</SectionHead>
+          {allSeasons.length > 0 && (
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-editorial-mono text-[10px] tracking-[0.14em] uppercase transition-all hover:bg-white/5 active:scale-95"
+              style={{ borderColor: "rgba(236,69,37,0.35)", color: A, background: "rgba(236,69,37,0.07)" }}
+              title="Exportar relatório da temporada em PDF"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              Exportar Relatório Geral
+            </button>
+          )}
+        </div>
         {isLoading ? (
           <NoData label="Carregando…" />
         ) : allSeasons.length === 0 ? (
@@ -871,6 +888,16 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           </p>
         </div>
       </div>
+
+      {/* ── Export Season Report Modal ──────────────────────────────────────── */}
+      <ExportSeasonReportModal
+        open={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        playerName={playerName ?? "Atleta"}
+        playerPosition={playerPosition}
+        allSeasons={allSeasons}
+        mergedBySeason={mergedBySeason as Record<number, PublicSeasonRow[]>}
+      />
     </div>
   );
 }
