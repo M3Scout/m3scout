@@ -776,15 +776,21 @@ function InsightSection({ title, count, items, color, bgHdr, dotColor, metricCol
                   </Text>
                 )}
               </View>
-              {/* Ref: 2 linhas — valor atual (negrito) + benchmarks (leve) */}
+              {/* Ref: 3 linhas — atual (bold) · benchmarks · ano anterior */}
               {(() => {
-                const parts = ins.ref.split(" · ");
-                const curr  = parts[0] ?? "";
-                const bench = parts.slice(1).join("  ·  ");
+                const parts      = ins.ref.split(" · ");
+                const curr       = parts[0] ?? "";
+                const rest       = parts.slice(1);
+                // Segmentos que começam com um ano (4 dígitos): "2025: ..."
+                const yearParts  = rest.filter(p => /^\d{4}:/.test(p.trim()));
+                const benchParts = rest.filter(p => !/^\d{4}:/.test(p.trim()));
+                const bench      = benchParts.join("  ·  ");
+                const yearLine   = yearParts.join("  ·  ");
                 return (
                   <View style={s.iRefWrap}>
                     <Text style={s.iRefCurr}>{curr}</Text>
-                    {bench ? <Text style={s.iRefBench}>{bench}</Text> : null}
+                    {bench    ? <Text style={[s.iRefBench, { marginTop: 2 }]}>{bench}</Text>   : null}
+                    {yearLine ? <Text style={[s.iRefBench, { marginTop: 2, color: C.g400 }]}>{yearLine}</Text> : null}
                   </View>
                 );
               })()}
