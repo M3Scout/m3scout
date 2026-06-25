@@ -509,13 +509,23 @@ const s = StyleSheet.create({
   secTxt:  { fontSize: 9, fontWeight: 700, color: C.g600, letterSpacing: 1.2, textTransform: "uppercase" },
   secLine: { height: 1, backgroundColor: C.g200, flex: 1, marginLeft: 8 },
 
-  cc:     { borderRadius: 6, borderWidth: 1, borderColor: C.g200, marginBottom: 12, overflow: "hidden" },
-  ccHdr:  { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.g200, backgroundColor: C.g50 },
-  ccName: { fontSize: 10, fontWeight: 700, color: C.black, flex: 1 },
-  ccR:    { flexDirection: "row", alignItems: "center", gap: 6 },
-  ccCoef: { fontSize: 8, color: C.g500 },
-  ccTier: { fontSize: 7.5, fontWeight: 800, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
-  ccGms:  { fontSize: 8, color: C.g500 },
+  // Competition list (summary only, no stat boxes)
+  compList: { borderRadius: 6, borderWidth: 1, borderColor: C.g200, marginBottom: 14, overflow: "hidden" },
+  compListHdr: { flexDirection: "row", alignItems: "center", backgroundColor: C.g100, paddingHorizontal: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.g200 },
+  compListHdrTxt: { fontSize: 6.5, fontWeight: 700, color: C.g500, textTransform: "uppercase", letterSpacing: 0.8 },
+  compRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.g100 },
+  compRowLast: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 9 },
+  compName: { fontSize: 9.5, fontWeight: 600, color: C.g900, flex: 1 },
+  compTier: { fontSize: 7.5, fontWeight: 800, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginRight: 8 },
+  compCoef: { fontSize: 8, color: C.g400, width: 48, textAlign: "right" },
+  compStat: { fontSize: 8, color: C.g600, width: 36, textAlign: "right" },
+  compStatB: { fontSize: 8, fontWeight: 700, color: C.g700, width: 36, textAlign: "right" },
+
+  // Total card — light background, red accent border
+  tc:     { borderRadius: 6, borderWidth: 1, borderColor: C.g200, marginBottom: 12, overflow: "hidden", borderTopWidth: 3, borderTopColor: C.red },
+  tcHdr:  { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.g200, backgroundColor: C.g50 },
+  tcTit:  { fontSize: 11, fontWeight: 800, color: C.black, flex: 1 },
+  tcSub:  { fontSize: 8, color: C.g500 },
 
   catW:   { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: C.g100 },
   catL:   { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
@@ -531,15 +541,8 @@ const s = StyleSheet.create({
   bPct: { fontSize: 6, fontWeight: 700, paddingHorizontal: 2.5, paddingVertical: 1, borderRadius: 2 },
   bVal: { fontSize: 14, fontWeight: 800, color: C.g900, lineHeight: 1 },
 
-  tc:     { borderRadius: 6, backgroundColor: C.g950, marginBottom: 12, overflow: "hidden" },
-  tcHdr:  { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
-  tcTit:  { fontSize: 10, fontWeight: 700, color: C.white },
-  tcSub:  { fontSize: 8, color: C.g500, marginTop: 2 },
-  tcCatW: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  tcCatW: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: C.g100 },
   tcCatL: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
-  dbIn:   { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 5, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  dbVal:  { fontSize: 14, fontWeight: 800, color: C.white, lineHeight: 1 },
-  dbLbl:  { fontSize: 6, color: C.g500, textTransform: "uppercase", letterSpacing: 0.3 },
 
   wCard:  { borderRadius: 6, backgroundColor: C.g950, marginBottom: 14, paddingHorizontal: 16, paddingVertical: 14 },
   wTitle: { fontSize: 9, fontWeight: 700, color: C.white, marginBottom: 2 },
@@ -582,31 +585,31 @@ function pctBadgeColor(p: number | null) {
   return p >= 60 ? C.green : p >= 50 ? "#CA8A04" : C.red;
 }
 
-function valColor(v: number, positive?: boolean, negative?: boolean, dark = false) {
-  if (positive && v > 0) return dark ? "#4ADE80" : C.green;
-  if (negative && v > 0) return dark ? "#FB7185" : C.red;
-  return dark ? C.white : C.g900;
+function valColor(v: number, positive?: boolean, negative?: boolean) {
+  if (positive && v > 0) return C.green;
+  if (negative && v > 0) return C.red;
+  return C.g900;
 }
 
 // ─── StatBox ─────────────────────────────────────────────────────────────────
 
 interface StatItem { label: string; value: number; positive?: boolean; negative?: boolean; pct?: number | null }
 
-function StatBox({ item, dark = false }: { item: StatItem; dark?: boolean }) {
-  const vc = valColor(item.value, item.positive, item.negative, dark);
+function StatBox({ item }: { item: StatItem }) {
+  const vc = valColor(item.value, item.positive, item.negative);
   const pc = item.pct !== undefined ? pctBadgeColor(item.pct ?? null) : null;
   return (
     <View style={s.box}>
-      <View style={dark ? s.dbIn : s.bIn}>
+      <View style={s.bIn}>
         <View style={s.bTop}>
-          <Text style={dark ? s.dbLbl : s.bLbl}>{item.label}</Text>
+          <Text style={s.bLbl}>{item.label}</Text>
           {item.pct !== undefined && pc !== null && (
             <Text style={[s.bPct, { color: pc, borderColor: pc, borderWidth: 0.5 }]}>
               {item.pct === null ? "0%" : `${Math.round(item.pct)}%`}
             </Text>
           )}
         </View>
-        <Text style={[dark ? s.dbVal : s.bVal, { color: vc }]}>{fv(item.value)}</Text>
+        <Text style={[s.bVal, { color: vc }]}>{fv(item.value)}</Text>
       </View>
     </View>
   );
@@ -614,10 +617,10 @@ function StatBox({ item, dark = false }: { item: StatItem; dark?: boolean }) {
 
 // ─── CatBlock ────────────────────────────────────────────────────────────────
 
-function CatBlock({ title, color, items, isLast = false, dark = false }: {
-  title: string; color: string; items: StatItem[]; isLast?: boolean; dark?: boolean;
+function CatBlock({ title, color, items, isLast = false, useTcStyle = false }: {
+  title: string; color: string; items: StatItem[]; isLast?: boolean; useTcStyle?: boolean;
 }) {
-  const wrap = dark ? (isLast ? s.tcCatL : s.tcCatW) : (isLast ? s.catL : s.catW);
+  const wrap = useTcStyle ? (isLast ? s.tcCatL : s.tcCatW) : (isLast ? s.catL : s.catW);
   return (
     <View style={wrap} wrap={false}>
       <View style={s.catHdr}>
@@ -625,7 +628,7 @@ function CatBlock({ title, color, items, isLast = false, dark = false }: {
         <Text style={[s.catTxt, { color }]}>{title}</Text>
       </View>
       <View style={s.grid}>
-        {items.map((item, i) => <StatBox key={i} item={item} dark={dark} />)}
+        {items.map((item, i) => <StatBox key={i} item={item} />)}
       </View>
     </View>
   );
@@ -692,34 +695,48 @@ function statBlocks(t: Agg, isGK: boolean) {
   return { ataque, passes, dribles, defesa };
 }
 
-// ─── CompCard ────────────────────────────────────────────────────────────────
+// ─── CompList — resumo de competições (sem stat boxes) ───────────────────────
 
-function CompCard({ row, meta, isGK }: { row: PublicSeasonRow; meta?: CompetitionMeta; isGK: boolean }) {
-  const t     = toAgg(row.stats);
-  const name  = row.competition_name ?? meta?.name ?? "—";
-  const coeff = meta?.final_coefficient ?? 0;
-  const tk    = tierK(coeff);
-  const tier  = TIER[tk];
-  const blks  = statBlocks(t, isGK);
+function CompList({ rows, meta }: { rows: PublicSeasonRow[]; meta: Record<string, CompetitionMeta> }) {
   return (
-    <View style={[s.cc, { borderTopWidth: 3, borderTopColor: tier.bg }]} wrap={false}>
-      <View style={s.ccHdr}>
-        <Text style={s.ccName}>{name}</Text>
-        <View style={s.ccR}>
-          {coeff > 0 && <Text style={s.ccCoef}>Coef. {fd(coeff, 2)}</Text>}
-          <Text style={[s.ccTier, { backgroundColor: tier.bg, color: tier.fg }]}>{tk} · {tier.label}</Text>
-          <Text style={s.ccGms}>{t.matches} J · {t.minutes} min</Text>
-        </View>
+    <View style={s.compList} wrap={false}>
+      {/* Cabeçalho da tabela */}
+      <View style={s.compListHdr}>
+        <Text style={[s.compListHdrTxt, { flex: 1 }]}>Competição</Text>
+        <Text style={[s.compListHdrTxt, { width: 80 }]}>Tier</Text>
+        <Text style={[s.compListHdrTxt, { width: 48, textAlign: "right" }]}>Coef.</Text>
+        <Text style={[s.compListHdrTxt, { width: 36, textAlign: "right" }]}>Jogos</Text>
+        <Text style={[s.compListHdrTxt, { width: 48, textAlign: "right" }]}>Minutos</Text>
+        <Text style={[s.compListHdrTxt, { width: 36, textAlign: "right" }]}>Gols</Text>
+        <Text style={[s.compListHdrTxt, { width: 44, textAlign: "right" }]}>Assist.</Text>
       </View>
-      <CatBlock title="Ataque"          color={C.red}   items={blks.ataque}  />
-      <CatBlock title="Passes"          color={C.amber} items={blks.passes}  />
-      <CatBlock title="Dribles / Posse" color={C.cyan}  items={blks.dribles} />
-      <CatBlock title="Defesa"          color={C.blue}  items={blks.defesa}  isLast />
+      {/* Linhas */}
+      {rows.map((row, i) => {
+        const t     = toAgg(row.stats);
+        const name  = row.competition_name ?? (row.competition_id ? meta[row.competition_id]?.name : undefined) ?? "—";
+        const coeff = row.competition_id ? (meta[row.competition_id]?.final_coefficient ?? 0) : 0;
+        const tk    = tierK(coeff);
+        const tier  = TIER[tk];
+        const isLast = i === rows.length - 1;
+        return (
+          <View key={row.id} style={isLast ? s.compRowLast : s.compRow}>
+            <Text style={s.compName}>{name}</Text>
+            <View style={{ width: 80 }}>
+              <Text style={[s.compTier, { backgroundColor: tier.bg, color: tier.fg, alignSelf: "flex-start" }]}>{tk} · {tier.label}</Text>
+            </View>
+            <Text style={s.compCoef}>{coeff > 0 ? fd(coeff, 2) : "—"}</Text>
+            <Text style={s.compStat}>{t.matches}</Text>
+            <Text style={s.compStatB}>{t.minutes}</Text>
+            <Text style={[s.compStatB, { color: t.goals > 0 ? C.green : C.g600 }]}>{t.goals}</Text>
+            <Text style={[s.compStatB, { width: 44, color: t.assists > 0 ? C.green : C.g600 }]}>{t.assists}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-// ─── TotalCard ───────────────────────────────────────────────────────────────
+// ─── TotalCard — fundo claro com borda vermelha ───────────────────────────────
 
 function TotalCard({ t, year, isGK }: { t: Agg; year: number; isGK: boolean }) {
   const blks = statBlocks(t, isGK);
@@ -727,12 +744,12 @@ function TotalCard({ t, year, isGK }: { t: Agg; year: number; isGK: boolean }) {
     <View style={s.tc}>
       <View style={s.tcHdr}>
         <Text style={s.tcTit}>Total Geral · Temporada {year}</Text>
-        <Text style={s.tcSub}>{t.matches} jogos · {t.minutes} minutos disputados</Text>
+        <Text style={s.tcSub}>{t.matches} jogos · {n(t.minutes)} minutos disputados</Text>
       </View>
-      <CatBlock title="Ataque"          color={C.red}   items={blks.ataque}  dark />
-      <CatBlock title="Passes"          color={C.amber} items={blks.passes}  dark />
-      <CatBlock title="Dribles / Posse" color={C.cyan}  items={blks.dribles} dark />
-      <CatBlock title="Defesa"          color={C.blue}  items={blks.defesa}  dark isLast />
+      <CatBlock title="Ataque"          color={C.red}   items={blks.ataque}  />
+      <CatBlock title="Passes"          color={C.amber} items={blks.passes}  />
+      <CatBlock title="Dribles / Posse" color={C.cyan}  items={blks.dribles} />
+      <CatBlock title="Defesa"          color={C.blue}  items={blks.defesa}  isLast />
     </View>
   );
 }
@@ -856,15 +873,8 @@ export function PlayerSeasonPdfDocument({
         <View style={s.hLine} fixed />
 
         {/* 01 */}
-        <SectionHead num="01" label="Estatísticas por Competição" />
-        {rows.map(row => (
-          <CompCard
-            key={row.id}
-            row={row}
-            meta={row.competition_id ? competitionMeta[row.competition_id] : undefined}
-            isGK={isGK}
-          />
-        ))}
+        <SectionHead num="01" label="Competições da Temporada" />
+        <CompList rows={rows} meta={competitionMeta} />
 
         {/* 02 */}
         <SectionHead num="02" label="Total Consolidado" />
