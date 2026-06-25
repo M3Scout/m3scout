@@ -709,22 +709,24 @@ const s = StyleSheet.create({
   tcTit:  { fontSize: 11, fontWeight: 800, color: C.black, flex: 1 },
   tcSub:  { fontSize: 8, color: C.g500 },
 
-  catW:   { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: C.g100 },
-  catL:   { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
+  // Cat rows — left border carries the category color for P&B legibility
+  catW:   { paddingLeft: 10, paddingRight: 12, paddingTop: 8, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: C.g100, borderLeftWidth: 3 },
+  catL:   { paddingLeft: 10, paddingRight: 12, paddingTop: 8, paddingBottom: 10, borderLeftWidth: 3 },
   catHdr: { flexDirection: "row", alignItems: "center", marginBottom: 7 },
-  catDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
-  catTxt: { fontSize: 6.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" },
+  catDot: { width: 5, height: 5, borderRadius: 2.5, marginRight: 5 },
+  catTxt: { fontSize: 6.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: C.g700 },
   grid:   { flexDirection: "row", flexWrap: "wrap" },
 
+  // Stat boxes — value always black so P&B printing stays readable
   box:  { width: "25%", paddingRight: 5, paddingBottom: 5 },
   bIn:  { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 5, backgroundColor: C.g50, borderWidth: 1, borderColor: C.g100 },
   bTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 3 },
-  bLbl: { fontSize: 6, color: C.g400, textTransform: "uppercase", letterSpacing: 0.3 },
+  bLbl: { fontSize: 6, color: C.g500, textTransform: "uppercase", letterSpacing: 0.3 },
   bPct: { fontSize: 6, fontWeight: 700, paddingHorizontal: 2.5, paddingVertical: 1, borderRadius: 2 },
-  bVal: { fontSize: 14, fontWeight: 800, color: C.g900, lineHeight: 1 },
+  bVal: { fontSize: 14, fontWeight: 800, color: C.black, lineHeight: 1 },
 
-  tcCatW: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: C.g100 },
-  tcCatL: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
+  tcCatW: { paddingLeft: 10, paddingRight: 12, paddingTop: 8, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: C.g100, borderLeftWidth: 3 },
+  tcCatL: { paddingLeft: 10, paddingRight: 12, paddingTop: 8, paddingBottom: 10, borderLeftWidth: 3 },
 
   // Insight section
   iSec:    { marginBottom: 10 },
@@ -770,7 +772,6 @@ function valColor(v: number, positive?: boolean, negative?: boolean) {
 interface StatItem { label: string; value: number; positive?: boolean; negative?: boolean; pct?: number | null }
 
 function StatBox({ item }: { item: StatItem }) {
-  const vc = valColor(item.value, item.positive, item.negative);
   const pc = item.pct !== undefined ? pctBadgeColor(item.pct ?? null) : null;
   return (
     <View style={s.box}>
@@ -778,12 +779,12 @@ function StatBox({ item }: { item: StatItem }) {
         <View style={s.bTop}>
           <Text style={s.bLbl}>{item.label}</Text>
           {item.pct !== undefined && pc !== null && (
-            <Text style={[s.bPct, { color: pc, borderColor: pc, borderWidth: 0.5 }]}>
+            <Text style={[s.bPct, { color: C.g600, borderColor: C.g300, borderWidth: 0.5 }]}>
               {item.pct === null ? "0%" : `${Math.round(item.pct)}%`}
             </Text>
           )}
         </View>
-        <Text style={[s.bVal, { color: vc }]}>{fv(item.value)}</Text>
+        <Text style={s.bVal}>{fv(item.value)}</Text>
       </View>
     </View>
   );
@@ -796,10 +797,10 @@ function CatBlock({ title, color, items, isLast = false, useTcStyle = false }: {
 }) {
   const wrap = useTcStyle ? (isLast ? s.tcCatL : s.tcCatW) : (isLast ? s.catL : s.catW);
   return (
-    <View style={wrap} wrap={false}>
+    <View style={[wrap, { borderLeftColor: color }]} wrap={false}>
       <View style={s.catHdr}>
         <View style={[s.catDot, { backgroundColor: color }]} />
-        <Text style={[s.catTxt, { color }]}>{title}</Text>
+        <Text style={s.catTxt}>{title}</Text>
       </View>
       <View style={s.grid}>
         {items.map((item, i) => <StatBox key={i} item={item} />)}
