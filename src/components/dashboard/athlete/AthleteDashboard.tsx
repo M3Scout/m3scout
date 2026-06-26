@@ -401,30 +401,6 @@ export function AthleteDashboard() {
         <AthleteBodyMetricsCard athleteId={athlete.id} />
       </motion.div>
 
-      {/* Row 4: Season Goals (100% width) */}
-      <motion.div variants={staggerItem} className="w-full">
-        <AthleteSeasonGoalsCard
-          athleteId={athlete.id}
-          currentStats={{
-            goals: seasonTotals.goals,
-            assists: seasonTotals.assists,
-            matches: seasonTotals.matches,
-            minutes: seasonTotals.minutes,
-            saves: totals?.saves ?? 0,
-            clean_sheets: totals?.clean_sheets ?? 0,
-            shots: totals?.shots ?? 0,
-            tackles: totals?.tackles ?? 0,
-            yellow_cards: yellowCards,
-            interceptions: totals?.interceptions ?? 0,
-            passes_completed: mergedTotals?.passes_completed ?? 0,
-            passes_total:     mergedTotals?.passes_total     ?? 0,
-            dribbles_success: seasonTotals.dribbles_success,
-            dribbles_total:   seasonTotals.dribbles_total,
-          }}
-          isGoalkeeper={isGoalkeeper}
-        />
-      </motion.div>
-
       {/* Row 5: Elite Insights */}
       <motion.div variants={staggerItem} className="w-full">
         <EliteInsights
