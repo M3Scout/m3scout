@@ -479,7 +479,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
   // Fix: statsLoading stays true when query is disabled (enabled: false)
   // Check fetchStatus to know if the query is actually fetching
   const isStatsActuallyLoading = statsLoading && statsFetchStatus === "fetching";
-  const isLoading = goalsLoading || (playerIds.length > 0 && isStatsActuallyLoading);
+  const isLoading = goalsLoading || (playerPairs.length > 0 && isStatsActuallyLoading);
 
   const goals = goalsRaw ?? [];
   const rbacAllowed = isPlayerView || isAdmin || can("users", "manage");
@@ -494,7 +494,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
       goalsError: goalsError ? String(goalsError) : null,
       statsLoading,
       statsFetchStatus,
-      playerIdsLength: playerIds.length,
+      playerPairsLength: playerPairs.length,
       isLoading,
       goalsLength: goals.length,
       firstGoal: goals[0] ?? null,
