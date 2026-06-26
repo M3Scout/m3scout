@@ -309,7 +309,6 @@ export function AthleteSeasonGoalsCard({
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-3 sm:py-4 border-b" style={{ borderColor: CARD_BORDER }}>
-          <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {goals.length > 0 && (
               <span
