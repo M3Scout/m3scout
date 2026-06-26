@@ -310,13 +310,6 @@ export function AthleteSeasonGoalsCard({
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-3 sm:py-4 border-b" style={{ borderColor: CARD_BORDER }}>
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-editorial-mono text-[10px] sm:text-[11px] tracking-[0.18em] sm:tracking-[0.22em] uppercase" style={{ color: MUTED }}>
-              // Metas da Temporada
-            </span>
-            <span className="font-editorial-mono text-[9px] sm:text-[9.5px]" style={{ color: MUTED }}>
-              {currentYear}
-            </span>
-          </div>
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {goals.length > 0 && (
               <span
