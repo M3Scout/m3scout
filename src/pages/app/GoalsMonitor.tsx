@@ -156,10 +156,12 @@ function StatusBadge({ status, isLimit }: { status: GoalStatus; isLimit: boolean
 // Group goals by player and render as cards
 function GoalsGridView({
   goals,
-  onGoalClick
+  onGoalClick,
+  isPlayerView = false,
 }: {
   goals: GoalWithProgress[];
   onGoalClick: (goal: GoalWithProgress) => void;
+  isPlayerView?: boolean;
 }) {
   const [openPlayerId, setOpenPlayerId] = useState<string | null>(null);
 
@@ -705,7 +707,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
                 )}
               </div>
             ) : (
-              <GoalsGridView goals={filteredGoals} onGoalClick={setSelectedGoal} />
+              <GoalsGridView goals={filteredGoals} onGoalClick={setSelectedGoal} isPlayerView={isPlayerView} />
             )}
           </motion.div>
         )}
