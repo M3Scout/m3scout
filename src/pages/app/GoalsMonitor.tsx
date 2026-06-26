@@ -191,7 +191,7 @@ function GoalsGridView({
         <span>{groupedByPlayer.length} jogadores • {goals.length} metas</span>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 items-start">
+      <div className={cn("grid gap-4 items-start", isPlayerView ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2 xl:grid-cols-3")}>
         {groupedByPlayer.map(({ player, goals: playerGoals }) => {
           if (!player) return null;
           return (
