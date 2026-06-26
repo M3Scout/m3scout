@@ -416,10 +416,10 @@ export function AthleteDashboard() {
             tackles: totals?.tackles ?? 0,
             yellow_cards: yellowCards,
             interceptions: totals?.interceptions ?? 0,
-            passes_completed: totals?.passes_completed ?? 0,
-            passes_total: totals?.passes_total ?? 0,
-            dribbles_success: totals?.dribbles_success ?? 0,
-            dribbles_total: totals?.dribbles_total ?? 0,
+            passes_completed: mergedTotals?.passes_completed ?? 0,
+            passes_total:     mergedTotals?.passes_total     ?? 0,
+            dribbles_success: seasonTotals.dribbles_success,
+            dribbles_total:   seasonTotals.dribbles_total,
           }}
           isGoalkeeper={isGoalkeeper}
         />
