@@ -1194,6 +1194,7 @@ export type Database = {
           salary_info: string | null
           sort_order: number | null
           start_date: string
+          termination_fee: string | null
           transfer_fee: string | null
           updated_at: string
         }
@@ -1215,6 +1216,7 @@ export type Database = {
           salary_info?: string | null
           sort_order?: number | null
           start_date: string
+          termination_fee?: string | null
           transfer_fee?: string | null
           updated_at?: string
         }
@@ -1236,6 +1238,7 @@ export type Database = {
           salary_info?: string | null
           sort_order?: number | null
           start_date?: string
+          termination_fee?: string | null
           transfer_fee?: string | null
           updated_at?: string
         }
@@ -1837,14 +1840,14 @@ export type Database = {
           is_archived: boolean | null
           is_public: boolean | null
           last_physical_evaluation: string | null
+          m3_contract_end: string | null
+          m3_contract_file_url: string | null
+          m3_contract_start: string | null
           market_value: number | null
           market_value_currency: string | null
           market_value_trend: string | null
           max_speed: number | null
           medical_notes: string | null
-          m3_contract_end: string | null
-          m3_contract_file_url: string | null
-          m3_contract_start: string | null
           muscle_mass: number | null
           nationality: string
           passports: string[] | null
@@ -1899,14 +1902,14 @@ export type Database = {
           is_archived?: boolean | null
           is_public?: boolean | null
           last_physical_evaluation?: string | null
+          m3_contract_end?: string | null
+          m3_contract_file_url?: string | null
+          m3_contract_start?: string | null
           market_value?: number | null
           market_value_currency?: string | null
           market_value_trend?: string | null
           max_speed?: number | null
           medical_notes?: string | null
-          m3_contract_end?: string | null
-          m3_contract_file_url?: string | null
-          m3_contract_start?: string | null
           muscle_mass?: number | null
           nationality: string
           passports?: string[] | null
@@ -1961,14 +1964,14 @@ export type Database = {
           is_archived?: boolean | null
           is_public?: boolean | null
           last_physical_evaluation?: string | null
+          m3_contract_end?: string | null
+          m3_contract_file_url?: string | null
+          m3_contract_start?: string | null
           market_value?: number | null
           market_value_currency?: string | null
           market_value_trend?: string | null
           max_speed?: number | null
           medical_notes?: string | null
-          m3_contract_end?: string | null
-          m3_contract_file_url?: string | null
-          m3_contract_start?: string | null
           muscle_mass?: number | null
           nationality?: string
           passports?: string[] | null
@@ -2208,9 +2211,11 @@ export type Database = {
       targets: {
         Row: {
           age_estimate: number | null
+          agency_situation: string | null
           birth_date: string | null
           city: string | null
           competition_id: string | null
+          contract_end_date: string | null
           country: string | null
           created_at: string
           created_by: string | null
@@ -2234,19 +2239,27 @@ export type Database = {
           photo_url: string | null
           position: string
           priority: Database["public"]["Enums"]["target_priority"]
+          recommendation_grade: string | null
+          score_mental: number | null
+          score_physical: number | null
+          score_tactical: number | null
+          score_technical: number | null
           secondary_position: string | null
           source: string | null
           state: string | null
           status: Database["public"]["Enums"]["target_status"]
+          tactical_function: string | null
           tags: string[] | null
           updated_at: string
           weight: number | null
         }
         Insert: {
           age_estimate?: number | null
+          agency_situation?: string | null
           birth_date?: string | null
           city?: string | null
           competition_id?: string | null
+          contract_end_date?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
@@ -2270,19 +2283,27 @@ export type Database = {
           photo_url?: string | null
           position: string
           priority?: Database["public"]["Enums"]["target_priority"]
+          recommendation_grade?: string | null
+          score_mental?: number | null
+          score_physical?: number | null
+          score_tactical?: number | null
+          score_technical?: number | null
           secondary_position?: string | null
           source?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["target_status"]
+          tactical_function?: string | null
           tags?: string[] | null
           updated_at?: string
           weight?: number | null
         }
         Update: {
           age_estimate?: number | null
+          agency_situation?: string | null
           birth_date?: string | null
           city?: string | null
           competition_id?: string | null
+          contract_end_date?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
@@ -2306,10 +2327,16 @@ export type Database = {
           photo_url?: string | null
           position?: string
           priority?: Database["public"]["Enums"]["target_priority"]
+          recommendation_grade?: string | null
+          score_mental?: number | null
+          score_physical?: number | null
+          score_tactical?: number | null
+          score_technical?: number | null
           secondary_position?: string | null
           source?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["target_status"]
+          tactical_function?: string | null
           tags?: string[] | null
           updated_at?: string
           weight?: number | null
@@ -2565,7 +2592,6 @@ export type Database = {
           max_speed: number | null
           muscle_mass: number | null
           nationality: string | null
-          passports: string[] | null
           photo_url: string | null
           physical_status: string | null
           play_style: string | null
@@ -2582,92 +2608,6 @@ export type Database = {
           vo2_max: number | null
           weight: number | null
           wingspan: number | null
-        }
-        Insert: {
-          age?: number | null
-          areas_to_develop?: string[] | null
-          auto_potential?: number | null
-          auto_rating?: number | null
-          bio_public?: string | null
-          birth_date?: string | null
-          body_fat_percentage?: number | null
-          country?: string | null
-          created_at?: string | null
-          current_club?: string | null
-          dominant_foot?: string | null
-          estimated_level?: string | null
-          full_name?: string | null
-          height?: number | null
-          highlight_video_url?: string | null
-          id?: string | null
-          is_archived?: boolean | null
-          is_public?: boolean | null
-          market_value?: number | null
-          market_value_currency?: string | null
-          market_value_trend?: string | null
-          max_speed?: number | null
-          muscle_mass?: number | null
-          nationality?: string | null
-          passports?: string[] | null
-          photo_url?: string | null
-          physical_status?: string | null
-          play_style?: string | null
-          playing_height_preference?: string | null
-          position?: string | null
-          primary_tactical_role?: string | null
-          ready_to_compete?: boolean | null
-          secondary_positions?: string[] | null
-          secondary_tactical_role?: string | null
-          slug?: string | null
-          sprint_30m?: number | null
-          strengths?: string[] | null
-          updated_at?: string | null
-          vo2_max?: number | null
-          weight?: number | null
-          wingspan?: number | null
-        }
-        Update: {
-          age?: number | null
-          areas_to_develop?: string[] | null
-          auto_potential?: number | null
-          auto_rating?: number | null
-          bio_public?: string | null
-          birth_date?: string | null
-          body_fat_percentage?: number | null
-          country?: string | null
-          created_at?: string | null
-          current_club?: string | null
-          dominant_foot?: string | null
-          estimated_level?: string | null
-          full_name?: string | null
-          height?: number | null
-          highlight_video_url?: string | null
-          id?: string | null
-          is_archived?: boolean | null
-          is_public?: boolean | null
-          market_value?: number | null
-          market_value_currency?: string | null
-          market_value_trend?: string | null
-          max_speed?: number | null
-          muscle_mass?: number | null
-          nationality?: string | null
-          passports?: string[] | null
-          photo_url?: string | null
-          physical_status?: string | null
-          play_style?: string | null
-          playing_height_preference?: string | null
-          position?: string | null
-          primary_tactical_role?: string | null
-          ready_to_compete?: boolean | null
-          secondary_positions?: string[] | null
-          secondary_tactical_role?: string | null
-          slug?: string | null
-          sprint_30m?: number | null
-          strengths?: string[] | null
-          updated_at?: string | null
-          vo2_max?: number | null
-          weight?: number | null
-          wingspan?: number | null
         }
         Relationships: []
       }
