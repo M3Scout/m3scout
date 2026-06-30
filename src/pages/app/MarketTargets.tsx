@@ -569,7 +569,7 @@ export default function MarketTargets() {
                     </span>
                     {trend === "UP"     && <TrendingUp   className="w-3 h-3 text-emerald-400" />}
                     {trend === "DOWN"   && <TrendingDown  className="w-3 h-3 text-red-400" />}
-                    {trend === "STABLE" && <Minus         className="w-3 h-3" style={{ color: MUTED }} />}
+                    {trend === "FLAT" && <Minus         className="w-3 h-3" style={{ color: MUTED }} />}
                   </div>
                 </div>
               );

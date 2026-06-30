@@ -85,12 +85,16 @@ export function useContracts(filterStatus?: string, filterDays?: number) {
               player_photo_url: c.players?.photo_url || null,
               player_position: c.players?.position || "N/D",
               club_name: c.club_name,
+              club_logo_url: null,
               contract_type: c.contract_type,
+              transfer_fee: null,
               start_date: c.start_date,
               end_date: c.end_date,
               days_to_expire: daysToExpire,
               status,
+              sort_order: null,
             };
+
           });
 
         // Calculate counts
