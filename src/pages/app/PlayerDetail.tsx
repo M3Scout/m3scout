@@ -62,6 +62,10 @@ interface Player {
   passports: string[] | null;
   agent_name: string | null;
   agent_contact: string | null;
+  m3_contract_start: string | null;
+  m3_contract_end: string | null;
+  m3_contract_file_url: string | null;
+
   weight: number | null;
   body_fat_percentage: number | null;
   muscle_mass: number | null;

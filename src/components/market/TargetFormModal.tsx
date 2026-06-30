@@ -365,7 +365,7 @@ export function TargetFormModal({ open, onOpenChange, target, onSuccess }: Targe
         if (error) throw error;
         toast({ title: "Target atualizado" });
       } else {
-        const { error } = await supabase.from("targets").insert(payload);
+        const { error } = await supabase.from("targets").insert(payload as any);
         if (error) throw error;
         toast({ title: "Target criado" });
       }

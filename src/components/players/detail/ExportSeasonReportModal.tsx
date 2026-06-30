@@ -107,7 +107,8 @@ export function ExportSeasonReportModal({
         });
         setCompetitionMeta(map);
       })
-      .finally(() => setMetaLoading(false));
+      .then(() => setMetaLoading(false), () => setMetaLoading(false));
+
   }, [open, mergedBySeason]);
 
   // Rows for selected year (merged)
@@ -272,7 +273,7 @@ export function ExportSeasonReportModal({
               </div>
 
               {/* KPI grid */}
-              <div className="grid grid-cols-5 divide-x" style={{ borderColor: BORDER, divideBorderColor: BORDER }}>
+              <div className="grid grid-cols-5 divide-x" style={{ borderColor: BORDER }}>
                 {[
                   { label: "JOGOS",  value: preview.matches,                                       color: TEXT  },
                   { label: "MINUTOS",value: preview.minutes,                                       color: TEXT  },

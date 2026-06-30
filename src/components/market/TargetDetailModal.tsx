@@ -78,13 +78,14 @@ const STATUS_LABELS: Record<string, string> = {
 
 // ─── Sub-atoms ────────────────────────────────────────────────────────────────
 
-function Mono({ children, className }: { children: React.ReactNode; className?: string }) {
+function Mono({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <span className={cn("font-mono text-[10px] tracking-[0.14em] uppercase", className)}>
+    <span className={cn("font-mono text-[10px] tracking-[0.14em] uppercase", className)} style={style}>
       {children}
     </span>
   );
 }
+
 
 function InfoRow({ icon: Icon, value }: { icon: React.ElementType; value: string }) {
   return (

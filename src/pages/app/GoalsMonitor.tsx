@@ -12,6 +12,8 @@ import {
   User,
   Users
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { supabase } from "@/integrations/supabase/client";
