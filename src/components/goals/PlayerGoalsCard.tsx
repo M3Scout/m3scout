@@ -141,10 +141,11 @@ function GoalRow({ goal, onClick }: { goal: GoalData; onClick?: () => void }) {
           </span>
           <div className="flex items-center gap-1 flex-none tabular-nums">
             <span className="text-[13px] font-semibold font-display" style={{ color: FG }}>
-              {goal.currentValue}{cfg.unit ?? ""}
+              {goal.currentValue}{(cfg as GoalTypeConfig).unit ?? ""}
             </span>
             <span className="text-[11px]" style={{ color: MUTED }}>/</span>
-            <span className="text-[11px]" style={{ color: MUTED }}>{goal.target_value}{cfg.unit ?? ""}</span>
+            <span className="text-[11px]" style={{ color: MUTED }}>{goal.target_value}{(cfg as GoalTypeConfig).unit ?? ""}</span>
+
           </div>
         </div>
         <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>

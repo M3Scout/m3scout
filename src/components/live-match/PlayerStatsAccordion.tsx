@@ -118,7 +118,7 @@ export function PlayerStatsAccordion({ events, matchPlayers }: PlayerStatsAccord
         name: mp.player?.full_name ?? `Atleta`,
         photoUrl: mp.player?.photo_url ?? null,
         position: mp.player?.position ?? "",
-        role: mp.role ?? "substitute",
+        role: (mp as any).started ? "starter" : "substitute",
         goals: playerEvents.filter((e) => e.event_type === "goal").length,
         assists: playerEvents.filter((e) => e.event_type === "assist").length,
         yellowCards: playerEvents.filter((e) => e.event_type === "yellow").length,

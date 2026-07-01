@@ -78,13 +78,14 @@ const STATUS_LABELS: Record<string, string> = {
 
 // ─── Sub-atoms ────────────────────────────────────────────────────────────────
 
-function Mono({ children, className }: { children: React.ReactNode; className?: string }) {
+function Mono({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <span className={cn("font-mono text-[10px] tracking-[0.14em] uppercase", className)}>
+    <span className={cn("font-mono text-[10px] tracking-[0.14em] uppercase", className)} style={style}>
       {children}
     </span>
   );
 }
+
 
 function InfoRow({ icon: Icon, value }: { icon: React.ElementType; value: string }) {
   return (
@@ -482,7 +483,7 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                         <div className="flex items-center gap-1.5">
                           {target.market_score!.trend_30d === "UP"   && <TrendingUp   className="w-4 h-4 text-emerald-400" />}
                           {target.market_score!.trend_30d === "DOWN" && <TrendingDown  className="w-4 h-4 text-red-400" />}
-                          {target.market_score!.trend_30d === "STABLE" && <Minus       className="w-4 h-4" style={{ color: MUTED }} />}
+                          {target.market_score!.trend_30d === "FLAT" && <Minus       className="w-4 h-4" style={{ color: MUTED }} />}
                           <span className="text-[12px] font-mono" style={{ color: MUTED }}>Tendência 30d</span>
                         </div>
                         <div className="flex items-center gap-1.5">

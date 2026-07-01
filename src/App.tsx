@@ -115,13 +115,21 @@ function AppRoutes() {
   // Prefetch critical routes after boot
   usePrefetchRoutes();
   
+  // Public routes (landing, atletas, sobre, etc.) must NEVER be blocked by
+  // auth bootstrap — otherwise first-time mobile visitors see a blank/loading
+  // screen before the marketing site renders.
+  const path = typeof window !== "undefined" ? window.location.pathname : "/";
+  const isProtectedPath = path === "/dashboard" || path.startsWith("/dashboard/");
+
   // Determine loading state and reason
-  const isBootstrapping = loading || (rolesLoading && !isRecovering);
-  const loadingReason = loading 
-    ? "boot" 
-    : (rolesLoading || permissionsLoading) 
-      ? "auth_recovery" 
-      : null;
+  const isBootstrapping = isProtectedPath && (loading || (rolesLoading && !isRecovering));
+  const loadingReason = !isProtectedPath
+    ? null
+    : loading
+      ? "boot"
+      : (rolesLoading || permissionsLoading)
+        ? "auth_recovery"
+        : null;
 
   // Logout handler for AppShell
   const handleLogout = async () => {
@@ -133,9 +141,10 @@ function AppRoutes() {
     <AppShell 
       isLoading={isBootstrapping} 
       loadingReason={loadingReason}
-      hasAuthTimeout={hasAuthTimeout}
+      hasAuthTimeout={isProtectedPath && hasAuthTimeout}
       onLogout={handleLogout}
     >
+
       <TooltipProvider>
         <Toaster />
         <Sonner />

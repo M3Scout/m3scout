@@ -62,7 +62,7 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
       // Fetch existing contracts to determine sort_order
       const { data: existing } = await supabase
         .from("player_contract_history")
-        .select("id, sort_order")
+        .select("id, sort_order, start_date")
         .eq("player_id", playerId)
         .eq("is_archived", false);
 
