@@ -78,6 +78,9 @@ const Contracts = lazy(() => import("./pages/app/Contracts"));
 
 const Prancheta = lazy(() => import("./pages/app/Prancheta"));
 
+// Laboratório Tático
+const LaboratorioTaticoPage = lazy(() => import("./pages/app/LaboratorioTaticoPage"));
+
 // Admin
 const Leads = lazy(() => import("./pages/app/Leads"));
 const News = lazy(() => import("./pages/app/News"));
@@ -223,6 +226,9 @@ function AppRoutes() {
                 <Route path="metas" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><GoalsMonitor /></Suspense></RequirePermission>} />
                 {/* Goals Monitor — player (own goals only) */}
                 <Route path="minhas-metas" element={<Suspense fallback={<RouteSuspense />}><MyGoalsPage /></Suspense>} />
+
+                {/* Laboratório Tático */}
+                <Route path="laboratorio" element={<Suspense fallback={<RouteSuspense />}><LaboratorioTaticoPage /></Suspense>} />
                 
                 {/* Contracts */}
                 <Route path="contratos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Contracts /></Suspense></RequirePermission>} />

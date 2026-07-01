@@ -94,6 +94,9 @@ export default {
         // Public athlete profile — Brutalista/Editorial design system
         display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         'editorial-mono': ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        // Laboratório Tático — Prancheta Tática design system
+        archivo: ['"Archivo"', 'system-ui', 'sans-serif'],
+        'tactical-mono': ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       keyframes: {
         "accordion-down": {
