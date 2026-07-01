@@ -95,6 +95,8 @@ interface ContractRecord {
   end_date: string | null;
   salary_info: string | null;
   transfer_fee: string | null;
+  termination_fee: string | null;
+  updated_at: string;
   notes: string | null;
   is_current: boolean | null;
   is_archived: boolean | null;
@@ -235,11 +237,22 @@ export function ContractTab({
     },
   });
 
-  const currentEntryId = useMemo(() => {
+  const currentEntry = useMemo(() => {
     if (history.length === 0) return null;
     return history.reduce((prev, curr) =>
       new Date(curr.start_date) > new Date(prev.start_date) ? curr : prev
-    ).id;
+    );
+  }, [history]);
+
+  const currentEntryId = currentEntry?.id ?? null;
+
+  // termination_fee from whichever contract was most recently edited (updated_at) that has the field set
+  const latestTerminationFee = useMemo(() => {
+    const withFee = history.filter(c => c.termination_fee);
+    if (withFee.length === 0) return null;
+    return withFee.reduce((prev, curr) =>
+      new Date(curr.updated_at) > new Date(prev.updated_at) ? curr : prev
+    ).termination_fee;
   }, [history]);
 
   const handleReorder = async (index: number, dir: "up" | "down") => {
@@ -287,7 +300,7 @@ export function ContractTab({
     { label: "País",                 value: country       },
     { label: "Vínculo",              value: derivedStatus ? statusCfg.label : null },
     { label: "Salário",              value: salaryInfo    },
-    { label: "Cláusula de Rescisão", value: releaseClause },
+    { label: "Cláusula de Rescisão", value: latestTerminationFee },
     { label: "Agente",               value: agentName, sub: agentContact ?? undefined },
   ];
 

@@ -3,7 +3,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft, Upload, User, Shield, Loader2, Trash2, Activity, Target,
@@ -12,6 +12,7 @@ import {
 import { PlayerStatsForm } from "@/components/players/PlayerStatsForm";
 import { toast } from "sonner";
 import { extractYouTubeVideoId, safeArray } from "@/lib/utils";
+import { PLAY_STYLES } from "@/lib/playStyles";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { ImageCropperModal } from "@/components/players/ImageCropperModal";
 import { CurrencyInput, CurrencyCode } from "@/components/ui/currency-input";
@@ -31,16 +32,61 @@ const nationalities = [
   "Brasil", "Argentina", "Uruguai", "Colômbia", "Chile", "Portugal",
   "Espanha", "Itália", "França", "Alemanha",
 ];
-const playStyles = [
-  "Box-to-Box", "Volante de Contenção", "Armador Recuado", "Meia-Armador",
-  "Mezzala", "Falso Trequartista", "Falso Ponta", "Ponta Invertido",
-  "Falso 9", "Oportunista", "Zagueiro Construtor", "Goleiro-Linha",
+const tacticalRoleGroups: { label: string; options: string[] }[] = [
+  {
+    label: "🧤 Goleiros",
+    options: ["Goleiro Clássico", "Goleiro-Líbero"],
+  },
+  {
+    label: "🛡️ Zagueiros",
+    options: ["Zagueiro Rebatedor", "Zagueiro Construtor", "Zagueiro de Sobra (Líbero)"],
+  },
+  {
+    label: "🏃‍♂️ Laterais",
+    options: ["Lateral Defensivo (Base)", "Lateral Ofensivo (Ala)", "Lateral Invertido (Construtor)"],
+  },
+  {
+    label: "⚙️ Volantes e Meias Centrais",
+    options: ["Primeiro Volante (Cão de Guarda)", "Volante Armador (Regista)", "Meia Central (Box-to-Box)"],
+  },
+  {
+    label: "🧠 Meias Ofensivos",
+    options: ["Camisa 10 Clássico (Armador)", "Meia-Atacante (Infiltrador)", "Meia Moderno (Pressão)"],
+  },
+  {
+    label: "⚡ Pontas e Extremos",
+    options: ["Ponta Clássico", "Extremo Invertido", "Ponta Construtor"],
+  },
+  {
+    label: "🎯 Atacantes",
+    options: ["Segundo Atacante", "Centroavante Rompedor (Homem de Área)", "Atacante de Referência (Pivô)", "Falso 9"],
+  },
 ];
-const tacticalRoles = [
-  "Zagueiro Central", "Líbero", "Lateral Ofensivo", "Lateral Defensivo",
-  "Volante", "Primeiro Volante", "Segundo Volante", "Meia Central",
-  "Meia Ofensivo", "Ponta", "Atacante de Área", "Falso 9",
-];
+// Maps each tactical role → recommended play styles (values must match PLAY_STYLES nomes)
+const TACTICAL_ROLE_STYLES: Record<string, string[]> = {
+  "Goleiro Clássico":                      ["Tático / Leitor de Jogo", "Combativo / Agressivo"],
+  "Goleiro-Líbero":                        ["Elegante / Técnico", "Cadenciador / Maestro"],
+  "Zagueiro Rebatedor":                    ["Combativo / Agressivo", "Impositivo / Físico"],
+  "Zagueiro Construtor":                   ["Elegante / Técnico", "Cadenciador / Maestro"],
+  "Zagueiro de Sobra (Líbero)":            ["Tático / Leitor de Jogo", "Elegante / Técnico"],
+  "Lateral Defensivo (Base)":              ["Tático / Leitor de Jogo", "Combativo / Agressivo", "Incansável / Operário"],
+  "Lateral Ofensivo (Ala)":               ["Velocista / Explosivo", "Incansável / Operário"],
+  "Lateral Invertido (Construtor)":        ["Elegante / Técnico", "Vertical / Direto", "Incansável / Operário"],
+  "Primeiro Volante (Cão de Guarda)":      ["Combativo / Agressivo", "Tático / Leitor de Jogo"],
+  "Volante Armador (Regista)":             ["Cadenciador / Maestro", "Elegante / Técnico"],
+  "Meia Central (Box-to-Box)":             ["Incansável / Operário", "Impositivo / Físico"],
+  "Camisa 10 Clássico (Armador)":          ["Elegante / Técnico", "Cadenciador / Maestro", "Tático / Leitor de Jogo"],
+  "Meia-Atacante (Infiltrador)":           ["Infiltrador / Caçador de Espaços", "Oportunista / Frio"],
+  "Meia Moderno (Pressão)":               ["Incansável / Operário", "Vertical / Direto", "Combativo / Agressivo"],
+  "Ponta Clássico":                        ["Velocista / Explosivo", "Vertical / Direto"],
+  "Extremo Invertido":                     ["Driblador / Liso", "Vertical / Direto", "Velocista / Explosivo"],
+  "Ponta Construtor":                      ["Elegante / Técnico", "Tático / Leitor de Jogo"],
+  "Segundo Atacante":                      ["Infiltrador / Caçador de Espaços", "Oportunista / Frio", "Tático / Leitor de Jogo"],
+  "Centroavante Rompedor (Homem de Área)": ["Oportunista / Frio", "Velocista / Explosivo"],
+  "Atacante de Referência (Pivô)":         ["Impositivo / Físico", "Combativo / Agressivo"],
+  "Falso 9":                               ["Tático / Leitor de Jogo", "Elegante / Técnico"],
+};
+
 const strengthOptions = [
   "Passe Longo", "Drible", "Finalização", "Cabeceio", "Marcação", "Velocidade",
   "Força Física", "Posicionamento", "Visão de Jogo", "Liderança", "Bola Parada",
@@ -187,6 +233,13 @@ export default function EditPlayer() {
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [formData, existingPhotoUrl, photoPreview]);
+
+  // Suggested play styles based on selected tactical roles (deduped union)
+  const suggestedStyles = useMemo(() => {
+    const primary   = TACTICAL_ROLE_STYLES[formData.primary_tactical_role]   ?? [];
+    const secondary = TACTICAL_ROLE_STYLES[formData.secondary_tactical_role] ?? [];
+    return [...new Set([...primary, ...secondary])];
+  }, [formData.primary_tactical_role, formData.secondary_tactical_role]);
 
   // Circumference ≈ 100 when r=15.9, so dasharray maps directly to %
   const CIRC = 2 * Math.PI * 15.9;
@@ -694,10 +747,45 @@ export default function EditPlayer() {
                 <Field label="Estilo de Jogo" filled={!!formData.play_style}>
                   <Select value={formData.play_style} onValueChange={val => handleChange("play_style", val)}>
                     <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={suggestedStyles.length ? "Ver sugestões ✨" : "Selecione"}>
+                        {formData.play_style ? <span>{formData.play_style}</span> : null}
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-800 border-zinc-700">
-                      {playStyles.map(s => <SelectItem key={s} value={s} className="text-zinc-200 focus:bg-zinc-700">{s}</SelectItem>)}
+                    <SelectContent className="bg-zinc-800 border-zinc-700 max-h-80">
+                      {suggestedStyles.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-[10px] font-bold tracking-wider uppercase text-amber-400/80 px-2 py-1.5">
+                            ✨ Estilos Sugeridos
+                          </SelectLabel>
+                          {PLAY_STYLES.filter(s => suggestedStyles.includes(s.nome)).map(s => (
+                            <SelectItem
+                              key={s.nome} value={s.nome} textValue={s.nome}
+                              className="!pl-3 rounded-lg my-0.5 mx-1 [&>span:first-child]:hidden focus:bg-zinc-700 data-[state=checked]:!bg-emerald-500/15 data-[state=checked]:ring-1 data-[state=checked]:ring-emerald-500/40"
+                            >
+                              <div className="flex flex-col py-0.5">
+                                <span className="font-semibold text-[13px] leading-tight text-zinc-100">{s.nome}</span>
+                                <span className="text-[10px] text-zinc-400 leading-snug mt-0.5 max-w-[280px] whitespace-normal">{s.descricao}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] font-bold tracking-wider uppercase text-zinc-500 px-2 py-1.5">
+                          {suggestedStyles.length > 0 ? "Outros Estilos" : "Todos os Estilos"}
+                        </SelectLabel>
+                        {PLAY_STYLES.filter(s => !suggestedStyles.includes(s.nome)).map(s => (
+                          <SelectItem
+                            key={s.nome} value={s.nome} textValue={s.nome}
+                            className="!pl-3 rounded-lg my-0.5 mx-1 [&>span:first-child]:hidden focus:bg-zinc-700 data-[state=checked]:!bg-emerald-500/15 data-[state=checked]:ring-1 data-[state=checked]:ring-emerald-500/40"
+                          >
+                            <div className="flex flex-col py-0.5">
+                              <span className="font-semibold text-[13px] leading-tight text-zinc-100">{s.nome}</span>
+                              <span className="text-[10px] text-zinc-400 leading-snug mt-0.5 max-w-[280px] whitespace-normal">{s.descricao}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -707,7 +795,18 @@ export default function EditPlayer() {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
-                      {tacticalRoles.map(r => <SelectItem key={r} value={r} className="text-zinc-200 focus:bg-zinc-700">{r}</SelectItem>)}
+                      {tacticalRoleGroups.map(group => (
+                        <SelectGroup key={group.label}>
+                          <SelectLabel className="text-[10px] font-bold tracking-wider uppercase text-zinc-500 px-2 py-1.5">
+                            {group.label}
+                          </SelectLabel>
+                          {group.options.map(opt => (
+                            <SelectItem key={opt} value={opt} className="text-zinc-200 focus:bg-zinc-700 pl-4">
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
@@ -717,7 +816,18 @@ export default function EditPlayer() {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
-                      {tacticalRoles.map(r => <SelectItem key={r} value={r} className="text-zinc-200 focus:bg-zinc-700">{r}</SelectItem>)}
+                      {tacticalRoleGroups.map(group => (
+                        <SelectGroup key={group.label}>
+                          <SelectLabel className="text-[10px] font-bold tracking-wider uppercase text-zinc-500 px-2 py-1.5">
+                            {group.label}
+                          </SelectLabel>
+                          {group.options.map(opt => (
+                            <SelectItem key={opt} value={opt} className="text-zinc-200 focus:bg-zinc-700 pl-4">
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>

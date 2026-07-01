@@ -135,17 +135,37 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: "low" | "ideal" | "high" }) {
+function StatusBadge({ status, rangeKey, unit }: { status: "low" | "ideal" | "high"; rangeKey: string; unit: string }) {
   const cfg = {
     low:   { label: "BAIXO", color: AMBER  },
     ideal: { label: "IDEAL", color: GREEN  },
     high:  { label: "ALTO",  color: ACCENT },
   }[status];
+
+  const range = METRIC_RANGES[rangeKey];
+  const tooltipText = range ? `Faixa ideal: ${range.idealLow}–${range.idealHigh} ${unit}`.trim() : null;
+
   return (
-    <span className="font-editorial-mono text-[9px] tracking-wider border px-1.5 py-0.5 rounded-md"
-      style={{ color: cfg.color, borderColor: cfg.color }}>
-      {cfg.label}
-    </span>
+    <div className="relative group/badge flex-shrink-0">
+      <span
+        className="font-editorial-mono text-[9px] tracking-wider border px-1.5 py-0.5 rounded-md cursor-default select-none"
+        style={{ color: cfg.color, borderColor: cfg.color }}
+      >
+        {cfg.label}
+      </span>
+      {tooltipText && (
+        <div className="absolute bottom-full right-0 mb-2 z-20 pointer-events-none opacity-0 group-hover/badge:opacity-100 transition-opacity duration-150">
+          <div
+            className="font-editorial-mono text-[10px] tracking-wide whitespace-nowrap px-2.5 py-1.5 rounded-lg shadow-xl"
+            style={{ background: "#1c1b20", border: `1px solid ${cfg.color}40`, color: cfg.color }}
+          >
+            {tooltipText}
+          </div>
+          <div className="absolute top-full right-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent"
+            style={{ borderTopColor: `${cfg.color}40` }} />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -164,7 +184,7 @@ function MetricCard({ label, value, unit, rangeKey, decimals = 1 }: MetricCardPr
         <span className="font-editorial-mono text-[10px] uppercase tracking-[0.18em] leading-tight" style={{ color: MUTED }}>
           {label}
         </span>
-        {hasValue && status !== "none" && <StatusBadge status={status} />}
+        {hasValue && status !== "none" && <StatusBadge status={status} rangeKey={rangeKey} unit={unit} />}
       </div>
       {hasValue ? (
         <>

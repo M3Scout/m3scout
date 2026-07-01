@@ -44,6 +44,7 @@ interface ContractData {
   end_date: string | null;
   transfer_fee: string | null;
   salary_info: string | null;
+  termination_fee: string | null;
   notes: string | null;
   is_current: boolean;
   is_archived: boolean;
@@ -82,6 +83,7 @@ export function EditContractModal({
     end_date: "",
     transfer_fee: "",
     salary_info: "",
+    termination_fee: "",
     notes: "",
   });
 
@@ -96,6 +98,7 @@ export function EditContractModal({
         end_date: contract.end_date || "",
         transfer_fee: initBRL(contract.transfer_fee),
         salary_info: initBRL(contract.salary_info),
+        termination_fee: initBRL(contract.termination_fee),
         notes: contract.notes || "",
       });
       setFileUrl(contract.contract_file_url ?? null);
@@ -167,6 +170,7 @@ export function EditContractModal({
           end_date: formData.end_date || null,
           transfer_fee: formData.transfer_fee || null,
           salary_info: formData.salary_info || null,
+          termination_fee: formData.termination_fee || null,
           notes: formData.notes || null,
         })
         .eq("id", contract.id);
@@ -521,6 +525,18 @@ export function EditContractModal({
                 inputMode="numeric"
                 value={formData.salary_info}
                 onChange={(e) => setFormData({ ...formData, salary_info: handleBRLInput(e.target.value) })}
+                className="h-11 bg-zinc-900/50 border-zinc-800"
+                disabled={!canEdit}
+              />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="edit_termination_fee" className="text-xs text-zinc-400">Multa Rescisória</Label>
+              <Input
+                id="edit_termination_fee"
+                placeholder="R$ 0,00"
+                inputMode="numeric"
+                value={formData.termination_fee}
+                onChange={(e) => setFormData({ ...formData, termination_fee: handleBRLInput(e.target.value) })}
                 className="h-11 bg-zinc-900/50 border-zinc-800"
                 disabled={!canEdit}
               />
