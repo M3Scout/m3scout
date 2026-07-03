@@ -16,17 +16,17 @@ export function PlayerBadge({ player, accent }: PlayerBadgeProps) {
 
   return (
     <div
-      className="relative overflow-hidden flex items-center gap-3 rounded-xl px-3.5 py-3 transition-all duration-300 hover:-translate-y-0.5"
-      style={{ background: "#0f1311", border: "1px solid #1c2120" }}
+      className="relative overflow-hidden flex items-center gap-3 rounded-[8px] px-3.5 py-3 transition-colors duration-200 hover:bg-white/[0.03]"
+      style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}
     >
       <div
-        className="absolute pointer-events-none select-none font-archivo font-black leading-none"
+        className="absolute pointer-events-none select-none font-archivo font-bold leading-none"
         style={{
-          right: -6,
-          top: -18,
+          right: -4,
+          top: -14,
           fontSize: 72,
-          color: accent,
-          opacity: 0.08,
+          color: "transparent",
+          WebkitTextStroke: `1px ${accent}30`,
           letterSpacing: "-0.03em",
         }}
       >
@@ -47,12 +47,18 @@ export function PlayerBadge({ player, accent }: PlayerBadgeProps) {
       </div>
 
       <div className="relative z-[2] min-w-0 flex-1">
-        <div className="text-[13px] font-semibold truncate" style={{ color: "#e9ece9" }}>
+        <div className="text-[13px] font-semibold truncate" style={{ color: "#ededee" }}>
           {player.full_name}
         </div>
-        {player.position && (
-          <div className="font-tactical-mono text-[10px] tracking-wider truncate" style={{ color: "#6f7a73" }}>
+        {(player.position || player.secondary_positions?.length) && (
+          <div className="font-tactical-mono text-[10px] tracking-wider truncate" style={{ color: "#62616a" }}>
             {player.position}
+            {player.secondary_positions?.length ? ` · ${player.secondary_positions.join(", ")}` : ""}
+          </div>
+        )}
+        {player.play_style && (
+          <div className="text-[10px] truncate mt-0.5" style={{ color: accent }}>
+            {player.play_style}
           </div>
         )}
       </div>

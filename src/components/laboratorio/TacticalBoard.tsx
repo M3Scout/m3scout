@@ -70,12 +70,13 @@ function buildMovementPath(movement: MovementPath, color: string, gradientId: st
     <g>
       <defs>
         <radialGradient id={gradientId}>
-          <stop offset="0%" stopColor={color} stopOpacity={0.5} />
-          <stop offset="55%" stopColor={color} stopOpacity={0.12} />
+          <stop offset="0%" stopColor={color} stopOpacity={0.55} />
+          <stop offset="35%" stopColor={color} stopOpacity={0.32} />
+          <stop offset="70%" stopColor={color} stopOpacity={0.1} />
           <stop offset="100%" stopColor={color} stopOpacity={0} />
         </radialGradient>
       </defs>
-      <ellipse cx={zx} cy={zy} rx={280} ry={200} fill={`url(#${gradientId})`} />
+      <ellipse cx={zx} cy={zy} rx={135} ry={100} fill={`url(#${gradientId})`} />
       <path
         d={d}
         pathLength={1}
@@ -114,10 +115,10 @@ export function TacticalBoard({
 
   return (
     <div
-      className="rounded-[20px] p-3.5"
-      style={{ background: "#0f1311", border: "1px solid #1c2120" }}
+      className="rounded-[8px] p-3.5"
+      style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}
     >
-      <div className="relative w-full rounded-[13px] overflow-hidden">
+      <div className="relative w-full rounded-[6px] overflow-hidden">
         <svg viewBox="0 0 1000 660" className="w-full block" style={{ display: "block" }}>
           <defs>
             <linearGradient id="tactical-board-bg" x1="0" y1="0" x2="0" y2="1">
@@ -175,19 +176,9 @@ export function TacticalBoard({
                   border: `1.5px solid ${isSelected ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.22)"}`,
                   opacity: isSelected ? 1 : 0.85,
                   zIndex: isSelected ? 5 : 3,
-                  boxShadow: isSelected ? `0 0 0 4px ${color}2e, 0 5px 14px -3px ${color}` : "none",
+                  boxShadow: isSelected ? `0 0 0 3px ${color}40` : "none",
                 }}
               >
-                {!isSelected && !isGoalkeeper && (
-                  <span
-                    className="absolute rounded-full pointer-events-none"
-                    style={{
-                      inset: -5,
-                      border: `2px solid ${color}`,
-                      animation: "tacticalPulseRing 2.2s ease-out infinite",
-                    }}
-                  />
-                )}
                 <span className="relative z-[2]">{node.sigla}</span>
               </button>
             );
@@ -197,24 +188,26 @@ export function TacticalBoard({
         {/* Move label chip */}
         <div
           key={`chip-${activeMovementKey}`}
-          className="absolute top-3.5 left-3.5 inline-flex items-center gap-2 px-3.5 py-2 rounded-[11px] z-[8] backdrop-blur-md"
+          className="absolute top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-4 py-2 rounded-full z-[8] backdrop-blur-md"
           style={{
-            background: "rgba(9,13,11,0.84)",
-            border: `1px solid ${accent}45`,
+            background: "rgba(9,13,11,0.86)",
+            border: `1px solid ${accent}50`,
             boxShadow: "0 8px 22px -12px rgba(0,0,0,0.8)",
           }}
         >
           <ArrowRight className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} strokeWidth={2.6} />
-          <span className="font-archivo font-semibold text-[13.5px] whitespace-nowrap" style={{ color: "#f1f4f0" }}>
+          <span className="font-archivo font-semibold text-[13px] whitespace-nowrap" style={{ color: "#f1f4f0" }}>
             {activeMovement.label}
           </span>
         </div>
 
         <div
-          className="absolute left-3.5 bottom-2.5 font-tactical-mono text-[10px] tracking-[0.16em]"
-          style={{ color: "rgba(222,236,228,0.5)" }}
+          className="absolute inset-x-0 bottom-2.5 flex items-center justify-center gap-1.5 font-tactical-mono text-[9px] tracking-[0.14em] uppercase pointer-events-none"
+          style={{ color: "rgba(255,255,255,0.28)" }}
         >
-          ← DEFESA &nbsp;·&nbsp; ATAQUE →
+          <span>Defesa</span>
+          <ArrowRight className="w-2.5 h-2.5" strokeWidth={2.5} />
+          <span>Ataque</span>
         </div>
       </div>
     </div>

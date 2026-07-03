@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FlaskConical, Users, ChevronRight } from "lucide-react";
+import { Users, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Zagueiro",
     shortName: "ZAG",
     color: "#3b82f6",
-    dbPositions: ["CB", "Zagueiro", "Defensor Central"],
+    dbPositions: ["Zagueiro"],
     description: "A base do sistema defensivo, atuando no centro da linha de defesa.",
     mainFunctions: ["Marcação e Desarme", "Proteção da Área", "Cobertura", "Saída de Bola"],
     radarAttributes: ["Imposição Física", "Timing", "Antecipação", "Jogo Aéreo", "Leitura", "Linha Impd."],
@@ -74,7 +74,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Lateral",
     shortName: "LAT",
     color: "#06b6d4",
-    dbPositions: ["LB", "RB", "Lateral Esquerdo", "Lateral Direito", "Lateral"],
+    dbPositions: ["Lateral Direito", "Lateral Esquerdo"],
     description: "Atuam nas faixas laterais com papéis híbridos entre defesa e ataque.",
     mainFunctions: ["Defesa de Corredor", "Apoio Ofensivo", "Fechamento de Linha"],
     radarAttributes: ["Stamina", "Velocidade", "Cruzamento", "Drible Progr.", "Recomposição", "Marcação 1v1"],
@@ -125,7 +125,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Volante / Meia Central",
     shortName: "VOL",
     color: "#8b5cf6",
-    dbPositions: ["CM", "DM", "CDM", "Volante", "Meia Central"],
+    dbPositions: ["Volante", "Meia"],
     description: "O motor do time, operando no centro conectando defesa ao ataque.",
     mainFunctions: ["Destruição de Jogadas", "Transição e Distribuição", "Cobertura"],
     radarAttributes: ["Posicionamento", "Desarme", "Passe Curto", "Visão Periférica", "Pulmão", "Press Resist."],
@@ -176,7 +176,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Meia Ofensivo",
     shortName: "MEI",
     color: "#f59e0b",
-    dbPositions: ["AM", "CAM", "Meia Ofensivo", "Meia Atacante", "Trequartista"],
+    dbPositions: ["Meia Atacante"],
     description: "Os cérebros criativos, atuando entre o meio-campo e a linha de ataque.",
     mainFunctions: ["Criação e Visão de Jogo", "Quebra de Linhas", "Finalização de Média Dist.", "Flutuação"],
     radarAttributes: ["Visão de Jogo", "Drible Curto", "Passe Ruptura", "Finalização", "Giro Rápido", "Inteligência"],
@@ -227,7 +227,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Ponta / Extremo",
     shortName: "PNT",
     color: "#10b981",
-    dbPositions: ["LW", "RW", "Ponta Esquerdo", "Ponta Direito", "Extremo"],
+    dbPositions: ["Ponta Direita", "Ponta Esquerda"],
     description: "Velocidade, drible e agilidade atuando pelos lados do ataque.",
     mainFunctions: ["Amplitude e Profundidade", "1 contra 1 (1v1)", "Cruzamentos e Infiltrações", "Acomp. Defensivo"],
     radarAttributes: ["Aceleração", "Drible em Vel.", "Agilidade", "Frieza Final.", "Recomposição", "Resistência"],
@@ -278,7 +278,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Centroavante",
     shortName: "CA",
     color: "#ef4444",
-    dbPositions: ["ST", "CF", "Centroavante", "Atacante"],
+    dbPositions: ["Centroavante"],
     description: "O jogador mais avançado, cujo objetivo principal é fazer gols.",
     mainFunctions: ["Finalização", "Trabalho de Pivô", "Ocupação de Espaço", "Pressão Alta"],
     radarAttributes: ["Posic. Área", "Faro de Gol", "Finaliz. Ambos", "Força Física", "Explosão Curta", "Frieza"],
@@ -329,7 +329,7 @@ const POSITIONS: TacticalPosition[] = [
     name: "Segundo Atacante",
     shortName: "2AT",
     color: "#f97316",
-    dbPositions: ["SS", "Segundo Atacante", "Second Striker"],
+    dbPositions: ["Segundo Atacante"],
     description: "Atua na faixa entre o Meia Ofensivo e o Centroavante em esquemas com dupla de ataque.",
     mainFunctions: ["Orbitar o Camisa 9", "Coleta de Rebotes", "Tabelas Rápidas", "Finalizações de 2a Onda"],
     radarAttributes: ["Agilidade Mental", "Leitura Espaço", "Passe Curto 1-2", "Finaliz. Curta", "Vel. Ação", "Posic. Ofens."],
@@ -357,10 +357,13 @@ function SquadPanel({ position }: { position: TacticalPosition }) {
   const { data: players, isLoading } = useQuery({
     queryKey: ["lab-squad", position.id],
     queryFn: async () => {
+      // Match players whose primary position OR any secondary position falls
+      // in this family — a player's relevant role isn't always the primary one.
+      const quotedList = position.dbPositions.map((p) => `"${p}"`).join(",");
       const { data } = await supabase
         .from("players")
-        .select("id, full_name, position, photo_url")
-        .in("position", position.dbPositions)
+        .select("id, full_name, position, secondary_positions, play_style, photo_url")
+        .or(`position.in.(${quotedList}),secondary_positions.ov.{${quotedList}}`)
         .order("full_name");
       return (data ?? []) as SquadPlayer[];
     },
@@ -408,7 +411,6 @@ export default function LaboratorioTaticoPage() {
   const [selectedPositionId, setSelectedPositionId] = useState("zagueiro");
   const [selectedSubtypeId, setSelectedSubtypeId] = useState<string | null>(null);
   const [hoveredSubtypeId, setHoveredSubtypeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "squad">("overview");
 
   const selectedFormation = TACTICAL_DICTIONARY[selectedFormationKey];
   const selectedVariation =
@@ -452,7 +454,6 @@ export default function LaboratorioTaticoPage() {
     setSelectedPositionId(id);
     setSelectedSubtypeId(null);
     setHoveredSubtypeId(null);
-    setActiveTab("overview");
   }, []);
 
   const handleFormationSelect = useCallback((key: string) => {
@@ -471,44 +472,38 @@ export default function LaboratorioTaticoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visiblePositions]);
 
-  const showSquadTab = isAdmin && !isPlayerView;
+  const showSquadSection = isAdmin && !isPlayerView;
 
   return (
-    <div className="min-h-screen tactical-grid-bg font-archivo" style={{ color: "#e9ece9" }}>
+    <div className="min-h-screen font-archivo" style={{ color: "#ededee" }}>
       <div className="max-w-[1340px] mx-auto px-4 md:px-[30px] py-8 md:py-[38px] pb-16">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header
-          className="flex items-end justify-between gap-6 flex-wrap mb-6 pb-6"
-          style={{ borderBottom: "1px solid #1c2120" }}
+          className="flex items-end justify-between gap-6 flex-wrap mb-9 pb-6"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.075)" }}
         >
-          <div className="flex items-center gap-4">
-            <div
-              className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center shrink-0"
-              style={{ background: "#13201a", border: "1px solid #243a2f" }}
+          <div>
+            <div className="font-tactical-mono text-[11px] tracking-[0.24em] uppercase font-medium inline-flex gap-[10px] items-center" style={{ color: "#62616a" }}>
+              <span className="font-semibold" style={{ color: "#3fcf6e" }}>01</span>
+              <span className="w-[34px] h-px bg-white/15 flex-none" />
+              Laboratório Tático
+            </div>
+            <h1
+              className="mt-[10px] font-archivo font-semibold leading-[0.98] text-[32px] md:text-[42px]"
+              style={{ letterSpacing: "-0.03em", color: "#ededee" }}
             >
-              <FlaskConical className="w-[22px] h-[22px]" style={{ color: "#3fcf6e" }} strokeWidth={2} />
-            </div>
-            <div>
-              <div className="font-tactical-mono text-[11px] tracking-[0.26em]" style={{ color: "#5c6660" }}>
-                LABORATÓRIO TÁTICO
-              </div>
-              <h1
-                className="mt-0.5 font-archivo font-extrabold text-[22px] md:text-[27px] leading-tight"
-                style={{ letterSpacing: "-0.02em", color: "#f3f5f2" }}
-              >
-                Prancheta Tática
-              </h1>
-            </div>
+              Prancheta Tática
+            </h1>
           </div>
-          <div className="font-tactical-mono text-xs tracking-[0.14em]" style={{ color: "#6f7a73" }}>
-            <span style={{ color: "#9aa49d" }}>{selectedFormation.name}</span> &nbsp;/&nbsp;{" "}
-            {selectedPosition.subtypes.length} VARIAÇÕES DE FUNÇÃO
+          <div className="font-tactical-mono text-xs tracking-[0.1em]" style={{ color: "#62616a" }}>
+            <span style={{ color: "#9c9ba3" }}>{selectedFormation.name}</span> &nbsp;/&nbsp;{" "}
+            {selectedPosition.subtypes.length} variações de função
           </div>
         </header>
 
         {/* ── Esquema tático base ─────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-[22px] items-start mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-[22px] items-stretch mb-11">
           <FormationSelector
             formations={FORMATIONS}
             selectedFormation={selectedFormation}
@@ -524,14 +519,15 @@ export default function LaboratorioTaticoPage() {
             <TacticalDetails
               subtype={{ name: selectedVariation.label, play: selectedVariation.play }}
               accent={FORMATION_ACCENT}
+              className="flex-1"
             />
           </div>
         </div>
 
         {/* ── Role strip nav (apenas posições reais da formação) ───────── */}
         <nav
-          className="inline-flex gap-[3px] p-[5px] mb-6 rounded-[15px] max-w-full overflow-x-auto scrollbar-hide"
-          style={{ background: "#0c0f0d", border: "1px solid #1c2120" }}
+          className="inline-flex gap-[1px] p-[3px] mb-6 rounded-[10px] max-w-full overflow-x-auto scrollbar-hide"
+          style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}
         >
           {visiblePositions.map((pos, i) => {
             const isActive = pos.id === selectedPositionId;
@@ -540,22 +536,18 @@ export default function LaboratorioTaticoPage() {
                 key={pos.id}
                 type="button"
                 onClick={() => handlePositionSelect(pos.id)}
-                className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-[11px] whitespace-nowrap transition-all duration-200"
-                style={{
-                  background: isActive ? `${pos.color}1e` : "transparent",
-                  border: `1px solid ${isActive ? `${pos.color}4d` : "transparent"}`,
-                  boxShadow: isActive ? `inset 0 -2.5px 0 ${pos.color}` : "none",
-                }}
+                className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-[8px] whitespace-nowrap transition-colors duration-200"
+                style={{ background: isActive ? "rgba(255,255,255,0.06)" : "transparent" }}
               >
                 <span
                   className="font-tactical-mono text-xs font-semibold"
-                  style={{ color: pos.color, opacity: isActive ? 1 : 0.85 }}
+                  style={{ color: isActive ? pos.color : "#62616a" }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span
-                  className="font-archivo font-extrabold text-[15.5px]"
-                  style={{ letterSpacing: "0.02em", color: isActive ? "#f3f5f2" : "#8a948d" }}
+                  className="font-archivo font-semibold text-[15px]"
+                  style={{ letterSpacing: "-0.005em", color: isActive ? "#ededee" : "#62616a" }}
                 >
                   {pos.shortName}
                 </span>
@@ -580,11 +572,11 @@ export default function LaboratorioTaticoPage() {
         </div>
 
         {/* ── Variations ───────────────────────────────────────────────── */}
-        <div className="flex items-baseline justify-between gap-4 flex-wrap mb-3.5">
-          <h3 className="font-archivo font-extrabold text-[18px]" style={{ letterSpacing: "-0.01em", color: "#eef1ed" }}>
+        <div className="flex items-baseline justify-between gap-4 flex-wrap mb-4">
+          <h3 className="font-archivo font-semibold text-[20px]" style={{ letterSpacing: "-0.015em", color: "#ededee" }}>
             Variações da função
           </h3>
-          <span className="text-[13px] hidden sm:inline" style={{ color: "#6f7a73" }}>
+          <span className="text-[13px] hidden sm:inline" style={{ color: "#62616a" }}>
             Passe o mouse para prever o movimento no campo &middot; clique para fixar
           </span>
         </div>
@@ -611,66 +603,46 @@ export default function LaboratorioTaticoPage() {
           })}
         </div>
 
-        {/* ── Admin tab switcher (Perfil Tático / Atletas do Elenco) ─────── */}
-        {showSquadTab && (
-          <div className="inline-flex gap-1 p-1 mb-4 rounded-xl" style={{ background: "#0c0f0d", border: "1px solid #1c2120" }}>
-            {(["overview", "squad"] as const).map(tab => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className="px-4 py-2 rounded-lg font-tactical-mono text-[11px] font-bold tracking-wider uppercase transition-colors"
-                style={{
-                  color: activeTab === tab ? selectedPosition.color : "#6f7a73",
-                  background: activeTab === tab ? `${selectedPosition.color}18` : "transparent",
-                }}
-              >
-                {tab === "overview" ? "Perfil Tático" : "Atletas do Elenco"}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* ── Detail ───────────────────────────────────────────────────── */}
-        {showSquadTab && activeTab === "squad" ? (
-          <div className="rounded-[18px] p-6" style={{ background: "#0f1311", border: "1px solid #1c2120" }}>
-            <SquadPanel position={selectedPosition} />
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedSubtype.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 lg:grid-cols-[1.12fr_0.88fr] gap-[22px] items-start"
-            >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedSubtype.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="grid grid-cols-1 lg:grid-cols-[1.12fr_0.88fr] gap-[22px] items-start"
+          >
+            <div className="flex flex-col gap-4">
               <TacticalDetails subtype={selectedSubtype} accent={selectedPosition.color} />
-              <AttributesPanel
-                attributes={selectedPosition.radarAttributes}
-                values={selectedSubtype.radarValues}
-                references={selectedSubtype.references}
-                accent={selectedPosition.color}
-              />
-            </motion.div>
-          </AnimatePresence>
-        )}
+              {showSquadSection && (
+                <div className="rounded-[8px] p-6" style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}>
+                  <div className="font-tactical-mono text-[11px] tracking-[0.16em] uppercase mb-4" style={{ color: "#62616a" }}>
+                    Atletas do elenco
+                  </div>
+                  <SquadPanel position={selectedPosition} />
+                </div>
+              )}
+            </div>
+            <AttributesPanel
+              attributes={selectedPosition.radarAttributes}
+              values={selectedSubtype.radarValues}
+              references={selectedSubtype.references}
+              accent={selectedPosition.color}
+            />
+          </motion.div>
+        </AnimatePresence>
 
         {/* ── Player view: Compare CTA ────────────────────────────────── */}
-        {isPlayerView && !(showSquadTab && activeTab === "squad") && (
+        {isPlayerView && (
           <button
             type="button"
-            className="w-full mt-6 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-            style={{
-              background: `linear-gradient(135deg, ${selectedPosition.color}33, ${selectedPosition.color}18)`,
-              border: `1px solid ${selectedPosition.color}55`,
-              color: selectedPosition.color,
-            }}
+            className="w-full mt-6 flex items-center justify-center gap-[9px] py-[13px] rounded-[8px] font-tactical-mono text-[11px] tracking-[0.12em] uppercase font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99]"
+            style={{ background: "#ec4525", color: "#fff" }}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-3.5 h-3.5" />
             Comparar com meu Perfil
-            <ChevronRight className="w-4 h-4 ml-auto" />
+            <ChevronRight className="w-3.5 h-3.5 ml-auto" />
           </button>
         )}
       </div>

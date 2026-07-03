@@ -45,6 +45,8 @@ export interface SquadPlayer {
   id: string;
   full_name: string;
   position: string | null;
+  secondary_positions: string[] | null;
+  play_style: string | null;
   photo_url: string | null;
 }
 

@@ -26,15 +26,16 @@ export function FormationVariationTabs({
             key={key}
             type="button"
             onClick={() => onSelect(key)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-archivo font-semibold text-[13.5px] transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] font-archivo font-medium text-[13.5px] transition-colors duration-200"
             style={{
-              background: isActive ? `${accent}1e` : "#0f1311",
-              border: `1px solid ${isActive ? `${accent}70` : "#1c2120"}`,
-              color: isActive ? accent : "#9aa49d",
+              background: isActive ? "rgba(255,255,255,0.06)" : "#141318",
+              border: `1px solid ${isActive ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.075)"}`,
+              color: isActive ? "#ededee" : "#62616a",
+              boxShadow: isActive ? `inset 0 -2px 0 ${accent}` : "none",
             }}
           >
             {isRecommended && (
-              <Star className="w-3.5 h-3.5 shrink-0" fill={isActive ? accent : "none"} strokeWidth={2} />
+              <Star className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? accent : "#62616a" }} fill={isActive ? accent : "none"} strokeWidth={2} />
             )}
             {variation.label}
           </button>

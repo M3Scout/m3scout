@@ -1,4 +1,3 @@
-import { Layers, ThumbsUp, ThumbsDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -17,32 +16,29 @@ interface FormationSelectorProps {
 export function FormationSelector({ formations, selectedFormation, onSelect }: FormationSelectorProps) {
   return (
     <div
-      className="rounded-[18px] p-5 md:p-6"
-      style={{ background: "#0f1311", border: "1px solid #1c2120" }}
+      className="rounded-[8px] p-5 md:p-6"
+      style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}
     >
-      <div className="flex items-center gap-2.5 mb-4">
-        <Layers className="w-4 h-4" style={{ color: "#3fcf6e" }} strokeWidth={2} />
-        <span className="font-tactical-mono text-[11px] tracking-[0.18em]" style={{ color: "#6f7a73" }}>
-          ESQUEMA TÁTICO BASE
-        </span>
+      <div className="font-tactical-mono text-[11px] tracking-[0.18em] uppercase mb-4" style={{ color: "#62616a" }}>
+        Esquema tático base
       </div>
 
       <Select value={selectedFormation.key} onValueChange={onSelect}>
         <SelectTrigger
-          className="h-12 rounded-xl font-archivo font-bold text-[20px] px-4"
-          style={{ background: "#0c0f0d", border: "1px solid #243a2f", color: "#f3f5f2" }}
+          className="h-12 rounded-[8px] font-archivo font-semibold text-[19px] px-4"
+          style={{ background: "#0c0b0d", border: "1px solid rgba(255,255,255,0.1)", color: "#ededee" }}
         >
           <SelectValue />
         </SelectTrigger>
         <SelectContent
           className="font-archivo"
-          style={{ background: "#0f1311", border: "1px solid #1c2120", color: "#e9ece9" }}
+          style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.1)", color: "#ededee" }}
         >
           {formations.map((f) => (
             <SelectItem
               key={f.key}
               value={f.key}
-              className="font-semibold focus:bg-white/5"
+              className="font-medium focus:bg-white/5"
             >
               {f.name}
             </SelectItem>
@@ -50,36 +46,30 @@ export function FormationSelector({ formations, selectedFormation, onSelect }: F
         </SelectContent>
       </Select>
 
-      <div className="flex flex-col gap-3.5 mt-5">
+      <div className="flex flex-col gap-4 mt-5">
         <div>
-          <div className="font-tactical-mono text-[10px] tracking-[0.16em] mb-1.5" style={{ color: "#6f7a73" }}>
-            COMO FUNCIONA
+          <div className="font-tactical-mono text-[10px] tracking-[0.16em] uppercase mb-1.5" style={{ color: "#62616a" }}>
+            Como funciona
           </div>
-          <p className="text-[13.5px] leading-relaxed" style={{ color: "#dadfda" }}>
+          <p className="text-[13.5px] leading-relaxed" style={{ color: "#c8c7cc" }}>
             {selectedFormation.description.howItWorks}
           </p>
         </div>
 
-        <div className="rounded-xl px-3.5 py-3" style={{ background: "#10281a", border: "1px solid #1d3d2a" }}>
-          <div className="flex items-center gap-2 mb-1">
-            <ThumbsUp className="w-3.5 h-3.5 shrink-0" style={{ color: "#3fcf6e" }} strokeWidth={2} />
-            <span className="font-tactical-mono text-[10px] tracking-[0.14em]" style={{ color: "#3fcf6e" }}>
-              VANTAGENS
-            </span>
+        <div className="pl-3.5" style={{ borderLeft: "2px solid #3fcf6e" }}>
+          <div className="font-tactical-mono text-[10px] tracking-[0.14em] uppercase mb-1" style={{ color: "#3fcf6e" }}>
+            Vantagens
           </div>
-          <p className="text-[13px] leading-relaxed" style={{ color: "#c7ded0" }}>
+          <p className="text-[13px] leading-relaxed" style={{ color: "#9c9ba3" }}>
             {selectedFormation.description.pros}
           </p>
         </div>
 
-        <div className="rounded-xl px-3.5 py-3" style={{ background: "#2a1414", border: "1px solid #422020" }}>
-          <div className="flex items-center gap-2 mb-1">
-            <ThumbsDown className="w-3.5 h-3.5 shrink-0" style={{ color: "#ff5a5f" }} strokeWidth={2} />
-            <span className="font-tactical-mono text-[10px] tracking-[0.14em]" style={{ color: "#ff5a5f" }}>
-              DESVANTAGENS
-            </span>
+        <div className="pl-3.5" style={{ borderLeft: "2px solid #ec4525" }}>
+          <div className="font-tactical-mono text-[10px] tracking-[0.14em] uppercase mb-1" style={{ color: "#ec4525" }}>
+            Desvantagens
           </div>
-          <p className="text-[13px] leading-relaxed" style={{ color: "#e0c2c3" }}>
+          <p className="text-[13px] leading-relaxed" style={{ color: "#9c9ba3" }}>
             {selectedFormation.description.cons}
           </p>
         </div>
