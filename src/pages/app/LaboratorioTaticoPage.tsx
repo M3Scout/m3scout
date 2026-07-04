@@ -476,7 +476,7 @@ export default function LaboratorioTaticoPage() {
 
   return (
     <div className="min-h-screen font-archivo" style={{ color: "#ededee" }}>
-      <div className="max-w-[1340px] mx-auto px-4 md:px-[30px] py-8 md:py-[38px] pb-16">
+      <div className="max-w-[1340px] mx-auto px-0 md:px-[30px] py-8 md:py-[38px] pb-16">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header
@@ -526,7 +526,7 @@ export default function LaboratorioTaticoPage() {
 
         {/* ── Role strip nav (apenas posições reais da formação) ───────── */}
         <nav
-          className="inline-flex gap-[1px] p-[3px] mb-6 rounded-[10px] max-w-full overflow-x-auto scrollbar-hide"
+          className="flex w-full sm:inline-flex gap-[1px] p-[3px] mb-6 rounded-[10px] sm:max-w-full"
           style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}
         >
           {visiblePositions.map((pos, i) => {
@@ -536,17 +536,17 @@ export default function LaboratorioTaticoPage() {
                 key={pos.id}
                 type="button"
                 onClick={() => handlePositionSelect(pos.id)}
-                className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-[8px] whitespace-nowrap transition-colors duration-200"
+                className="flex-1 sm:flex-none min-w-0 inline-flex items-center justify-center gap-1 sm:gap-2.5 px-1.5 sm:px-4 py-2.5 rounded-[8px] whitespace-nowrap transition-colors duration-200"
                 style={{ background: isActive ? "rgba(255,255,255,0.06)" : "transparent" }}
               >
                 <span
-                  className="font-tactical-mono text-xs font-semibold"
+                  className="hidden sm:inline font-tactical-mono text-xs font-semibold"
                   style={{ color: isActive ? pos.color : "#62616a" }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span
-                  className="font-archivo font-semibold text-[15px]"
+                  className="font-archivo font-semibold text-[13px] sm:text-[15px]"
                   style={{ letterSpacing: "-0.005em", color: isActive ? "#ededee" : "#62616a" }}
                 >
                   {pos.shortName}

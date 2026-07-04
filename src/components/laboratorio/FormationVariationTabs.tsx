@@ -17,16 +17,17 @@ export function FormationVariationTabs({
   const entries = Object.entries(formation.variations);
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2 sm:flex-wrap">
       {entries.map(([key, variation]) => {
         const isActive = key === selectedVariationKey;
         const isRecommended = key === formation.recommendedVariation;
+        const label = variation.label.replace(/\s*\(Recomendada\)\s*/i, "");
         return (
           <button
             key={key}
             type="button"
             onClick={() => onSelect(key)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] font-archivo font-medium text-[13.5px] transition-colors duration-200"
+            className="flex-1 sm:flex-none min-w-0 inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-[8px] font-archivo font-medium text-[13.5px] transition-colors duration-200"
             style={{
               background: isActive ? "rgba(255,255,255,0.06)" : "#141318",
               border: `1px solid ${isActive ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.075)"}`,
@@ -37,7 +38,7 @@ export function FormationVariationTabs({
             {isRecommended && (
               <Star className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? accent : "#62616a" }} fill={isActive ? accent : "none"} strokeWidth={2} />
             )}
-            {variation.label}
+            <span className="truncate">{label}</span>
           </button>
         );
       })}

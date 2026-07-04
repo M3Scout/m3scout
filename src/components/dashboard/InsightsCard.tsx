@@ -560,23 +560,23 @@ export const InsightsCard = () => {
       style={{ background: BG, border: `1px solid ${BDR}` }}
     >
       {/* Header */}
-      <div className="px-5 py-3.5 flex items-center justify-between gap-4 border-b shrink-0"
+      <div className="px-4 sm:px-5 py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 border-b shrink-0"
         style={{ borderColor: BDR }}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center relative"
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center relative shrink-0"
             style={{ background: "rgba(245,158,11,0.12)" }}>
             <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
             <Sparkles className="w-2 h-2 text-amber-300 absolute -top-0.5 -right-0.5" />
           </div>
           <div>
-            <p className="text-[12px] font-display font-semibold uppercase tracking-wide" style={{ color: FG }}>
+            <p className="text-[12px] font-display font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: FG }}>
               // Insights da Plataforma
             </p>
           </div>
         </div>
 
         {/* Filter pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <FilterPill
             label="Todos" count={visible.length}
             active={filter === "all"} color="#ededee"
@@ -606,7 +606,7 @@ export const InsightsCard = () => {
         </div>
 
         {/* Scroll arrows */}
-        <div className="flex gap-1 shrink-0">
+        <div className="hidden sm:flex gap-1 shrink-0">
           <button
             onClick={() => scroll("left")}
             className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"

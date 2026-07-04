@@ -159,15 +159,14 @@ export function TacticalBoard({
                 title={node.label}
                 disabled={isGoalkeeper}
                 onClick={() => !isGoalkeeper && onSelect(node.family as RoleFamilyId)}
-                className="absolute flex items-center justify-center rounded-full font-tactical-mono"
+                className={`absolute flex items-center justify-center rounded-full font-tactical-mono w-6 h-6 sm:w-9 sm:h-9 ${
+                  isSelected ? "text-[8px] sm:text-[10px]" : "text-[7px] sm:text-[9px]"
+                }`}
                 style={{
                   left: `${(node.x / 1000) * 100}%`,
                   top: `${(node.y / 660) * 100}%`,
                   transform: "translate(-50%, -50%)",
                   transition: "left .6s cubic-bezier(.4,0,.2,1), top .6s cubic-bezier(.4,0,.2,1), background .2s, box-shadow .2s",
-                  width: 36,
-                  height: 36,
-                  fontSize: isSelected ? 10 : 9,
                   fontWeight: 700,
                   letterSpacing: "0.02em",
                   cursor: isGoalkeeper ? "default" : "pointer",
@@ -188,15 +187,15 @@ export function TacticalBoard({
         {/* Move label chip */}
         <div
           key={`chip-${activeMovementKey}`}
-          className="absolute top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-4 py-2 rounded-full z-[8] backdrop-blur-md"
+          className="absolute top-1.5 sm:top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-2 rounded-full z-[8] backdrop-blur-md max-w-[92%]"
           style={{
             background: "rgba(9,13,11,0.86)",
             border: `1px solid ${accent}50`,
             boxShadow: "0 8px 22px -12px rgba(0,0,0,0.8)",
           }}
         >
-          <ArrowRight className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} strokeWidth={2.6} />
-          <span className="font-archivo font-semibold text-[13px] whitespace-nowrap" style={{ color: "#f1f4f0" }}>
+          <ArrowRight className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: accent }} strokeWidth={2.6} />
+          <span className="font-archivo font-semibold text-[10px] sm:text-[13px] truncate" style={{ color: "#f1f4f0" }}>
             {activeMovement.label}
           </span>
         </div>

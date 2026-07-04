@@ -77,7 +77,6 @@ const internalNavGroups: NavGroup[] = [
     label: "Negócios",
     items: [
       { href: "/dashboard/noticias", label: "Notícias", module: "news", icon: Newspaper },
-      { href: "/dashboard/leads", label: "Leads", module: "leads", icon: Target },
     ]
   },
   {
