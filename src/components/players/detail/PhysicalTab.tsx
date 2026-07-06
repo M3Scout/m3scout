@@ -542,8 +542,8 @@ export function PhysicalTab({
         <div>
           <SectionHead n="04">COMPOSIÇÃO CORPORAL</SectionHead>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <MetricCard label="% Gordura"        value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" />
-            <MetricCard label="% Massa Muscular"  value={muscleMassPct}  unit="%"  rangeKey="muscle_mass_pct"     />
+            <MetricCard label="% Gordura"       value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" />
+            <MetricCard label="Massa Muscular"  value={resolvedMuscle}  unit="kg" rangeKey="muscle_mass"         />
             <MetricCard label="IMC"               value={bmi}            unit=""   rangeKey="bmi"                  />
           </div>
         </div>
