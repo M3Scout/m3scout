@@ -116,15 +116,9 @@ function PhysicalCard({
 
 // ══════════════════════════════════════════════════════
 export function AthletePhysicalSection({
-  height, weight, wingspan, body_fat_percentage, max_speed, sprint_30m, vo2_max,
+  height, weight, wingspan, body_fat_percentage, muscle_mass, max_speed, sprint_30m, vo2_max,
 }: AthletePhysicalSectionProps) {
-  if (!height && !weight && !wingspan && !body_fat_percentage && !max_speed && !sprint_30m && !vo2_max) return null;
-
-  // Muscle mass % — same formula as PhysicalTab: (1 - bf/100) * 50
-  const muscleMassPct =
-    weight != null && body_fat_percentage != null
-      ? (1 - body_fat_percentage / 100) * 50
-      : null;
+  if (!height && !weight && !wingspan && !body_fat_percentage && !muscle_mass && !max_speed && !sprint_30m && !vo2_max) return null;
 
   // Metric definitions — ref ranges mirror common elite reference bands
   const metrics: MetricDef[] = [
@@ -132,7 +126,7 @@ export function AthletePhysicalSection({
     { label: "Peso",           value: weight,              unit: "kg",    refMin: 70,  refMax: 80,  refText: "70–80 kg"    },
     { label: "Envergadura",    value: wingspan,            unit: "cm",    refMin: null,refMax: null, refText: "—"           },
     { label: "% Gordura",      value: body_fat_percentage, unit: "%",     refMin: 8,   refMax: 12,  refText: "8–12 %"      },
-    { label: "% Massa Musc.",  value: muscleMassPct,       unit: "%",     refMin: 44,  refMax: 55,  refText: "44–55 %"     },
+    { label: "Massa Muscular", value: muscle_mass,         unit: "kg",    refMin: 35,  refMax: 55,  refText: "35–55 kg"    },
     { label: "Vel. Máxima",    value: max_speed,           unit: "km/h",  refMin: 30,  refMax: 35,  refText: "30+ km/h"    },
     { label: "Sprint 30m",     value: sprint_30m,          unit: "s",     refMin: 3.8, refMax: 4.2, refText: "< 4.2 s",  invert: true },
     { label: "VO₂ Máximo",     value: vo2_max,             unit: "ml/kg", refMin: 55,  refMax: 65,  refText: "55+ ml/kg"  },

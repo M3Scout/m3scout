@@ -2803,16 +2803,19 @@ export type Database = {
         Args: { p_season_year: number }
         Returns: {
           full_name: string
+          last_match_date: string
           player_id: string
           slug: string
           total_accurate_passes: number
           total_aerial_duels_failed: number
           total_aerial_duels_won: number
+          total_assists: number
           total_crosses_failed: number
           total_crosses_success: number
           total_dribbles_failed: number
           total_dribbles_success: number
           total_failed_passes: number
+          total_goals: number
           total_ground_duels_failed: number
           total_ground_duels_won: number
           total_matches: number

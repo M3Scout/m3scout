@@ -45,7 +45,7 @@ const METRIC_RANGES: Record<string, { min: number; idealLow: number; idealHigh: 
   weight:              { min: 55,  idealLow: 65,  idealHigh: 85,  max: 100 },
   wingspan:            { min: 160, idealLow: 175, idealHigh: 200, max: 215 },
   body_fat_percentage: { min: 5,   idealLow: 8,   idealHigh: 15,  max: 25,  inverse: true },
-  muscle_mass_pct:     { min: 40,  idealLow: 44,  idealHigh: 55,  max: 60 },
+  muscle_mass:         { min: 25,  idealLow: 35,  idealHigh: 55,  max: 70 },
   bmi:                 { min: 18,  idealLow: 20,  idealHigh: 24,  max: 28 },
   max_speed:           { min: 25,  idealLow: 30,  idealHigh: 35,  max: 40 },
   sprint_30m:          { min: 3.5, idealLow: 3.8, idealHigh: 4.3, max: 5.0, inverse: true },
@@ -58,7 +58,7 @@ const RADAR_AXES = [
   { key: "sprint_30m",          label: "Sprint",        elite: 3.9, inverse: true,  rangeMax: 5.0 },
   { key: "vo2_max",             label: "VO2 Máx",       elite: 65,  inverse: false, rangeMax: 75  },
   { key: "body_fat_percentage", label: "% Gordura",     elite: 10,  inverse: true,  rangeMax: 25  },
-  { key: "muscle_mass_pct",     label: "% Massa Musc.", elite: 50,  inverse: false, rangeMax: 60  },
+  { key: "muscle_mass",         label: "Massa Musc.",   elite: 45,  inverse: false, rangeMax: 70  },
 ] as const;
 
 type RadarAxis = typeof RADAR_AXES[number];
@@ -68,7 +68,7 @@ const RADAR_AXIS_FORMAT: Record<string, { unit: string; decimals: number }> = {
   sprint_30m:          { unit: "s",         decimals: 2 },
   vo2_max:             { unit: "ml/kg/min", decimals: 1 },
   body_fat_percentage: { unit: "%",         decimals: 1 },
-  muscle_mass_pct:     { unit: "%",         decimals: 1 },
+  muscle_mass:         { unit: "kg",        decimals: 1 },
 };
 
 // ─── Elite benchmark by position group (real European elite averages) ─────────
@@ -121,10 +121,6 @@ const calcBMI = (weight?: number | null, height?: number | null): number | null 
   return weight / ((height / 100) ** 2);
 };
 
-const calcMuscleMassPct = (weight?: number | null, bf?: number | null): number | null => {
-  if (!weight || bf == null) return null;
-  return (weight * (1 - bf / 100) * 0.5 / weight) * 100;
-};
 
 const getMetricStatus = (value: number | null, key: string): { pct: number; status: "low" | "ideal" | "high" | "none" } => {
   if (value == null || !Number.isFinite(value)) return { pct: 0, status: "none" };
@@ -404,15 +400,14 @@ export function PhysicalTab({
   const resolvedSprint   = latest?.sprint_30m          ?? playerSprint30m ?? null;
   const resolvedVo2      = latest?.vo2_max             ?? playerVo2Max    ?? null;
 
-  const bmi           = calcBMI(resolvedWeight, playerHeight);
-  const muscleMassPct = calcMuscleMassPct(resolvedWeight, resolvedBodyFat);
+  const bmi = calcBMI(resolvedWeight, playerHeight);
 
   const radarRawValues = radarAxes.map(axis => {
     if (axis.key === "max_speed")           return resolvedMaxSpeed;
     if (axis.key === "sprint_30m")          return resolvedSprint;
     if (axis.key === "vo2_max")             return resolvedVo2;
     if (axis.key === "body_fat_percentage") return resolvedBodyFat;
-    if (axis.key === "muscle_mass_pct")     return muscleMassPct;
+    if (axis.key === "muscle_mass")         return resolvedMuscle;
     return null;
   });
 
@@ -660,9 +655,9 @@ export function PhysicalTab({
         <div>
           <SectionHead n="04">COMPOSIÇÃO CORPORAL</SectionHead>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <MetricCard label="% Gordura"        value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" eliteValue={eliteBenchmark.gordura} />
-            <MetricCard label="% Massa Muscular"  value={muscleMassPct}  unit="%"  rangeKey="muscle_mass_pct"     />
-            <MetricCard label="IMC"               value={bmi}            unit=""   rangeKey="bmi"                  eliteValue={eliteBenchmark.imc} />
+            <MetricCard label="% Gordura"       value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" eliteValue={eliteBenchmark.gordura} />
+            <MetricCard label="Massa Muscular"  value={resolvedMuscle}  unit="kg" rangeKey="muscle_mass"         />
+            <MetricCard label="IMC"             value={bmi}             unit=""   rangeKey="bmi"                 eliteValue={eliteBenchmark.imc} />
           </div>
         </div>
 
