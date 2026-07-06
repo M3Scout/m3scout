@@ -78,10 +78,6 @@ const calcBMI = (weight?: number | null, height?: number | null): number | null 
   return weight / ((height / 100) ** 2);
 };
 
-const calcMuscleMassPct = (weight?: number | null, bf?: number | null): number | null => {
-  if (!weight || bf == null) return null;
-  return (weight * (1 - bf / 100) * 0.5 / weight) * 100;
-};
 
 const getMetricStatus = (value: number | null, key: string): { pct: number; status: "low" | "ideal" | "high" | "none" } => {
   if (value == null || !Number.isFinite(value)) return { pct: 0, status: "none" };
