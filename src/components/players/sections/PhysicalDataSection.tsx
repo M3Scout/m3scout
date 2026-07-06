@@ -151,7 +151,7 @@ const ELITE_BENCHMARKS: Record<string, { value: number; label: string }> = {
   sprint_30m: { value: 3.9, label: "Sprint" },
   vo2_max: { value: 65, label: "VO2 Máx" },
   body_fat_percentage: { value: 10, label: "% Gordura" },
-  muscle_mass_percentage: { value: 50, label: "% Massa Musc." },
+  muscle_mass: { value: 45, label: "Massa Musc." },
 };
 
 // Calculate BMI from weight (kg) and height (cm)
@@ -541,20 +541,15 @@ const BodyCompositionCard = ({
 
 // Premium Physical Radar Chart
 const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
-  // Calculate muscle mass percentage for radar
-  const leanMass = calculateLeanMass(data.weight, data.body_fat_percentage);
-  const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
-  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, data.weight);
-
   const radarData = Object.entries(ELITE_BENCHMARKS).map(([key, benchmark]) => {
     let value: number | null | undefined;
-    
+
     switch (key) {
       case "max_speed": value = data.max_speed; break;
       case "sprint_30m": value = data.sprint_30m; break;
       case "vo2_max": value = data.vo2_max; break;
       case "body_fat_percentage": value = data.body_fat_percentage; break;
-      case "muscle_mass_percentage": value = muscleMassPercentage; break;
+      case "muscle_mass": value = data.muscle_mass; break;
       default: value = null;
     }
 
@@ -691,11 +686,7 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
   };
 
   const bmi = calculateBMI(mergedData.weight, mergedData.height);
-  
-  // Calculate derived values for body composition
-  const leanMass = calculateLeanMass(mergedData.weight, mergedData.body_fat_percentage);
-  const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
-  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, mergedData.weight);
+
 
   return (
     <div className="space-y-6">
@@ -760,26 +751,15 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
                 position={mergedData.position}
                 metricType="body_fat"
               />
-              <BodyCompositionCard 
-                icon={Dumbbell} 
-                label="% Massa Muscular" 
-                value={muscleMassPercentage} 
-                unit="%" 
-                position={mergedData.position}
-                metricType="muscle_mass"
+              <MetricCard
+                icon={Dumbbell}
+                label="Massa Muscular"
+                value={mergedData.muscle_mass}
+                unit="kg"
+                metricKey="muscle_mass"
               />
               <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
             </div>
-            {/* Calculation info - Discrete */}
-            {mergedData.weight && mergedData.body_fat_percentage && (
-              <div className="mt-3 p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/30">
-                <p className="text-[9px] text-zinc-700 uppercase tracking-wider">
-                  <span className="text-zinc-600">Cálculos:</span>{" "}
-                  Peso magro = {formatFixed(leanMass, 1)} kg | 
-                  Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}%)
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Block C - Performance Física */}
