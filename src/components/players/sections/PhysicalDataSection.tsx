@@ -151,7 +151,7 @@ const ELITE_BENCHMARKS: Record<string, { value: number; label: string }> = {
   sprint_30m: { value: 3.9, label: "Sprint" },
   vo2_max: { value: 65, label: "VO2 Máx" },
   body_fat_percentage: { value: 10, label: "% Gordura" },
-  muscle_mass_percentage: { value: 50, label: "% Massa Musc." },
+  muscle_mass: { value: 45, label: "Massa Musc." },
 };
 
 // Calculate BMI from weight (kg) and height (cm)
