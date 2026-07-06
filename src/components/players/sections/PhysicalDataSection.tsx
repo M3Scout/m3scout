@@ -756,26 +756,15 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
                 position={mergedData.position}
                 metricType="body_fat"
               />
-              <BodyCompositionCard 
-                icon={Dumbbell} 
-                label="% Massa Muscular" 
-                value={muscleMassPercentage} 
-                unit="%" 
-                position={mergedData.position}
-                metricType="muscle_mass"
+              <MetricCard
+                icon={Dumbbell}
+                label="Massa Muscular"
+                value={mergedData.muscle_mass}
+                unit="kg"
+                metricKey="muscle_mass"
               />
               <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
             </div>
-            {/* Calculation info - Discrete */}
-            {mergedData.weight && mergedData.body_fat_percentage && (
-              <div className="mt-3 p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/30">
-                <p className="text-[9px] text-zinc-700 uppercase tracking-wider">
-                  <span className="text-zinc-600">Cálculos:</span>{" "}
-                  Peso magro = {formatFixed(leanMass, 1)} kg | 
-                  Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}%)
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Block C - Performance Física */}
