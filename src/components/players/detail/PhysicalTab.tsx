@@ -58,7 +58,7 @@ const RADAR_AXES = [
   { key: "sprint_30m",          label: "Sprint",        elite: 3.9, inverse: true,  rangeMax: 5.0 },
   { key: "vo2_max",             label: "VO2 Máx",       elite: 65,  inverse: false, rangeMax: 75  },
   { key: "body_fat_percentage", label: "% Gordura",     elite: 10,  inverse: true,  rangeMax: 25  },
-  { key: "muscle_mass_pct",     label: "% Massa Musc.", elite: 50,  inverse: false, rangeMax: 60  },
+  { key: "muscle_mass",         label: "Massa Musc.",   elite: 45,  inverse: false, rangeMax: 70  },
 ] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
