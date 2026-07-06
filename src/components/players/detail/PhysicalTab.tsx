@@ -45,7 +45,7 @@ const METRIC_RANGES: Record<string, { min: number; idealLow: number; idealHigh: 
   weight:              { min: 55,  idealLow: 65,  idealHigh: 85,  max: 100 },
   wingspan:            { min: 160, idealLow: 175, idealHigh: 200, max: 215 },
   body_fat_percentage: { min: 5,   idealLow: 8,   idealHigh: 15,  max: 25,  inverse: true },
-  muscle_mass_pct:     { min: 40,  idealLow: 44,  idealHigh: 55,  max: 60 },
+  muscle_mass:         { min: 25,  idealLow: 35,  idealHigh: 55,  max: 70 },
   bmi:                 { min: 18,  idealLow: 20,  idealHigh: 24,  max: 28 },
   max_speed:           { min: 25,  idealLow: 30,  idealHigh: 35,  max: 40 },
   sprint_30m:          { min: 3.5, idealLow: 3.8, idealHigh: 4.3, max: 5.0, inverse: true },
