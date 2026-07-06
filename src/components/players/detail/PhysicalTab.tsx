@@ -309,8 +309,7 @@ export function PhysicalTab({
   const resolvedSprint   = latest?.sprint_30m          ?? playerSprint30m ?? null;
   const resolvedVo2      = latest?.vo2_max             ?? playerVo2Max    ?? null;
 
-  const bmi           = calcBMI(resolvedWeight, playerHeight);
-  const muscleMassPct = calcMuscleMassPct(resolvedWeight, resolvedBodyFat);
+  const bmi = calcBMI(resolvedWeight, playerHeight);
 
   const radarValues = RADAR_AXES.map(axis => {
     let value: number | null = null;
@@ -318,7 +317,7 @@ export function PhysicalTab({
     else if (axis.key === "sprint_30m")          value = resolvedSprint;
     else if (axis.key === "vo2_max")             value = resolvedVo2;
     else if (axis.key === "body_fat_percentage") value = resolvedBodyFat;
-    else if (axis.key === "muscle_mass_pct")     value = muscleMassPct;
+    else if (axis.key === "muscle_mass")         value = resolvedMuscle;
     return normalizeForRadar(value, axis.key);
   });
 
