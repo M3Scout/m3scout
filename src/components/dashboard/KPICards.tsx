@@ -51,7 +51,7 @@ const kpiConfig = [
     iconColor: "text-emerald-400",
     borderColor: "border-emerald-500/20",
     glowColor: "group-hover:shadow-emerald-500/10",
-    link: "/dashboard/contratos?status=expiring&days=90",
+    link: "/dashboard/contratos?status=expiring&days=60",
     warningThreshold: 0,
   },
 ];

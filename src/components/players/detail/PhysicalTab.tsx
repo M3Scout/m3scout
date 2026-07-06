@@ -61,10 +61,53 @@ const RADAR_AXES = [
   { key: "muscle_mass_pct",     label: "% Massa Musc.", elite: 50,  inverse: false, rangeMax: 60  },
 ] as const;
 
+type RadarAxis = typeof RADAR_AXES[number];
+
+const RADAR_AXIS_FORMAT: Record<string, { unit: string; decimals: number }> = {
+  max_speed:           { unit: "km/h",      decimals: 1 },
+  sprint_30m:          { unit: "s",         decimals: 2 },
+  vo2_max:             { unit: "ml/kg/min", decimals: 1 },
+  body_fat_percentage: { unit: "%",         decimals: 1 },
+  muscle_mass_pct:     { unit: "%",         decimals: 1 },
+};
+
+// ─── Elite benchmark by position group (real European elite averages) ─────────
+const ELITE_PHYSICAL_BENCHMARKS = {
+  goleiro:             { altura: 191, peso: 84, imc: 23.0, gordura: 10.5, label: "Goleiros" },
+  zagueiro:            { altura: 189, peso: 82, imc: 22.9, gordura: 9.5,  label: "Zagueiros" },
+  lateral:             { altura: 178, peso: 72, imc: 22.7, gordura: 8.0,  label: "Laterais/Alas" },
+  volante_meia:        { altura: 181, peso: 75, imc: 22.8, gordura: 9.0,  label: "Meio-Campistas" },
+  ponta_meia_atacante: { altura: 175, peso: 70, imc: 22.8, gordura: 8.5,  label: "Pontas/Meias Ofensivos" },
+  centroavante:        { altura: 185, peso: 80, imc: 23.3, gordura: 9.0,  label: "Centroavantes" },
+} as const;
+
+type EliteGroupKey = keyof typeof ELITE_PHYSICAL_BENCHMARKS;
+
+// Maps the raw `position` string stored on the player record to one of the
+// elite benchmark groups above. Falls back to the mid-field group when the
+// position is missing/unrecognized, since it sits closest to the overall mean.
+const POSITION_TO_ELITE_GROUP: Record<string, EliteGroupKey> = {
+  "Goleiro":         "goleiro",
+  "Zagueiro":        "zagueiro",
+  "Lateral Direito": "lateral",
+  "Lateral Esquerdo":"lateral",
+  "Volante":         "volante_meia",
+  "Meia":            "volante_meia",
+  "Meia Atacante":   "ponta_meia_atacante",
+  "Ponta Direita":   "ponta_meia_atacante",
+  "Ponta Esquerda":  "ponta_meia_atacante",
+  "Segundo Atacante":"ponta_meia_atacante",
+  "Centroavante":    "centroavante",
+  "Atacante":        "centroavante",
+};
+
+const getEliteBenchmark = (position?: string | null) =>
+  ELITE_PHYSICAL_BENCHMARKS[POSITION_TO_ELITE_GROUP[position ?? ""] ?? "volante_meia"];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const normalizeForRadar = (value: number | null, axisKey: string): number => {
+const normalizeForRadar = (value: number | null, axisKey: string, axes: readonly RadarAxis[]): number => {
   if (value == null || !Number.isFinite(value)) return 0;
-  const axis = RADAR_AXES.find(a => a.key === axisKey);
+  const axis = axes.find(a => a.key === axisKey);
   if (!axis) return 0;
   if (axis.inverse) {
     const norm = ((axis.rangeMax - value) / (axis.rangeMax - axis.elite)) * 100;
@@ -105,10 +148,18 @@ const axisPoint = (idx: number, factor: number) => {
 const pointsStr = (pts: { x: number; y: number }[]) =>
   pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
 
-function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
+// Vertices with no measured data get pinned to a small nominal radius instead
+// of true 0 — otherwise every missing axis collapses onto the exact same
+// center point and the polygon degenerates into a sharp, misleading dart
+// shape pointing at whichever 1-2 axes do have data.
+const NO_DATA_FACTOR = 0.08;
+
+function PhysicalRadar({ athleteValues, hasData }: { athleteValues: number[]; hasData: boolean[] }) {
   const rings = [0.25, 0.5, 0.75, 1.0];
-  const elitePts   = RADAR_AXES.map((_, i) => axisPoint(i, 1.0));
-  const athletePts = athleteValues.map((v, i) => axisPoint(i, v / 100));
+  const n = RADAR_AXES.length;
+  const elitePts = RADAR_AXES.map((_, i) => axisPoint(i, 1.0));
+  const athletePts = athleteValues.map((v, i) => axisPoint(i, hasData[i] ? v / 100 : NO_DATA_FACTOR));
+
   return (
     <svg viewBox="0 0 240 230" className="w-full max-w-[260px] mx-auto">
       {rings.map(r => (
@@ -120,14 +171,43 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
         return <line key={i} x1={CX} y1={CY} x2={outer.x} y2={outer.y} stroke={CARD_BORDER} strokeWidth="1" />;
       })}
       <polygon points={pointsStr(elitePts)} fill={`${ACCENT}14`} stroke={ACCENT} strokeWidth="1.5" strokeDasharray="4 3" />
-      <polygon points={pointsStr(athletePts)} fill={`${GREEN}28`} stroke={GREEN} strokeWidth="2" />
+
+      {/* Soft fill under everything, then per-edge strokes so segments touching a
+          no-data vertex read as dashed/uncertain instead of a solid claim. */}
+      <polygon points={pointsStr(athletePts)} fill={`${GREEN}20`} stroke="none" />
+      {athletePts.map((p, i) => {
+        const next = athletePts[(i + 1) % n];
+        const edgeHasData = hasData[i] && hasData[(i + 1) % n];
+        return (
+          <line key={i} x1={p.x} y1={p.y} x2={next.x} y2={next.y}
+            stroke={edgeHasData ? GREEN : MUTED}
+            strokeWidth={edgeHasData ? 2 : 1.25}
+            strokeDasharray={edgeHasData ? undefined : "3 3"}
+            opacity={edgeHasData ? 1 : 0.55}
+          />
+        );
+      })}
+      {athletePts.map((p, i) => (
+        hasData[i]
+          ? <circle key={i} cx={p.x} cy={p.y} r={3} fill={GREEN} />
+          : <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={CARD_BG} stroke={MUTED} strokeWidth="1.25" />
+      ))}
+
       {RADAR_AXES.map((axis, i) => {
         const pt = axisPoint(i, 1.22);
         return (
-          <text key={i} x={pt.x} y={pt.y} textAnchor="middle" dominantBaseline="middle"
-            fontSize="8.5" fill={MUTED} fontFamily="JetBrains Mono, monospace">
-            {axis.label}
-          </text>
+          <g key={i}>
+            <text x={pt.x} y={pt.y} textAnchor="middle" dominantBaseline="middle"
+              fontSize="8.5" fill={hasData[i] ? MUTED : "rgba(98,97,106,0.55)"} fontFamily="JetBrains Mono, monospace">
+              {axis.label}
+            </text>
+            {!hasData[i] && (
+              <text x={pt.x} y={pt.y + 11} textAnchor="middle" dominantBaseline="middle"
+                fontSize="7" fill="rgba(98,97,106,0.55)" fontFamily="JetBrains Mono, monospace">
+                sem dado
+              </text>
+            )}
+          </g>
         );
       })}
     </svg>
@@ -170,9 +250,9 @@ function StatusBadge({ status, rangeKey, unit }: { status: "low" | "ideal" | "hi
 }
 
 // ─── Metric card ──────────────────────────────────────────────────────────────
-interface MetricCardProps { label: string; value: number | null; unit: string; rangeKey: string; decimals?: number }
+interface MetricCardProps { label: string; value: number | null; unit: string; rangeKey: string; decimals?: number; eliteValue?: number }
 
-function MetricCard({ label, value, unit, rangeKey, decimals = 1 }: MetricCardProps) {
+function MetricCard({ label, value, unit, rangeKey, decimals = 1, eliteValue }: MetricCardProps) {
   const hasValue = value != null && Number.isFinite(value);
   const { pct, status } = getMetricStatus(value, rangeKey);
   const barColor = status === "ideal" ? GREEN : status === "low" ? AMBER : ACCENT;
@@ -199,6 +279,11 @@ function MetricCard({ label, value, unit, rangeKey, decimals = 1 }: MetricCardPr
       ) : (
         <div className="font-editorial-mono text-[10px] uppercase tracking-wider mt-2" style={{ color: MUTED }}>
           DADO NÃO COLETADO
+        </div>
+      )}
+      {eliteValue != null && (
+        <div className="mt-2.5 font-editorial-mono text-[9.5px] uppercase tracking-wider" style={{ color: MUTED }}>
+          Elite: <span style={{ color: ACCENT }}>{eliteValue.toFixed(decimals)}{unit}</span>
         </div>
       )}
     </div>
@@ -273,6 +358,7 @@ interface PhysicalTabProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 export function PhysicalTab({
   playerId,
+  playerPosition,
   playerHeight,
   playerWingspan,
   playerWeight,
@@ -285,6 +371,11 @@ export function PhysicalTab({
   const queryClient = useQueryClient();
   const { user, isAdmin, isScout } = useAuth();
   const canEdit = isAdmin || isScout;
+
+  const eliteBenchmark = getEliteBenchmark(playerPosition);
+  const radarAxes = RADAR_AXES.map(axis =>
+    axis.key === "body_fat_percentage" ? { ...axis, elite: eliteBenchmark.gordura } : axis
+  );
 
   const [activeMetrics, setActiveMetrics] = useState<MetricKey[]>(["weight", "body_fat_percentage"]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -316,15 +407,17 @@ export function PhysicalTab({
   const bmi           = calcBMI(resolvedWeight, playerHeight);
   const muscleMassPct = calcMuscleMassPct(resolvedWeight, resolvedBodyFat);
 
-  const radarValues = RADAR_AXES.map(axis => {
-    let value: number | null = null;
-    if      (axis.key === "max_speed")           value = resolvedMaxSpeed;
-    else if (axis.key === "sprint_30m")          value = resolvedSprint;
-    else if (axis.key === "vo2_max")             value = resolvedVo2;
-    else if (axis.key === "body_fat_percentage") value = resolvedBodyFat;
-    else if (axis.key === "muscle_mass_pct")     value = muscleMassPct;
-    return normalizeForRadar(value, axis.key);
+  const radarRawValues = radarAxes.map(axis => {
+    if (axis.key === "max_speed")           return resolvedMaxSpeed;
+    if (axis.key === "sprint_30m")          return resolvedSprint;
+    if (axis.key === "vo2_max")             return resolvedVo2;
+    if (axis.key === "body_fat_percentage") return resolvedBodyFat;
+    if (axis.key === "muscle_mass_pct")     return muscleMassPct;
+    return null;
   });
+
+  const radarValues = radarAxes.map((axis, i) => normalizeForRadar(radarRawValues[i], axis.key, radarAxes));
+  const radarHasData = radarRawValues.map(v => v != null && Number.isFinite(v));
 
   const chartData = (history ?? []).map(r => ({
     date: format(parseDateSafe(r.recorded_at), "dd/MM/yy"),
@@ -502,11 +595,18 @@ export function PhysicalTab({
 
         {/* ── 2. Performance vs Elite ──────────────────────────────────── */}
         <div>
-          <SectionHead n="02">PERFORMANCE VS ELITE</SectionHead>
+          <SectionHead n="02"
+            action={
+              <span className="font-editorial-mono text-[9px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-md border"
+                style={{ color: ACCENT, borderColor: `${ACCENT}40`, background: `${ACCENT}0d` }}>
+                Benchmark: {eliteBenchmark.label}
+              </span>
+            }
+          >PERFORMANCE VS ELITE</SectionHead>
           <div className="rounded-xl border p-6" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1 flex justify-center">
-                <PhysicalRadar athleteValues={radarValues} />
+                <PhysicalRadar athleteValues={radarValues} hasData={radarHasData} />
               </div>
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 font-editorial-mono text-[10px] uppercase tracking-wider">
@@ -517,16 +617,29 @@ export function PhysicalTab({
                   <svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke={GREEN} strokeWidth="2" /></svg>
                   <span style={{ color: MUTED }}>Atleta</span>
                 </div>
-                <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: CARD_BORDER }}>
-                  {RADAR_AXES.map((axis, i) => (
-                    <div key={axis.key} className="flex items-center gap-3 font-editorial-mono text-[11px]">
-                      <span className="w-[108px]" style={{ color: MUTED }}>{axis.label}</span>
-                      <div className="flex-1 h-[1px]" style={{ background: CARD_BORDER }} />
-                      <span style={{ color: radarValues[i] >= 75 ? GREEN : radarValues[i] >= 40 ? TEXT : ACCENT }}>
-                        {radarValues[i].toFixed(0)}%
-                      </span>
-                    </div>
-                  ))}
+                <div className="mt-3 space-y-2.5 border-t pt-3" style={{ borderColor: CARD_BORDER }}>
+                  {radarAxes.map((axis, i) => {
+                    const fmt = RADAR_AXIS_FORMAT[axis.key];
+                    const raw = radarRawValues[i];
+                    const hasRaw = raw != null && Number.isFinite(raw);
+                    return (
+                      <div key={axis.key} className="flex items-center justify-between gap-3 font-editorial-mono text-[11px]">
+                        <span className="w-[100px] shrink-0" style={{ color: hasRaw ? MUTED : "rgba(98,97,106,0.55)" }}>{axis.label}</span>
+                        {hasRaw ? (
+                          <div className="flex items-baseline gap-2">
+                            <span style={{ color: radarValues[i] >= 75 ? GREEN : radarValues[i] >= 40 ? TEXT : ACCENT }}>
+                              {raw!.toFixed(fmt.decimals)}{fmt.unit}
+                            </span>
+                            <span className="text-[9.5px]" style={{ color: MUTED }}>
+                              / elite {axis.elite.toFixed(fmt.decimals)}{fmt.unit}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[9.5px] italic" style={{ color: "rgba(98,97,106,0.55)" }}>sem dado</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -537,8 +650,8 @@ export function PhysicalTab({
         <div>
           <SectionHead n="03" action={addButton}>MEDIDAS CORPORAIS</SectionHead>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <MetricCard label="Altura"      value={playerHeight ?? null} unit="cm"  rangeKey="height"  decimals={0} />
-            <MetricCard label="Peso"        value={resolvedWeight}       unit="kg"  rangeKey="weight"              />
+            <MetricCard label="Altura"      value={playerHeight ?? null} unit="cm"  rangeKey="height"  decimals={0} eliteValue={eliteBenchmark.altura} />
+            <MetricCard label="Peso"        value={resolvedWeight}       unit="kg"  rangeKey="weight"              eliteValue={eliteBenchmark.peso} />
             <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
           </div>
         </div>
@@ -547,9 +660,9 @@ export function PhysicalTab({
         <div>
           <SectionHead n="04">COMPOSIÇÃO CORPORAL</SectionHead>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <MetricCard label="% Gordura"        value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" />
+            <MetricCard label="% Gordura"        value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" eliteValue={eliteBenchmark.gordura} />
             <MetricCard label="% Massa Muscular"  value={muscleMassPct}  unit="%"  rangeKey="muscle_mass_pct"     />
-            <MetricCard label="IMC"               value={bmi}            unit=""   rangeKey="bmi"                  />
+            <MetricCard label="IMC"               value={bmi}            unit=""   rangeKey="bmi"                  eliteValue={eliteBenchmark.imc} />
           </div>
         </div>
 

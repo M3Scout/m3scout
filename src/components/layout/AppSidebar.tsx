@@ -21,7 +21,6 @@ import {
   UserCog,
   User,
   Gamepad2,
-  ClipboardList,
   FlaskConical,
   type LucideIcon,
 } from "lucide-react";
@@ -61,8 +60,8 @@ const internalNavGroups: NavGroup[] = [
       { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
       { href: "/dashboard/atletas", label: "Atletas", module: "players", icon: Users },
       { href: "/dashboard/comparar",   label: "Comparar",  module: "compare", icon: GitCompare },
-      { href: "/dashboard/prancheta", label: "Prancheta", module: "players", icon: ClipboardList, hiddenOnMobile: true },
       { href: "/dashboard/relatorios", label: "Relatórios", module: "reports", icon: FileText },
+      { href: "/dashboard/metas", label: "Metas", module: "users", action: "manage", icon: Goal },
     ]
   },
   {
@@ -90,7 +89,6 @@ const internalNavGroups: NavGroup[] = [
   {
     label: "Administração",
     items: [
-      { href: "/dashboard/metas", label: "Metas", module: "users", action: "manage", icon: Goal },
       { href: "/dashboard/usuarios", label: "Usuários", module: "users", action: "manage", icon: UserCog },
     ]
   }

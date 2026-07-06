@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronRight } from "lucide-react";
+import { Users } from "lucide-react";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -633,18 +633,6 @@ export default function LaboratorioTaticoPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* ── Player view: Compare CTA ────────────────────────────────── */}
-        {isPlayerView && (
-          <button
-            type="button"
-            className="w-full mt-6 flex items-center justify-center gap-[9px] py-[13px] rounded-[8px] font-tactical-mono text-[11px] tracking-[0.12em] uppercase font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99]"
-            style={{ background: "#ec4525", color: "#fff" }}
-          >
-            <Users className="w-3.5 h-3.5" />
-            Comparar com meu Perfil
-            <ChevronRight className="w-3.5 h-3.5 ml-auto" />
-          </button>
-        )}
       </div>
     </div>
   );

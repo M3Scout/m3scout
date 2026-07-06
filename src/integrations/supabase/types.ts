@@ -1195,6 +1195,7 @@ export type Database = {
           sort_order: number | null
           start_date: string
           termination_fee: string | null
+          termination_fee_international: string | null
           transfer_fee: string | null
           updated_at: string
         }
@@ -1217,6 +1218,7 @@ export type Database = {
           sort_order?: number | null
           start_date: string
           termination_fee?: string | null
+          termination_fee_international?: string | null
           transfer_fee?: string | null
           updated_at?: string
         }
@@ -1239,6 +1241,7 @@ export type Database = {
           sort_order?: number | null
           start_date?: string
           termination_fee?: string | null
+          termination_fee_international?: string | null
           transfer_fee?: string | null
           updated_at?: string
         }

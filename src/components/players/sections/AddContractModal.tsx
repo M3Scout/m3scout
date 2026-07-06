@@ -37,6 +37,7 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
     transfer_fee: "",
     salary_info: "",
     termination_fee: "",
+    termination_fee_international: "",
     notes: "",
   });
 
@@ -49,6 +50,7 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
     transfer_fee: "",
     salary_info: "",
     termination_fee: "",
+    termination_fee_international: "",
     notes: "",
   });
 
@@ -118,6 +120,7 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
           transfer_fee: formData.transfer_fee || null,
           salary_info: formData.salary_info || null,
           termination_fee: formData.termination_fee || null,
+          termination_fee_international: formData.termination_fee_international || null,
           notes: formData.notes || null,
           is_current: false,
           is_archived: false,
@@ -226,13 +229,23 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
                 className="h-11 bg-zinc-900/50 border-zinc-800"
               />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label className="text-xs text-zinc-400">Multa Rescisória</Label>
+            <div className="space-y-2">
+              <Label className="text-xs text-zinc-400">Multa Rescisória (Nacional)</Label>
               <Input
                 placeholder="R$ 0,00"
                 inputMode="numeric"
                 value={formData.termination_fee}
                 onChange={(e) => setFormData({ ...formData, termination_fee: handleBRLInput(e.target.value) })}
+                className="h-11 bg-zinc-900/50 border-zinc-800"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-zinc-400">Multa Rescisória (Internacional)</Label>
+              <Input
+                placeholder="R$ 0,00"
+                inputMode="numeric"
+                value={formData.termination_fee_international}
+                onChange={(e) => setFormData({ ...formData, termination_fee_international: handleBRLInput(e.target.value) })}
                 className="h-11 bg-zinc-900/50 border-zinc-800"
               />
             </div>

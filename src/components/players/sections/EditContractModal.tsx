@@ -45,6 +45,7 @@ interface ContractData {
   transfer_fee: string | null;
   salary_info: string | null;
   termination_fee: string | null;
+  termination_fee_international: string | null;
   notes: string | null;
   is_current: boolean;
   is_archived: boolean;
@@ -84,6 +85,7 @@ export function EditContractModal({
     transfer_fee: "",
     salary_info: "",
     termination_fee: "",
+    termination_fee_international: "",
     notes: "",
   });
 
@@ -99,6 +101,7 @@ export function EditContractModal({
         transfer_fee: initBRL(contract.transfer_fee),
         salary_info: initBRL(contract.salary_info),
         termination_fee: initBRL(contract.termination_fee),
+        termination_fee_international: initBRL(contract.termination_fee_international),
         notes: contract.notes || "",
       });
       setFileUrl(contract.contract_file_url ?? null);
@@ -171,6 +174,7 @@ export function EditContractModal({
           transfer_fee: formData.transfer_fee || null,
           salary_info: formData.salary_info || null,
           termination_fee: formData.termination_fee || null,
+          termination_fee_international: formData.termination_fee_international || null,
           notes: formData.notes || null,
         })
         .eq("id", contract.id);
@@ -529,14 +533,26 @@ export function EditContractModal({
                 disabled={!canEdit}
               />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="edit_termination_fee" className="text-xs text-zinc-400">Multa Rescisória</Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit_termination_fee" className="text-xs text-zinc-400">Multa Rescisória (Nacional)</Label>
               <Input
                 id="edit_termination_fee"
                 placeholder="R$ 0,00"
                 inputMode="numeric"
                 value={formData.termination_fee}
                 onChange={(e) => setFormData({ ...formData, termination_fee: handleBRLInput(e.target.value) })}
+                className="h-11 bg-zinc-900/50 border-zinc-800"
+                disabled={!canEdit}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_termination_fee_international" className="text-xs text-zinc-400">Multa Rescisória (Internacional)</Label>
+              <Input
+                id="edit_termination_fee_international"
+                placeholder="R$ 0,00"
+                inputMode="numeric"
+                value={formData.termination_fee_international}
+                onChange={(e) => setFormData({ ...formData, termination_fee_international: handleBRLInput(e.target.value) })}
                 className="h-11 bg-zinc-900/50 border-zinc-800"
                 disabled={!canEdit}
               />

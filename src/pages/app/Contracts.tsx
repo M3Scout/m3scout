@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ScrollText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,8 +8,12 @@ import { AthleteContractRow } from "@/components/contracts/AthleteContractRow";
 
 export default function Contracts() {
   const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
 
-  const { playerGroups, loading, error, counts } = useContractsByPlayer();
+  const filterStatus = searchParams.get("status") ?? undefined;
+  const filterDays = searchParams.has("days") ? Number(searchParams.get("days")) : undefined;
+
+  const { playerGroups, loading, error, counts } = useContractsByPlayer(filterStatus, filterDays);
 
   const filteredGroups = useMemo(() => {
     const q = search.toLowerCase().trim();

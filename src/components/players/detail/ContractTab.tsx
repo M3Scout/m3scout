@@ -96,6 +96,7 @@ interface ContractRecord {
   salary_info: string | null;
   transfer_fee: string | null;
   termination_fee: string | null;
+  termination_fee_international: string | null;
   updated_at: string;
   notes: string | null;
   is_current: boolean | null;
@@ -255,6 +256,14 @@ export function ContractTab({
     ).termination_fee;
   }, [history]);
 
+  const latestTerminationFeeIntl = useMemo(() => {
+    const withFee = history.filter(c => c.termination_fee_international);
+    if (withFee.length === 0) return null;
+    return withFee.reduce((prev, curr) =>
+      new Date(curr.updated_at) > new Date(prev.updated_at) ? curr : prev
+    ).termination_fee_international;
+  }, [history]);
+
   const handleReorder = async (index: number, dir: "up" | "down") => {
     const swapIdx = dir === "up" ? index - 1 : index + 1;
     if (swapIdx < 0 || swapIdx >= history.length || reordering) return;
@@ -300,7 +309,8 @@ export function ContractTab({
     { label: "País",                 value: country       },
     { label: "Vínculo",              value: derivedStatus ? statusCfg.label : null },
     { label: "Salário",              value: salaryInfo    },
-    { label: "Cláusula de Rescisão", value: latestTerminationFee },
+    { label: "Cláusula de Rescisão (Nacional)", value: latestTerminationFee },
+    { label: "Cláusula de Rescisão (Internacional)", value: latestTerminationFeeIntl },
     { label: "Agente",               value: agentName, sub: agentContact ?? undefined },
   ];
 

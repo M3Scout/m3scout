@@ -8,13 +8,14 @@ import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";
 import { InsightsCard } from "@/components/dashboard/InsightsCard";
 import { isAbortError, logFetchError, logFetchSuccess } from "@/lib/fetchLogger";
-import { Star, Users, FileText, ArrowRight } from "lucide-react";
+import { Star, Users, ArrowRight } from "lucide-react";
 import "./dashboard-v2.css";
 
 interface DashboardStats {
   totalPlayers: number;
-  reportsThisMonth: number;
-  totalLeads: number;
+  totalGoals: number;
+  totalAssists: number;
+  goalsSeasonYear: number;
   expiringContracts: number;
 }
 interface PositionData { name: string; value: number; }
@@ -27,6 +28,7 @@ interface CompetitionUsage {
   usos: number; jogadores: number; ultimo_uso: string | null;
 }
 interface PositionRow { position: string | null; }
+interface SeasonAggRow { total_goals: number | null; total_assists: number | null; }
 interface RecentReportRow {
   id: string; match_date: string; final_score: number | null;
   players?: { full_name: string | null } | null;
@@ -262,33 +264,29 @@ export const DashboardV2 = () => {
 
   // ── Query 1: bundle of dashboard-wide stats (8 parallel reqs, runs ONCE per 5 min) ──
   const overviewQuery = useQuery({
-    queryKey: ["dashboard-v2", "overview", session?.user?.id ?? null],
+    queryKey: ["dashboard-v2", "overview-v3", session?.user?.id ?? null],
     enabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
       const start = performance.now();
-      const firstDayOfMonth = new Date();
-      firstDayOfMonth.setDate(1);
-      firstDayOfMonth.setHours(0, 0, 0, 0);
 
       const [
-        playersRes, leadsRes, contractsRes, positionsRes,
-        recentReportsRes, reportsThisMonthRes, topPlayersRes,
+        playersRes, contractsRes, positionsRes,
+        recentReportsRes, topPlayersRes,
       ] = await Promise.all([
         supabase.from("players").select("id", { count: "exact", head: true })
           .or("is_archived.is.null,is_archived.eq.false"),
-        supabase.from("leads").select("id", { count: "exact", head: true }),
-        supabase.from("players").select("id", { count: "exact", head: true })
-          .gte("contract_end", new Date().toISOString().split("T")[0])
-          .lte("contract_end", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        supabase.from("player_contract_history")
+          .select("player_id, is_archived, players!player_contract_history_player_id_fkey(is_archived)")
+          .or("is_archived.is.null,is_archived.eq.false")
+          .gte("end_date", new Date().toISOString().split("T")[0])
+          .lte("end_date", new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
         supabase.from("players").select("position").or("is_archived.is.null,is_archived.eq.false"),
         supabase.from("scouting_reports")
           .select(`id, match_date, final_score, players(full_name), competitions(name)`)
           .is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
-        supabase.from("scouting_reports").select("id", { count: "exact", head: true })
-          .is("deleted_at", null).gte("created_at", firstDayOfMonth.toISOString()),
         supabase.from("players")
           .select("id, full_name, position, auto_rating, current_club, age")
           .not("auto_rating", "is", null)
@@ -296,11 +294,31 @@ export const DashboardV2 = () => {
           .order("auto_rating", { ascending: false }).limit(6),
       ]);
 
+      const expiringPlayerIds = new Set(
+        ((contractsRes.data as { player_id: string; players: { is_archived: boolean | null } | null }[] | null) || [])
+          .filter((c) => !c.players?.is_archived)
+          .map((c) => c.player_id)
+      );
+
+      // Same logic the attribute radar uses: don't assume the calendar year has
+      // data yet — walk backwards to the most recent season that actually has
+      // goals/assists recorded, across the whole squad.
+      let seasonAggregates: SeasonAggRow[] = [];
+      let goalsSeasonYear = currentYear;
+      for (const year of [currentYear, currentYear - 1, currentYear - 2]) {
+        const { data } = await supabase.rpc("get_season_player_aggregates", { p_season_year: year });
+        const rows = (data as SeasonAggRow[] | null) || [];
+        goalsSeasonYear = year;
+        seasonAggregates = rows;
+        if (rows.some(r => (r.total_goals || 0) > 0 || (r.total_assists || 0) > 0)) break;
+      }
+
       const stats: DashboardStats = {
         totalPlayers: playersRes.count || 0,
-        reportsThisMonth: reportsThisMonthRes.count || 0,
-        totalLeads: leadsRes.count || 0,
-        expiringContracts: contractsRes.count || 0,
+        totalGoals: seasonAggregates.reduce((sum, r) => sum + (r.total_goals || 0), 0),
+        totalAssists: seasonAggregates.reduce((sum, r) => sum + (r.total_assists || 0), 0),
+        goalsSeasonYear,
+        expiringContracts: expiringPlayerIds.size,
       };
 
       const counts: Record<string, number> = {};
@@ -357,7 +375,7 @@ export const DashboardV2 = () => {
     },
   });
 
-  const stats = overviewQuery.data?.stats ?? { totalPlayers: 0, reportsThisMonth: 0, totalLeads: 0, expiringContracts: 0 };
+  const stats = overviewQuery.data?.stats ?? { totalPlayers: 0, totalGoals: 0, totalAssists: 0, goalsSeasonYear: currentYear, expiringContracts: 0 };
   const positionData = overviewQuery.data?.positionData ?? [];
   const topPlayers = overviewQuery.data?.topPlayers ?? [];
   const competitions = competitionsQuery.data ?? [];
@@ -481,24 +499,24 @@ export const DashboardV2 = () => {
             <div className="m3dash-stat-sub">Portfólio ativo</div>
             <div className="m3dash-stat-bar m3dash-stat-bar--green" />
           </Link>
-          <Link to="/dashboard/relatorios" className="m3dash-stat">
-            <div className="m3dash-stat-label">Relatórios</div>
-            <div className="m3dash-stat-value">{stats.reportsThisMonth}</div>
-            <div className="m3dash-stat-sub">Este mês</div>
-            <div className={`m3dash-stat-bar ${stats.reportsThisMonth > 0 ? "m3dash-stat-bar--muted" : "m3dash-stat-bar--muted"}`} />
+          <Link to="/dashboard/atletas" className="m3dash-stat">
+            <div className="m3dash-stat-label">Gols</div>
+            <div className="m3dash-stat-value">{stats.totalGoals}</div>
+            <div className="m3dash-stat-sub">Temporada {stats.goalsSeasonYear}</div>
+            <div className="m3dash-stat-bar m3dash-stat-bar--muted" />
           </Link>
-          <Link to="/dashboard/leads" className="m3dash-stat">
-            <div className="m3dash-stat-label">Leads</div>
-            <div className="m3dash-stat-value">{stats.totalLeads}</div>
-            <div className="m3dash-stat-sub">Total recebidos</div>
-            <div className={`m3dash-stat-bar ${stats.totalLeads > 0 ? "m3dash-stat-bar--muted" : "m3dash-stat-bar--muted"}`} />
+          <Link to="/dashboard/atletas" className="m3dash-stat">
+            <div className="m3dash-stat-label">Assistências</div>
+            <div className="m3dash-stat-value">{stats.totalAssists}</div>
+            <div className="m3dash-stat-sub">Temporada {stats.goalsSeasonYear}</div>
+            <div className="m3dash-stat-bar m3dash-stat-bar--muted" />
           </Link>
-          <Link to="/dashboard/contratos?status=expiring&days=90" className="m3dash-stat">
+          <Link to="/dashboard/contratos?status=expiring&days=60" className="m3dash-stat">
             <div className="m3dash-stat-label">Contratos</div>
             <div className={`m3dash-stat-value ${stats.expiringContracts > 0 ? "warn" : ""}`}>
               {stats.expiringContracts}
             </div>
-            <div className="m3dash-stat-sub">Expirando 90d</div>
+            <div className="m3dash-stat-sub">Expirando 60d</div>
             <div className="m3dash-stat-bar m3dash-stat-bar--yellow" />
           </Link>
         </div>

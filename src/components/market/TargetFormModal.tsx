@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Save, Star, X, Plus } from "lucide-react";
+import { Loader2, Save, Star, X, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Target, TargetStatus, TargetPriority } from "@/types/marketScore";
@@ -52,6 +52,10 @@ const SOURCES = [
   { value: "agente",      label: "Agente / Empresário" },
   { value: "outro",       label: "Outro" },
 ];
+
+// Accent-insensitive, case-insensitive, whitespace-insensitive search matching
+const normalizeSearch = (s: string) =>
+  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, "");
 
 const AGENCY_OPTIONS = [
   { value: "free",          label: "Livre (sem representação)" },
@@ -258,6 +262,15 @@ export function TargetFormModal({ open, onOpenChange, target, onSuccess }: Targe
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  const [competitionSearch, setCompetitionSearch] = useState("");
+  const filteredCompetitions = useMemo(() => {
+    const q = normalizeSearch(competitionSearch);
+    if (!q) return competitions;
+    return competitions.filter(c =>
+      normalizeSearch(`${c.display_name || c.name} ${c.country ?? ""}`).includes(q)
+    );
+  }, [competitions, competitionSearch]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -502,7 +515,42 @@ export function TargetFormModal({ open, onOpenChange, target, onSuccess }: Targe
                 <Input {...form.register("current_club")} placeholder="Nome do clube" className={INPUT_CLS} />
               </Field>
               <Field label="Competição / Liga">
-                <Input {...form.register("league_competition")} placeholder="Ex: Série B, La Liga..." className={INPUT_CLS} />
+                <Select
+                  value={form.watch("league_competition") || "_none"}
+                  onValueChange={v => form.setValue("league_competition", v === "_none" ? "" : v)}
+                  onOpenChange={open => { if (!open) setCompetitionSearch(""); }}
+                >
+                  <SelectTrigger className={SELECT_TRIGGER_CLS}>
+                    <SelectValue placeholder="Selecione a competição" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[280px]">
+                    <div className="sticky -top-1 z-10 -mx-1 -mt-1 mb-1 bg-popover p-1.5 border-b border-white/[0.07]">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                        <input
+                          value={competitionSearch}
+                          onChange={e => setCompetitionSearch(e.target.value)}
+                          onKeyDown={e => e.stopPropagation()}
+                          placeholder="Buscar competição..."
+                          autoFocus
+                          className="w-full h-8 pl-7 pr-2 rounded-md bg-white/[0.04] border border-white/[0.07] text-[13px] text-foreground placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#ec4525]/40"
+                        />
+                      </div>
+                    </div>
+                    <SelectItem value="_none">—</SelectItem>
+                    {filteredCompetitions.map(c => {
+                      const label = c.display_name || c.name;
+                      return (
+                        <SelectItem key={c.id} value={label}>
+                          {label}{c.country ? ` (${c.country})` : ""}
+                        </SelectItem>
+                      );
+                    })}
+                    {filteredCompetitions.length === 0 && (
+                      <div className="py-3 text-center text-[12px] text-zinc-500">Nenhuma competição encontrada</div>
+                    )}
+                  </SelectContent>
+                </Select>
               </Field>
             </FieldRow>
 
