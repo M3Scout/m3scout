@@ -691,11 +691,7 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
   };
 
   const bmi = calculateBMI(mergedData.weight, mergedData.height);
-  
-  // Calculate derived values for body composition
-  const leanMass = calculateLeanMass(mergedData.weight, mergedData.body_fat_percentage);
-  const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
-  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, mergedData.weight);
+
 
   return (
     <div className="space-y-6">
