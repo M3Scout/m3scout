@@ -541,20 +541,15 @@ const BodyCompositionCard = ({
 
 // Premium Physical Radar Chart
 const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
-  // Calculate muscle mass percentage for radar
-  const leanMass = calculateLeanMass(data.weight, data.body_fat_percentage);
-  const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
-  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, data.weight);
-
   const radarData = Object.entries(ELITE_BENCHMARKS).map(([key, benchmark]) => {
     let value: number | null | undefined;
-    
+
     switch (key) {
       case "max_speed": value = data.max_speed; break;
       case "sprint_30m": value = data.sprint_30m; break;
       case "vo2_max": value = data.vo2_max; break;
       case "body_fat_percentage": value = data.body_fat_percentage; break;
-      case "muscle_mass_percentage": value = muscleMassPercentage; break;
+      case "muscle_mass": value = data.muscle_mass; break;
       default: value = null;
     }
 
