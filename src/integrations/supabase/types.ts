@@ -2713,6 +2713,10 @@ export type Database = {
       end_first_half_v2: { Args: { p_game_id: string }; Returns: Json }
       end_game_v2: { Args: { p_game_id: string }; Returns: Json }
       finish_live_game: { Args: { p_game_id: string }; Returns: Json }
+      get_agency_impact_stats: {
+        Args: { p_season_year?: number }
+        Returns: Json
+      }
       get_competitions_usage: {
         Args: { p_season_year: number }
         Returns: {

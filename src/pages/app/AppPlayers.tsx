@@ -39,6 +39,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
+import { AgencyImpactDashboard } from "@/components/players/AgencyImpactDashboard";
 import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
 import { PlayerListRowPremium, PlayerListRowMobilePremium } from "@/components/players/PlayerListRowPremium";
 import { SortControlsPremium } from "@/components/players/SortControlsPremium";
@@ -989,6 +990,8 @@ const AppPlayers = () => {
           </div>
         </div>
       )}
+
+      <AgencyImpactDashboard />
 
       <DeletePlayerDialog
         open={deleteDialogOpen}

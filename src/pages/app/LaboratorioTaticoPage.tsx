@@ -526,7 +526,7 @@ export default function LaboratorioTaticoPage() {
 
         {/* ── Role strip nav (apenas posições reais da formação) ───────── */}
         <nav
-          className="flex w-full sm:inline-flex gap-[1px] p-[3px] mb-6 rounded-[10px] sm:max-w-full"
+          className="flex w-full sm:inline-flex sm:w-auto gap-[1px] p-[3px] mb-6 rounded-[10px] sm:max-w-full"
           style={{ background: "#141318", border: "1px solid rgba(255,255,255,0.075)" }}
         >
           {visiblePositions.map((pos, i) => {
