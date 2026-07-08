@@ -15,6 +15,7 @@ import {
 import { format } from "date-fns";
 import { parseDateSafe } from "@/lib/dateUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getEliteBenchmark } from "@/lib/physicalBenchmarks";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ACCENT      = "#ec4525";
@@ -71,38 +72,6 @@ const RADAR_AXIS_FORMAT: Record<string, { unit: string; decimals: number }> = {
   muscle_mass:         { unit: "kg",        decimals: 1 },
 };
 
-// ─── Elite benchmark by position group (real European elite averages) ─────────
-const ELITE_PHYSICAL_BENCHMARKS = {
-  goleiro:             { altura: 191, peso: 84, imc: 23.0, gordura: 10.5, label: "Goleiros" },
-  zagueiro:            { altura: 189, peso: 82, imc: 22.9, gordura: 9.5,  label: "Zagueiros" },
-  lateral:             { altura: 178, peso: 72, imc: 22.7, gordura: 8.0,  label: "Laterais/Alas" },
-  volante_meia:        { altura: 181, peso: 75, imc: 22.8, gordura: 9.0,  label: "Meio-Campistas" },
-  ponta_meia_atacante: { altura: 175, peso: 70, imc: 22.8, gordura: 8.5,  label: "Pontas/Meias Ofensivos" },
-  centroavante:        { altura: 185, peso: 80, imc: 23.3, gordura: 9.0,  label: "Centroavantes" },
-} as const;
-
-type EliteGroupKey = keyof typeof ELITE_PHYSICAL_BENCHMARKS;
-
-// Maps the raw `position` string stored on the player record to one of the
-// elite benchmark groups above. Falls back to the mid-field group when the
-// position is missing/unrecognized, since it sits closest to the overall mean.
-const POSITION_TO_ELITE_GROUP: Record<string, EliteGroupKey> = {
-  "Goleiro":         "goleiro",
-  "Zagueiro":        "zagueiro",
-  "Lateral Direito": "lateral",
-  "Lateral Esquerdo":"lateral",
-  "Volante":         "volante_meia",
-  "Meia":            "volante_meia",
-  "Meia Atacante":   "ponta_meia_atacante",
-  "Ponta Direita":   "ponta_meia_atacante",
-  "Ponta Esquerda":  "ponta_meia_atacante",
-  "Segundo Atacante":"ponta_meia_atacante",
-  "Centroavante":    "centroavante",
-  "Atacante":        "centroavante",
-};
-
-const getEliteBenchmark = (position?: string | null) =>
-  ELITE_PHYSICAL_BENCHMARKS[POSITION_TO_ELITE_GROUP[position ?? ""] ?? "volante_meia"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const normalizeForRadar = (value: number | null, axisKey: string, axes: readonly RadarAxis[]): number => {

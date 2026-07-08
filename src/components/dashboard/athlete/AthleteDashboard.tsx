@@ -279,7 +279,7 @@ export function AthleteDashboard() {
   // Calculate cards and discipline stats
   const yellowCards = totals?.yellow_cards ?? 0;
   const redCards = totals?.red_cards ?? 0;
-  
+
   // Check if goalkeeper
   const isGoalkeeper = useMemo(() => {
     const pos = athlete?.position?.toLowerCase() ?? '';

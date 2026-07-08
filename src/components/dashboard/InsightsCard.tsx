@@ -2,13 +2,17 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle, TrendingUp, Sparkles, ChevronRight,
-  Lightbulb, Clock, Target, Crosshair, ShieldAlert,
-  Star, Trophy, FileWarning, X, ChevronLeft,
+  Sparkles, ChevronRight, Lightbulb, X, ChevronLeft, CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/authContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  buildInsights, groupInsightsByPlayer, CAT,
+  type InsightCategory, type PlayerInsightGroup,
+  type AggregateRow, type GoalRow, type ContractRow, type PhysicalRow,
+} from "@/lib/insightsEngine";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -16,93 +20,6 @@ const BG      = "#0f0e13";
 const BDR     = "rgba(255,255,255,0.07)";
 const MUTED   = "#62616a";
 const FG      = "#ededee";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type InsightCategory = "critical" | "alert" | "positive" | "neutral";
-
-interface Insight {
-  id:          string;
-  category:    InsightCategory;
-  priority:    number;
-  icon:        React.ElementType;
-  title:       string;
-  description: string;
-  tooltip:     string;
-  link:        string;
-}
-
-interface AggregateRow {
-  player_id:              string;
-  full_name:              string;
-  slug:                   string | null;
-  total_matches:          number;
-  total_minutes:          number;
-  total_accurate_passes:  number;
-  total_failed_passes:    number;
-  total_crosses_success:  number;
-  total_crosses_failed:   number;
-  total_dribbles_success: number;
-  total_dribbles_failed:  number;
-  total_ground_duels_won:    number;
-  total_ground_duels_failed: number;
-  total_aerial_duels_won:    number;
-  total_aerial_duels_failed: number;
-  total_goals:            number;
-  total_assists:          number;
-  last_match_date:        string | null;
-}
-
-interface GoalRow {
-  id:           string;
-  player_id:    string;
-  goal_type:    string;
-  target_value: number;
-  season_year:  number;
-  player:       { full_name: string } | null;
-}
-
-interface ContractRow {
-  id:            string;
-  full_name:     string;
-  contract_end:  string | null;
-}
-
-// ─── Category config ──────────────────────────────────────────────────────────
-
-const CAT: Record<InsightCategory, { color: string; bg: string; border: string; label: string }> = {
-  critical: {
-    color:  "#f43f5e",
-    bg:     "rgba(244,63,94,0.08)",
-    border: "rgba(244,63,94,0.2)",
-    label:  "Crítico",
-  },
-  alert: {
-    color:  "#f59e0b",
-    bg:     "rgba(245,158,11,0.08)",
-    border: "rgba(245,158,11,0.2)",
-    label:  "Atenção",
-  },
-  positive: {
-    color:  "#22c55e",
-    bg:     "rgba(34,197,94,0.08)",
-    border: "rgba(34,197,94,0.2)",
-    label:  "Positivo",
-  },
-  neutral: {
-    color:  MUTED,
-    bg:     "rgba(255,255,255,0.03)",
-    border: BDR,
-    label:  "Info",
-  },
-};
-
-const GOAL_TYPE_LABELS: Record<string, string> = {
-  goals:    "Gols", assists: "Assistências", matches: "Partidas",
-  minutes:  "Minutos", shots: "Finalizações", tackles: "Desarmes",
-  interceptions: "Interceptações", clearances: "Cortes",
-  pass_accuracy: "Passe %", dribble_accuracy: "Dribles %",
-};
 
 // ─── LocalStorage dismiss ─────────────────────────────────────────────────────
 
@@ -116,225 +33,31 @@ function saveDismissed(ids: Set<string>) {
   localStorage.setItem(LS_KEY, JSON.stringify([...ids]));
 }
 
-// ─── Insight engine ───────────────────────────────────────────────────────────
+// ─── LocalStorage "reviewed" tracking ───────────────────────────────────────
+// Lightweight audit trail: unlike dismiss (hides forever), marking an athlete
+// as reviewed just timestamps that an admin has seen/handled their insights —
+// the card stays visible until the underlying data actually improves. Scoped
+// to this browser only, same as dismiss; not shared across admins/devices.
 
-function buildInsights(
-  aggregates: AggregateRow[],
-  goals: GoalRow[],
-  contracts: ContractRow[],
-  year: number,
-): Insight[] {
-  const out: Insight[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+const REVIEWED_LS_KEY = "reviewed_insights_v1";
 
-  // ── Contract alerts ───────────────────────────────────────────────────────
-  for (const c of contracts) {
-    if (!c.contract_end) continue;
-    const end  = new Date(c.contract_end);
-    const days = Math.ceil((end.getTime() - today.getTime()) / 86400000);
-    if (days < 0) continue;
+function getReviewed(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(REVIEWED_LS_KEY) ?? "{}"); }
+  catch { return {}; }
+}
+function saveReviewed(map: Record<string, string>) {
+  localStorage.setItem(REVIEWED_LS_KEY, JSON.stringify(map));
+}
 
-    const firstName = c.full_name.split(" ")[0];
-    if (days <= 30) {
-      out.push({
-        id: `contract-critical-${c.id}`, category: "critical", priority: 1,
-        icon: FileWarning,
-        title: `${firstName}: Contrato Expirando`,
-        description: `Vence em ${days} dia${days === 1 ? "" : "s"}. Ação urgente necessária.`,
-        tooltip: `${c.full_name} — contrato com o clube expira em ${days} dias (${end.toLocaleDateString("pt-BR")}).`,
-        link: `/dashboard/atletas/${c.id}`,
-      });
-    } else if (days <= 90) {
-      out.push({
-        id: `contract-alert-${c.id}`, category: "alert", priority: 2,
-        icon: FileWarning,
-        title: `${firstName}: Contrato a Vencer`,
-        description: `Expira em ${days} dias. Avalie renovação ou transferência.`,
-        tooltip: `${c.full_name} — contrato expira em ${days} dias (${end.toLocaleDateString("pt-BR")}).`,
-        link: `/dashboard/atletas/${c.id}`,
-      });
-    }
-  }
-
-  // ── Per-player stats rules ────────────────────────────────────────────────
-  for (const p of aggregates) {
-    const firstName = p.full_name.split(" ")[0];
-    const link      = `/dashboard/atletas/${p.player_id}`;
-
-    // Rule: Atleta parado (sem jogo registrado há > 21 dias)
-    if (p.last_match_date) {
-      const last     = new Date(p.last_match_date);
-      const daysSince = Math.floor((today.getTime() - last.getTime()) / 86400000);
-      if (daysSince > 21) {
-        out.push({
-          id: `idle-${p.player_id}`, category: "alert", priority: 3,
-          icon: Clock,
-          title: `${firstName}: Sem Jogo Registrado`,
-          description: `Último jogo há ${daysSince} dias. Verifique a situação.`,
-          tooltip: `${p.full_name} — último jogo registrado no sistema foi em ${last.toLocaleDateString("pt-BR")} (${daysSince} dias atrás).`,
-          link,
-        });
-      }
-    }
-
-    // Rule: Minutagem Baixa
-    if (p.total_matches >= 5) {
-      const avgMin = p.total_minutes / p.total_matches;
-      if (avgMin <= 45) {
-        out.push({
-          id: `minutes-${p.player_id}`, category: "alert", priority: 4,
-          icon: Clock,
-          title: `${firstName}: Minutagem Baixa`,
-          description: `Média de ${avgMin.toFixed(0)} min/jogo em ${p.total_matches} partidas.`,
-          tooltip: `${p.full_name} — ${avgMin.toFixed(0)} min/jogo em ${p.total_matches} jogos na temporada ${year}. Pode indicar falta de regularidade como titular.`,
-          link,
-        });
-      }
-    }
-
-    // Rule: Success rates (critical / alert / positive)
-    type RateRule = {
-      key: string; icon: React.ElementType;
-      success: number; total: number; minTotal: number;
-      positiveThreshold: number;
-    };
-    const rateRules: RateRule[] = [
-      {
-        key: "Passes", icon: Target,
-        success: p.total_accurate_passes,
-        total:   p.total_accurate_passes + p.total_failed_passes,
-        minTotal: 50, positiveThreshold: 82,
-      },
-      {
-        key: "Dribles", icon: TrendingUp,
-        success: p.total_dribbles_success,
-        total:   p.total_dribbles_success + p.total_dribbles_failed,
-        minTotal: 15, positiveThreshold: 70,
-      },
-      {
-        key: "Cruzamentos", icon: Crosshair,
-        success: p.total_crosses_success,
-        total:   p.total_crosses_success + p.total_crosses_failed,
-        minTotal: 10, positiveThreshold: 75,
-      },
-      {
-        key: "Duelo Chão", icon: ShieldAlert,
-        success: p.total_ground_duels_won,
-        total:   p.total_ground_duels_won + p.total_ground_duels_failed,
-        minTotal: 15, positiveThreshold: 65,
-      },
-      {
-        key: "Duelo Aéreo", icon: ShieldAlert,
-        success: p.total_aerial_duels_won,
-        total:   p.total_aerial_duels_won + p.total_aerial_duels_failed,
-        minTotal: 10, positiveThreshold: 65,
-      },
-    ];
-
-    // Track best positive per player (only emit the top 1 to avoid flooding)
-    let bestPositive: { pct: number; r: typeof rateRules[number] } | null = null;
-
-    for (const r of rateRules) {
-      if (r.total < r.minTotal) continue;
-      const pct = (r.success / r.total) * 100;
-
-      if (pct < 50) {
-        out.push({
-          id: `critical-${r.key.toLowerCase()}-${p.player_id}`, category: "critical", priority: 1,
-          icon: r.icon,
-          title: `${firstName}: Alerta Crítico em ${r.key}`,
-          description: `Aproveitamento de apenas ${pct.toFixed(0)}%. Exige intervenção.`,
-          tooltip: `${p.full_name} — ${r.key}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Abaixo de 50% é crítico.`,
-          link,
-        });
-      } else if (pct <= 65) {
-        out.push({
-          id: `alert-${r.key.toLowerCase()}-${p.player_id}`, category: "alert", priority: 3,
-          icon: r.icon,
-          title: `${firstName}: Atenção em ${r.key}`,
-          description: `Aproveitamento de ${pct.toFixed(0)}%. Monitoramento necessário.`,
-          tooltip: `${p.full_name} — ${r.key}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Entre 50–65%, requer acompanhamento.`,
-          link,
-        });
-      } else if (pct >= r.positiveThreshold) {
-        // Keep only the best positive per player
-        if (!bestPositive || pct > bestPositive.pct) {
-          bestPositive = { pct, r };
-        }
-      }
-    }
-
-    // Emit single best positive for this player
-    if (bestPositive) {
-      const { pct, r } = bestPositive;
-      out.push({
-        id: `positive-${r.key.toLowerCase()}-${p.player_id}`, category: "positive", priority: 6,
-        icon: Star,
-        title: `${firstName}: Em Alta em ${r.key}`,
-        description: `${pct.toFixed(0)}% de aproveitamento. Excelente desempenho.`,
-        tooltip: `${p.full_name} — ${r.key}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Melhor stat acima do benchmark.`,
-        link,
-      });
-    }
-  }
-
-  // ── Goal meta progress ────────────────────────────────────────────────────
-  const aggregateMap = new Map(aggregates.map(a => [a.player_id, a]));
-
-  for (const g of goals) {
-    if (g.season_year !== year) continue;
-    if (!g.player) continue;
-    const agg = aggregateMap.get(g.player_id);
-    if (!agg) continue;
-
-    // Compute current value for types we have in the aggregate
-    let currentValue: number | null = null;
-    if (g.goal_type === "goals")   currentValue = agg.total_goals;
-    if (g.goal_type === "assists") currentValue = agg.total_assists;
-    if (g.goal_type === "matches") currentValue = agg.total_matches;
-    if (g.goal_type === "minutes") currentValue = agg.total_minutes;
-    if (currentValue === null || g.target_value <= 0) continue;
-
-    const pct       = (currentValue / g.target_value) * 100;
-    const firstName = g.player.full_name.split(" ")[0];
-    const typeLabel = GOAL_TYPE_LABELS[g.goal_type] ?? g.goal_type;
-    const link      = `/dashboard/atletas/${g.player_id}`;
-
-    if (pct >= 100) {
-      out.push({
-        id: `goal-achieved-${g.id}`, category: "positive", priority: 5,
-        icon: Trophy,
-        title: `${firstName}: Meta Batida! 🎯`,
-        description: `Meta de ${typeLabel} alcançada (${currentValue}/${g.target_value}).`,
-        tooltip: `${g.player.full_name} atingiu a meta de ${typeLabel} na temporada ${year}: ${currentValue} de ${g.target_value} (${pct.toFixed(0)}%).`,
-        link,
-      });
-    } else if (pct >= 80) {
-      out.push({
-        id: `goal-near-${g.id}`, category: "positive", priority: 6,
-        icon: Target,
-        title: `${firstName}: Perto da Meta`,
-        description: `${pct.toFixed(0)}% da meta de ${typeLabel} (${currentValue}/${g.target_value}).`,
-        tooltip: `${g.player.full_name} está a ${g.target_value - currentValue} de atingir a meta de ${typeLabel} na temporada ${year}.`,
-        link,
-      });
-    } else if (pct < 30 && agg.total_matches >= 8) {
-      out.push({
-        id: `goal-behind-${g.id}`, category: "alert", priority: 4,
-        icon: AlertTriangle,
-        title: `${firstName}: Meta em Risco`,
-        description: `Apenas ${pct.toFixed(0)}% da meta de ${typeLabel} com ${agg.total_matches} jogos.`,
-        tooltip: `${g.player.full_name} — meta de ${typeLabel}: ${currentValue}/${g.target_value} (${pct.toFixed(0)}%). Ritmo abaixo do necessário com ${agg.total_matches} partidas disputadas.`,
-        link,
-      });
-    }
-  }
-
-  // Sort: priority ascending (1 = most urgent)
-  out.sort((a, b) => a.priority - b.priority);
-
-  return out;
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "agora mesmo";
+  if (minutes < 60) return `há ${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `há ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `há ${days}d`;
 }
 
 // ─── Category filter pill ─────────────────────────────────────────────────────
@@ -367,13 +90,15 @@ function FilterPill({
   );
 }
 
-// ─── Insight card ─────────────────────────────────────────────────────────────
+// ─── Insight card (grouped per athlete) ────────────────────────────────────────
 
-function InsightChip({
-  insight, index, onDismiss,
-}: { insight: Insight; index: number; onDismiss: (id: string) => void }) {
-  const cat  = CAT[insight.category];
-  const Icon = insight.icon;
+function InsightGroupChip({
+  group, index, onDismiss, onOpen, reviewedAt,
+}: { group: PlayerInsightGroup; index: number; onDismiss: (ids: string[]) => void; onOpen: () => void; reviewedAt?: string }) {
+  const cat = CAT[group.category];
+  const MAX_VISIBLE = 3;
+  const visibleItems = group.items.slice(0, MAX_VISIBLE);
+  const extraCount = group.items.length - visibleItems.length;
 
   return (
     <motion.div
@@ -381,18 +106,22 @@ function InsightChip({
       animate={{ opacity: 1, x: 0,  scale: 1 }}
       exit={{ opacity: 0, x: -10, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
-      className="relative rounded-xl flex flex-col gap-3 p-4 group"
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onOpen(); }}
+      className="relative rounded-xl flex flex-col gap-2.5 p-4 group cursor-pointer transition-colors hover:brightness-110"
       style={{
         background: cat.bg,
         border: `1px solid ${cat.border}`,
         flex: "0 0 calc(25% - 9px)",
-        minWidth: "200px",
+        minWidth: "220px",
         minHeight: "160px",
       }}
     >
       {/* Dismiss */}
       <button
-        onClick={(e) => { e.preventDefault(); onDismiss(insight.id); }}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDismiss(group.items.map(i => i.id)); }}
         className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
         style={{ background: "rgba(255,255,255,0.08)", color: MUTED }}
         title="Dispensar"
@@ -400,28 +129,49 @@ function InsightChip({
         <X className="w-2.5 h-2.5" />
       </button>
 
-      {/* Icon */}
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}30` }}
-      >
-        <Icon className="w-4 h-4" style={{ color: cat.color }} />
+      {/* Player name header */}
+      <div className="flex items-center gap-2 pr-4">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}30` }}
+        >
+          {(() => { const Icon = visibleItems[0].icon; return <Icon className="w-3.5 h-3.5" style={{ color: cat.color }} />; })()}
+        </div>
+        <p className="font-display font-semibold text-[13px] leading-tight truncate" style={{ color: cat.color }}>
+          {group.playerName}
+        </p>
       </div>
 
-      {/* Text */}
-      <div className="flex-1 min-w-0 pr-3">
-        <p className="font-display font-semibold text-[12px] leading-tight mb-1 line-clamp-2"
-          style={{ color: cat.color }}>
-          {insight.title}
-        </p>
-        <p className="font-mono text-[10px] leading-relaxed line-clamp-3" style={{ color: MUTED }}>
-          {insight.description}
-        </p>
+      {/* Items list */}
+      <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+        {visibleItems.map(item => (
+          <div key={item.id} title={item.tooltip} className="min-w-0">
+            <p className="font-mono text-[10px] font-semibold leading-tight truncate" style={{ color: CAT[item.category].color }}>
+              {item.title}
+            </p>
+            <p className="font-mono text-[9.5px] leading-snug line-clamp-1" style={{ color: MUTED }}>
+              {item.description}
+            </p>
+          </div>
+        ))}
+        {extraCount > 0 && (
+          <p className="font-mono text-[9.5px] underline" style={{ color: MUTED }}>
+            +{extraCount} outro{extraCount > 1 ? "s" : ""} insight{extraCount > 1 ? "s" : ""}
+          </p>
+        )}
       </div>
+
+      {reviewedAt && (
+        <div className="flex items-center gap-1 font-mono text-[9px]" style={{ color: "#22c55e" }} title={`Revisado ${formatRelativeTime(reviewedAt)}`}>
+          <CheckCircle2 className="w-3 h-3" />
+          Revisado {formatRelativeTime(reviewedAt)}
+        </div>
+      )}
 
       {/* Link arrow */}
       <Link
-        to={insight.link}
+        to={group.link}
+        onClick={e => e.stopPropagation()}
         className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider transition-all duration-150 w-fit"
         style={{ color: cat.color }}
         onMouseEnter={e => (e.currentTarget.style.opacity = "0.7")}
@@ -433,6 +183,84 @@ function InsightChip({
   );
 }
 
+// ─── Insight detail modal (all items for one athlete) ──────────────────────────
+
+function InsightGroupModal({
+  group, reviewedAt, onOpenChange, onToggleReviewed,
+}: {
+  group: PlayerInsightGroup | null;
+  reviewedAt?: string;
+  onOpenChange: (open: boolean) => void;
+  onToggleReviewed: (playerId: string) => void;
+}) {
+  return (
+    <Dialog open={!!group} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-md p-0 gap-0 overflow-hidden rounded-xl border"
+        style={{ background: BG, borderColor: group ? CAT[group.category].border : BDR }}
+      >
+        {group && (
+          <>
+            <DialogHeader className="px-5 py-4 border-b" style={{ borderColor: CAT[group.category].border }}>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${CAT[group.category].color}18`, border: `1px solid ${CAT[group.category].border}` }}
+                >
+                  {(() => { const Icon = group.items[0].icon; return <Icon className="w-4 h-4" style={{ color: CAT[group.category].color }} />; })()}
+                </div>
+                <div>
+                  <DialogTitle className="font-display font-semibold text-[15px]" style={{ color: CAT[group.category].color }}>
+                    {group.playerName}
+                  </DialogTitle>
+                  {reviewedAt && (
+                    <p className="flex items-center gap-1 font-mono text-[9.5px] mt-0.5" style={{ color: "#22c55e" }}>
+                      <CheckCircle2 className="w-2.5 h-2.5" /> Revisado {formatRelativeTime(reviewedAt)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="px-5 py-4 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+              {group.items.map(item => (
+                <div key={item.id}>
+                  <p className="font-mono text-[12px] font-semibold" style={{ color: CAT[item.category].color }}>
+                    {item.title}
+                  </p>
+                  <p className="font-mono text-[11px] leading-relaxed mt-0.5" style={{ color: MUTED }}>
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="px-5 py-4 border-t flex gap-2" style={{ borderColor: CAT[group.category].border }}>
+              <button
+                onClick={() => onToggleReviewed(group.playerId)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-mono text-[10px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={reviewedAt
+                  ? { background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }
+                  : { background: "rgba(255,255,255,0.04)", color: MUTED, border: `1px solid ${BDR}` }}
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                {reviewedAt ? "Revisado — desmarcar" : "Marcar como revisado"}
+              </button>
+              <Link
+                to={group.link}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-mono text-[10px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={{ background: `${CAT[group.category].color}18`, color: CAT[group.category].color, border: `1px solid ${CAT[group.category].border}` }}
+              >
+                Ver atleta <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export const InsightsCard = () => {
@@ -441,83 +269,157 @@ export const InsightsCard = () => {
 
   const [filter,    setFilter]    = useState<FilterValue>("all");
   const [dismissed, setDismissed] = useState<Set<string>>(getDismissed);
+  const [reviewed,  setReviewed]  = useState<Record<string, string>>(getReviewed);
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Sync dismissed to localStorage
+  // Sync dismissed / reviewed to localStorage
   useEffect(() => { saveDismissed(dismissed); }, [dismissed]);
+  useEffect(() => { saveReviewed(reviewed); }, [reviewed]);
 
-  const handleDismiss = (id: string) =>
-    setDismissed(prev => new Set([...prev, id]));
+  const handleDismiss = (ids: string[]) =>
+    setDismissed(prev => new Set([...prev, ...ids]));
 
-  // ── Query 1: season aggregates (extended RPC) ───────────────────────────
-  const { data: aggregates = [], isLoading: loadingAgg } = useQuery<AggregateRow[]>({
-    queryKey:  ["insights-season-aggregates-v2", currentYear],
+  const handleToggleReviewed = (playerId: string) =>
+    setReviewed(prev => {
+      if (prev[playerId]) {
+        const next = { ...prev };
+        delete next[playerId];
+        return next;
+      }
+      return { ...prev, [playerId]: new Date().toISOString() };
+    });
+
+  // ── Query 1: season aggregates, walking back to the most recent season
+  // that actually has data — mirrors the same fallback used on the dashboard
+  // Gols/Assistências cards, so insights don't go quiet at the start of a
+  // new season before any stats have been entered.
+  const { data: aggResult, isLoading: loadingAgg } = useQuery({
+    queryKey:  ["insights-season-aggregates-v3", currentYear],
     queryFn:   async () => {
-      const { data, error } = await supabase.rpc("get_season_player_aggregates", { p_season_year: currentYear });
-      if (error) throw error;
-      return (data ?? []) as AggregateRow[];
+      for (const year of [currentYear, currentYear - 1, currentYear - 2]) {
+        const { data, error } = await supabase.rpc("get_season_player_aggregates", { p_season_year: year });
+        if (error) throw error;
+        const rows = (data ?? []) as AggregateRow[];
+        if (rows.length > 0) return { year, aggregates: rows };
+      }
+      return { year: currentYear, aggregates: [] as AggregateRow[] };
     },
     staleTime: 5 * 60 * 1000,
     enabled:   !!session?.user,
   });
 
-  // ── Query 2: player season goals (meta progress) ────────────────────────
+  const resolvedYear = aggResult?.year ?? currentYear;
+  const aggregates   = aggResult?.aggregates ?? [];
+
+  // ── Query 2: player season goals (meta progress) — tied to the same
+  // resolved season as the aggregates above ────────────────────────────────
   const { data: goals = [], isLoading: loadingGoals } = useQuery<GoalRow[]>({
-    queryKey:  ["insights-goals", currentYear],
+    queryKey:  ["insights-goals", resolvedYear],
     queryFn:   async () => {
       const { data, error } = await supabase
         .from("player_season_goals")
         .select("id, player_id, goal_type, target_value, season_year, player:players(full_name)")
-        .eq("season_year", currentYear);
+        .eq("season_year", resolvedYear);
       if (error) throw error;
       return (data ?? []) as GoalRow[];
     },
     staleTime: 5 * 60 * 1000,
-    enabled:   !!session?.user,
+    enabled:   !!session?.user && !!aggResult,
   });
 
-  // ── Query 3: contracts expiring ─────────────────────────────────────────
+  // ── Query 3: contracts expiring — sourced from player_contract_history,
+  // the real multi-contract system (national/international fee, full
+  // history), not the legacy single players.contract_end column ───────────
   const { data: contracts = [], isLoading: loadingContracts } = useQuery<ContractRow[]>({
-    queryKey:  ["insights-contracts"],
+    queryKey:  ["insights-contracts-v3"],
     queryFn:   async () => {
+      const todayStr = new Date().toISOString().split("T")[0];
       const ninetyDays = new Date();
       ninetyDays.setDate(ninetyDays.getDate() + 90);
+      const ninetyDaysStr = ninetyDays.toISOString().split("T")[0];
+
       const { data, error } = await supabase
-        .from("players")
-        .select("id, full_name, contract_end")
-        .not("contract_end", "is", null)
-        .lte("contract_end", ninetyDays.toISOString().split("T")[0])
-        .eq("is_archived", false);
+        .from("player_contract_history")
+        .select("player_id, end_date, players!player_contract_history_player_id_fkey(full_name, is_archived)")
+        .eq("is_archived", false)
+        .not("end_date", "is", null)
+        .gte("end_date", todayStr)
+        .lte("end_date", ninetyDaysStr);
       if (error) throw error;
-      return (data ?? []) as ContractRow[];
+
+      // Collapse to the soonest-expiring contract per (non-archived) player —
+      // a player can have more than one row within the window.
+      type Row = { player_id: string; end_date: string; players: { full_name: string; is_archived: boolean | null } | null };
+      const byPlayer = new Map<string, ContractRow>();
+      for (const row of (data ?? []) as Row[]) {
+        if (row.players?.is_archived) continue;
+        const existing = byPlayer.get(row.player_id);
+        if (!existing || row.end_date < (existing.contract_end ?? "9999-99-99")) {
+          byPlayer.set(row.player_id, {
+            id: row.player_id,
+            full_name: row.players?.full_name ?? "Atleta",
+            contract_end: row.end_date,
+          });
+        }
+      }
+      return Array.from(byPlayer.values());
     },
     staleTime: 10 * 60 * 1000,
     enabled:   !!session?.user,
   });
 
-  const isLoading = loadingAgg || loadingGoals || loadingContracts;
+  // ── Query 4: player position + physical data — for position-aware
+  // performance thresholds and the body-composition-vs-elite rule ─────────
+  const { data: physicalRows = [], isLoading: loadingPhysical } = useQuery<PhysicalRow[]>({
+    queryKey:  ["insights-player-physical"],
+    queryFn:   async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, full_name, position, body_fat_percentage")
+        .or("is_archived.is.null,is_archived.eq.false");
+      if (error) throw error;
+      return (data ?? []) as PhysicalRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+    enabled:   !!session?.user,
+  });
 
-  // ── Build and filter insights ───────────────────────────────────────────
-  const allInsights = useMemo(
-    () => buildInsights(aggregates, goals, contracts, currentYear),
-    [aggregates, goals, contracts, currentYear],
+  const positionByPlayerId = useMemo(
+    () => new Map(physicalRows.map(p => [p.id, p.position])),
+    [physicalRows],
   );
 
-  const visible = useMemo(
+  const isLoading = loadingAgg || loadingGoals || loadingContracts || loadingPhysical;
+
+  // ── Build, group and filter insights ─────────────────────────────────────
+  const allInsights = useMemo(
+    () => buildInsights(aggregates, goals, contracts, physicalRows, resolvedYear, positionByPlayerId),
+    [aggregates, goals, contracts, physicalRows, resolvedYear, positionByPlayerId],
+  );
+
+  const visibleInsights = useMemo(
     () => allInsights.filter(i => !dismissed.has(i.id)),
     [allInsights, dismissed],
   );
 
+  const groups = useMemo(
+    () => groupInsightsByPlayer(visibleInsights),
+    [visibleInsights],
+  );
+
   const filtered = useMemo(
-    () => filter === "all" ? visible : visible.filter(i => i.category === filter),
-    [visible, filter],
+    () => filter === "all" ? groups : groups.filter(g => g.category === filter),
+    [groups, filter],
   );
 
   const counts = useMemo(() => ({
-    critical: visible.filter(i => i.category === "critical").length,
-    alert:    visible.filter(i => i.category === "alert").length,
-    positive: visible.filter(i => i.category === "positive").length,
-  }), [visible]);
+    critical: groups.filter(g => g.category === "critical").length,
+    alert:    groups.filter(g => g.category === "alert").length,
+    positive: groups.filter(g => g.category === "positive").length,
+  }), [groups]);
+
+  const openGroup = openGroupId ? groups.find(g => g.playerId === openGroupId) ?? null : null;
 
   // ── Scroll helpers ──────────────────────────────────────────────────────
   const scroll = (dir: "left" | "right") => {
@@ -572,59 +474,66 @@ export const InsightsCard = () => {
             <p className="text-[12px] font-display font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: FG }}>
               // Insights da Plataforma
             </p>
+            {resolvedYear !== currentYear && (
+              <p className="text-[9.5px] font-mono" style={{ color: MUTED }}>
+                Exibindo dados de {resolvedYear} (sem dados em {currentYear} ainda)
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Filter pills */}
-        <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          <FilterPill
-            label="Todos" count={visible.length}
-            active={filter === "all"} color="#ededee"
-            onClick={() => setFilter("all")}
-          />
-          {counts.critical > 0 && (
+        {/* Filter pills + scroll arrows — grouped together on the right */}
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             <FilterPill
-              label="Crítico" count={counts.critical}
-              active={filter === "critical"} color={CAT.critical.color}
-              onClick={() => setFilter(f => f === "critical" ? "all" : "critical")}
+              label="Todos" count={groups.length}
+              active={filter === "all"} color="#ededee"
+              onClick={() => setFilter("all")}
             />
-          )}
-          {counts.alert > 0 && (
-            <FilterPill
-              label="Atenção" count={counts.alert}
-              active={filter === "alert"} color={CAT.alert.color}
-              onClick={() => setFilter(f => f === "alert" ? "all" : "alert")}
-            />
-          )}
-          {counts.positive > 0 && (
-            <FilterPill
-              label="Positivo" count={counts.positive}
-              active={filter === "positive"} color={CAT.positive.color}
-              onClick={() => setFilter(f => f === "positive" ? "all" : "positive")}
-            />
-          )}
-        </div>
+            {counts.critical > 0 && (
+              <FilterPill
+                label="Crítico" count={counts.critical}
+                active={filter === "critical"} color={CAT.critical.color}
+                onClick={() => setFilter(f => f === "critical" ? "all" : "critical")}
+              />
+            )}
+            {counts.alert > 0 && (
+              <FilterPill
+                label="Atenção" count={counts.alert}
+                active={filter === "alert"} color={CAT.alert.color}
+                onClick={() => setFilter(f => f === "alert" ? "all" : "alert")}
+              />
+            )}
+            {counts.positive > 0 && (
+              <FilterPill
+                label="Positivo" count={counts.positive}
+                active={filter === "positive"} color={CAT.positive.color}
+                onClick={() => setFilter(f => f === "positive" ? "all" : "positive")}
+              />
+            )}
+          </div>
 
-        {/* Scroll arrows */}
-        <div className="hidden sm:flex gap-1 shrink-0">
-          <button
-            onClick={() => scroll("left")}
-            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-            style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${BDR}`, color: MUTED }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-            style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${BDR}`, color: MUTED }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          {/* Scroll arrows */}
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={() => scroll("left")}
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+              style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${BDR}`, color: MUTED }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+              style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${BDR}`, color: MUTED }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -658,8 +567,15 @@ export const InsightsCard = () => {
               )}
             </motion.div>
           ) : (
-            filtered.map((insight, i) => (
-              <InsightChip key={insight.id} insight={insight} index={i} onDismiss={handleDismiss} />
+            filtered.map((group, i) => (
+              <InsightGroupChip
+                key={group.playerId}
+                group={group}
+                index={i}
+                onDismiss={handleDismiss}
+                onOpen={() => setOpenGroupId(group.playerId)}
+                reviewedAt={reviewed[group.playerId]}
+              />
             ))
           )}
         </AnimatePresence>
@@ -679,6 +595,13 @@ export const InsightsCard = () => {
           </button>
         </div>
       )}
+
+      <InsightGroupModal
+        group={openGroup}
+        reviewedAt={openGroup ? reviewed[openGroup.playerId] : undefined}
+        onOpenChange={open => !open && setOpenGroupId(null)}
+        onToggleReviewed={handleToggleReviewed}
+      />
     </motion.div>
   );
 };
