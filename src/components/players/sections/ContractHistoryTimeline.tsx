@@ -46,6 +46,7 @@ interface ContractHistoryRecord {
   end_date: string | null;
   transfer_fee: string | null;
   termination_fee: string | null;
+  termination_fee_international?: string | null;
   salary_info: string | null;
   notes: string | null;
   is_current: boolean;
