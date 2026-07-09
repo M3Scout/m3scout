@@ -362,12 +362,26 @@ export function PhysicalTab({
 
   const latest = history && history.length > 0 ? history[history.length - 1] : null;
 
-  const resolvedWeight   = latest?.weight              ?? playerWeight    ?? null;
-  const resolvedBodyFat  = latest?.body_fat_percentage ?? playerBodyFat   ?? null;
-  const resolvedMuscle   = latest?.muscle_mass         ?? playerMuscle    ?? null;
-  const resolvedMaxSpeed = latest?.max_speed           ?? playerMaxSpeed  ?? null;
-  const resolvedSprint   = latest?.sprint_30m          ?? playerSprint30m ?? null;
-  const resolvedVo2      = latest?.vo2_max             ?? playerVo2Max    ?? null;
+  // A given evaluation can fill in only some fields (e.g. just weight). Using
+  // only the single most recent record would silently fall back to the stale
+  // players.* value even when an earlier record has a real, more relevant
+  // reading for that specific metric — so each metric independently looks
+  // back through history for its own last non-null value.
+  const latestMetric = <K extends keyof PhysicalHistoryRecord>(key: K): PhysicalHistoryRecord[K] | null => {
+    if (!history) return null;
+    for (let i = history.length - 1; i >= 0; i--) {
+      const v = history[i][key];
+      if (v != null) return v;
+    }
+    return null;
+  };
+
+  const resolvedWeight   = latestMetric("weight")              ?? playerWeight    ?? null;
+  const resolvedBodyFat  = latestMetric("body_fat_percentage") ?? playerBodyFat   ?? null;
+  const resolvedMuscle   = latestMetric("muscle_mass")         ?? playerMuscle    ?? null;
+  const resolvedMaxSpeed = latestMetric("max_speed")           ?? playerMaxSpeed  ?? null;
+  const resolvedSprint   = latestMetric("sprint_30m")          ?? playerSprint30m ?? null;
+  const resolvedVo2      = latestMetric("vo2_max")              ?? playerVo2Max    ?? null;
 
   const bmi = calcBMI(resolvedWeight, playerHeight);
 
