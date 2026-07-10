@@ -45,7 +45,7 @@ interface ContractData {
   transfer_fee: string | null;
   salary_info: string | null;
   termination_fee: string | null;
-  termination_fee_international: string | null;
+  termination_fee_international?: string | null;
   notes: string | null;
   is_current: boolean;
   is_archived: boolean;

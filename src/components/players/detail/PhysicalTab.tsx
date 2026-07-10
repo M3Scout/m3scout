@@ -74,7 +74,14 @@ const RADAR_AXIS_FORMAT: Record<string, { unit: string; decimals: number }> = {
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const normalizeForRadar = (value: number | null, axisKey: string, axes: readonly RadarAxis[]): number => {
+interface RadarAxisLike {
+  key: string;
+  elite: number;
+  rangeMax: number;
+  inverse: boolean;
+}
+
+const normalizeForRadar = (value: number | null, axisKey: string, axes: readonly RadarAxisLike[]): number => {
   if (value == null || !Number.isFinite(value)) return 0;
   const axis = axes.find(a => a.key === axisKey);
   if (!axis) return 0;
