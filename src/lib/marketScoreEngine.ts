@@ -26,6 +26,7 @@ import {
   POSITION_MATURITY_CONFIG,
   MarketScoreTrend,
 } from '@/types/marketScore';
+import { getEliteBenchmark } from '@/lib/physicalBenchmarks';
 
 // =====================================================
 // UTILITY FUNCTIONS
@@ -638,6 +639,52 @@ export function computeMarketScoreActive(
 }
 
 // =====================================================
+// TARGET COMPETITION STATS SIGNALS
+// =====================================================
+
+/**
+ * Derives objective signals from logged per-competition stats: a minutes-weighted
+ * average of the REAL competition coefficient (competitions.final_coefficient),
+ * and a goals+assists-per-90 rate. Both are null when no stats are logged yet,
+ * so callers can fall back to the softer heuristics (league name guess / observation
+ * ratings) that already exist for targets with no stats.
+ */
+function deriveCompetitionStatsSignals(competitionStats: TargetPlayerData['competitionStats']) {
+  const withCoeff = competitionStats.filter(c => c.finalCoefficient != null);
+  let avgCoeff: number | null = null;
+  let maxCoeff: number | null = null;
+  let contextScoreFromStats: number | null = null;
+
+  if (withCoeff.length > 0) {
+    const weights = withCoeff.map(c => c.minutesPlayed ?? (c.matchesPlayed ? c.matchesPlayed * 90 : 90));
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    avgCoeff = withCoeff.reduce((sum, c, i) => sum + (c.finalCoefficient as number) * weights[i], 0) / totalWeight;
+    maxCoeff = Math.max(...withCoeff.map(c => c.finalCoefficient as number));
+    // Same conversion used for active players — coefficient 1.0 = 50, 2.0 = 100.
+    contextScoreFromStats = clamp((avgCoeff - 0.5) * 50 + 25, 20, 100);
+  }
+
+  const totalMinutes = competitionStats.reduce((sum, c) => sum + (c.minutesPlayed ?? 0), 0);
+  const totalGoals = competitionStats.reduce((sum, c) => sum + (c.goals ?? 0), 0);
+  const totalAssists = competitionStats.reduce((sum, c) => sum + (c.assists ?? 0), 0);
+
+  let gaPer90: number | null = null;
+  let performanceScoreFromStats: number | null = null;
+  if (totalMinutes > 0) {
+    gaPer90 = (totalGoals + totalAssists) * 90 / totalMinutes;
+    // 0.5 G+A/90 → 40, 1.0 G+A/90 → 60, 2.0 G+A/90 → 100 (capped)
+    performanceScoreFromStats = clamp(gaPer90 * 40 + 20, 0, 100);
+  }
+
+  return {
+    competitionIds: withCoeff.map(c => c.competitionId),
+    avgCoeff, maxCoeff, contextScoreFromStats,
+    totalMinutes, totalGoals, totalAssists, gaPer90, performanceScoreFromStats,
+    hasStats: competitionStats.length > 0,
+  };
+}
+
+// =====================================================
 // MAIN CALCULATION FUNCTION: TARGET PLAYER
 // =====================================================
 
@@ -654,58 +701,96 @@ export function computeMarketScoreTarget(
     : data.ageEstimate;
   
   const ageWindowDetails = calculateAgeWindowScore(age, data.position);
-  
-  // Performance from observations
+
+  const statsSignals = deriveCompetitionStatsSignals(data.competitionStats);
+
+  // Performance: equal-weighted blend of up to 3 independent signals —
+  // subjective observation rating, objective G+A/90 from logged stats, and
+  // the scout's 0-5 Matriz de Avaliação (Físico/Técnico/Tático/Mental).
+  // Any signal that isn't available yet is simply left out of the average.
   const validObservations = data.observations.filter(o => o.performanceRating !== null);
   const avgRating = validObservations.length > 0
     ? validObservations.reduce((sum, o) => sum + (o.performanceRating ?? 0), 0) / validObservations.length
     : null;
-  
-  // Simple performance score from observations
+
   let ratingScore = 50; // Neutral if no data
   if (avgRating !== null) {
     ratingScore = clamp(avgRating * 10, 20, 100);
   }
-  
+
+  const matrixValues = Object.values(data.evaluationMatrix).filter((v): v is number => v != null);
+  const avgMatrix = matrixValues.length > 0
+    ? matrixValues.reduce((a, b) => a + b, 0) / matrixValues.length
+    : null;
+  const matrixScore = avgMatrix !== null ? clamp((avgMatrix / 5) * 100, 0, 100) : null;
+
+  const perfSignals: { value: number; label: string }[] = [];
+  if (avgRating !== null) perfSignals.push({ value: ratingScore, label: `Observações: ${avgRating.toFixed(1)}/10` });
+  if (statsSignals.performanceScoreFromStats !== null) perfSignals.push({ value: statsSignals.performanceScoreFromStats, label: `Estatísticas: ${statsSignals.gaPer90!.toFixed(2)} G+A/90` });
+  if (matrixScore !== null) perfSignals.push({ value: matrixScore, label: `Matriz de Avaliação: ${avgMatrix!.toFixed(1)}/5` });
+
+  // The Matriz de Avaliação is a subjective 0-5 rating with no corroborating
+  // game data behind it. When it's the ONLY performance signal (no observations,
+  // no logged stats), it shouldn't carry as much weight as when it agrees with
+  // real evidence — otherwise a target with zero hard data can outscore one
+  // whose logged stats happen to show low output. 25% discount in that case.
+  const isUnverifiedMatrixOnly = perfSignals.length === 1 && avgRating === null && statsSignals.performanceScoreFromStats === null && matrixScore !== null;
+
+  const combinedPerfScore = perfSignals.length > 0
+    ? (perfSignals.reduce((sum, s) => sum + s.value, 0) / perfSignals.length) * (isUnverifiedMatrixOnly ? 0.75 : 1)
+    : 50;
+  const perfReasoning = perfSignals.length > 0
+    ? perfSignals.map(s => s.label).join(' + ') + (isUnverifiedMatrixOnly ? ' (nota reduzida — sem observações ou estatísticas que confirmem).' : '.')
+    : 'Sem avaliações, estatísticas ou matriz de avaliação registradas.';
+
   const performanceImpactDetails: PerformanceImpactDetails = {
     matchesAnalyzed: validObservations.length,
     minutesPlayed: data.observations.reduce((sum, o) => sum + (o.minutesObserved ?? 0), 0),
     averageRating: avgRating,
     ratingScore: Math.round(ratingScore),
     decisiveActions: {
-      goals: 0, assists: 0, keyPasses: 0, chancesCreated: 0,
-      tackles: 0, interceptions: 0, clearances: 0,
+      goals: statsSignals.totalGoals, assists: statsSignals.totalAssists,
+      keyPasses: 0, chancesCreated: 0, tackles: 0, interceptions: 0, clearances: 0,
     },
-    decisiveActionsScore: Math.round(ratingScore), // Use same as rating for targets
-    combinedScore: Math.round(ratingScore),
-    reasoning: avgRating !== null
-      ? `Avaliação média de ${avgRating.toFixed(1)} em ${validObservations.length} observações.`
-      : 'Sem avaliações de observação registradas.',
+    decisiveActionsScore: Math.round(statsSignals.performanceScoreFromStats ?? ratingScore),
+    combinedScore: Math.round(clamp(combinedPerfScore, 0, 100)),
+    reasoning: perfReasoning,
   };
-  
-  // Competitive context from league info
-  let contextScore = 50;
-  if (data.leagueCompetition) {
-    // Try to infer level from league name
-    const league = data.leagueCompetition.toLowerCase();
-    if (league.includes('série a') || league.includes('serie a') || league.includes('primeira divisão')) {
-      contextScore = 75;
-    } else if (league.includes('série b') || league.includes('serie b') || league.includes('segunda divisão')) {
-      contextScore = 60;
-    } else if (league.includes('série c') || league.includes('série d')) {
-      contextScore = 45;
+
+  // Competitive context: prefer the REAL competition coefficient/tier from
+  // logged stats (minutes-weighted); fall back to guessing from the free-text
+  // league name only when no competition stats have been logged yet.
+  let competitiveContextDetails: CompetitiveContextDetails;
+  if (statsSignals.contextScoreFromStats !== null) {
+    competitiveContextDetails = {
+      competitionsPlayed: statsSignals.competitionIds,
+      averageCompetitionCoefficient: Math.round(statsSignals.avgCoeff! * 100) / 100,
+      highestCoefficient: Math.round(statsSignals.maxCoeff! * 100) / 100,
+      contextScore: Math.round(statsSignals.contextScoreFromStats),
+      reasoning: `Coeficiente médio real de ${statsSignals.avgCoeff!.toFixed(2)} (${statsSignals.competitionIds.length} competiç${statsSignals.competitionIds.length > 1 ? 'ões' : 'ão'} registrada${statsSignals.competitionIds.length > 1 ? 's' : ''}, ponderado por minutos).`,
+    };
+  } else {
+    let contextScore = 50;
+    if (data.leagueCompetition) {
+      const league = data.leagueCompetition.toLowerCase();
+      if (league.includes('série a') || league.includes('serie a') || league.includes('primeira divisão')) {
+        contextScore = 75;
+      } else if (league.includes('série b') || league.includes('serie b') || league.includes('segunda divisão')) {
+        contextScore = 60;
+      } else if (league.includes('série c') || league.includes('série d')) {
+        contextScore = 45;
+      }
     }
+    competitiveContextDetails = {
+      competitionsPlayed: data.leagueCompetition ? [data.leagueCompetition] : [],
+      averageCompetitionCoefficient: 1.0,
+      highestCoefficient: 1.0,
+      contextScore,
+      reasoning: data.leagueCompetition
+        ? `Atua no ${data.leagueCompetition} (estimado — cadastre estatísticas por competição para usar o coeficiente real).`
+        : 'Competição não informada.',
+    };
   }
-  
-  const competitiveContextDetails: CompetitiveContextDetails = {
-    competitionsPlayed: data.leagueCompetition ? [data.leagueCompetition] : [],
-    averageCompetitionCoefficient: 1.0,
-    highestCoefficient: 1.0,
-    contextScore,
-    reasoning: data.leagueCompetition
-      ? `Atua no ${data.leagueCompetition}.`
-      : 'Competição não informada.',
-  };
   
   // Consistency from observations
   const totalMinutesObserved = data.observations.reduce((sum, o) => sum + (o.minutesObserved ?? 0), 0);
@@ -736,18 +821,56 @@ export function computeMarketScoreTarget(
     reasoning: `${data.observations.length} observações registradas, ${totalMinutesObserved} minutos observados.`,
   };
   
-  // Market profile - simpler for targets
-  const versatilityScore = 50; // Unknown secondary positions
-  const positionFitScore = 50; // Can't assess without detailed stats
-  
+  // Market profile — versatility from secondary position + tactical function,
+  // position fit from how close height/weight are to the elite benchmark for
+  // this position group (same benchmark table used on the Physical tab), and
+  // a smaller "clube atual definido" signal (having a documented club context
+  // is itself a minor market-profile signal, even without a club-strength
+  // rating table to grade it further).
+  const totalPositions = 1 + (data.secondaryPosition ? 1 : 0);
+  const versatilityScore = clamp(40 + totalPositions * 10, 0, 100);
+
+  const profileTraits: string[] = [];
+  if (data.secondaryPosition) profileTraits.push(`Atua também como ${data.secondaryPosition}`);
+  if (data.tacticalFunction) profileTraits.push(`Função tática definida: ${data.tacticalFunction}`);
+
+  let positionFitScore = 50;
+  if (data.height != null || data.weight != null) {
+    const bench = getEliteBenchmark(data.position);
+    positionFitScore = 50;
+    if (data.height != null) {
+      const diffPct = Math.abs(data.height - bench.altura) / bench.altura;
+      if (diffPct <= 0.03) { positionFitScore += 20; profileTraits.push('Altura ideal para a posição'); }
+      else if (diffPct <= 0.07) { positionFitScore += 10; profileTraits.push('Altura próxima do ideal'); }
+      else { positionFitScore -= 5; }
+    }
+    if (data.weight != null) {
+      const diffPct = Math.abs(data.weight - bench.peso) / bench.peso;
+      if (diffPct <= 0.05) { positionFitScore += 15; profileTraits.push('Peso ideal para a posição'); }
+      else if (diffPct <= 0.12) { positionFitScore += 7; }
+      else { positionFitScore -= 5; }
+    }
+    positionFitScore = clamp(positionFitScore, 0, 100);
+  }
+
+  const clubContextScore = data.currentClub ? 100 : 30;
+  if (data.currentClub) profileTraits.push(`Clube definido: ${data.currentClub}`);
+
+  const combinedProfileScore = clamp(
+    versatilityScore * 0.35 + positionFitScore * 0.55 + clubContextScore * 0.10,
+    0, 100
+  );
+
   const marketProfileDetails: MarketProfileDetails = {
     position: data.position,
-    secondaryPositions: [],
+    secondaryPositions: data.secondaryPosition ? [data.secondaryPosition] : [],
     versatilityScore,
     positionFitScore,
-    keyTraits: [],
-    combinedScore: 50,
-    reasoning: 'Perfil de mercado baseado em dados limitados.',
+    keyTraits: profileTraits,
+    combinedScore: Math.round(combinedProfileScore),
+    reasoning: profileTraits.length > 0
+      ? profileTraits.join(', ') + '.'
+      : 'Sem dados suficientes de posição secundária, função tática, clube ou dados físicos.',
   };
   
   // Calculate scores
@@ -766,18 +889,30 @@ export function computeMarketScoreTarget(
     scoreMarketProfile * weights.marketProfile
   );
   
-  // Confidence for targets - generally lower
+  // Confidence for targets - generally lower.
+  // `position` is dropped: it's a required field at target creation, so it's
+  // always true and never discriminates between well- and poorly-documented
+  // targets. `leagueCompetition` only counts when it's actually the ONE being
+  // used by Contexto (i.e. no competition stats logged yet) — once real stats
+  // exist it stops mattering there, so it should stop mattering here too.
   let confidenceLevel = 0;
   if (age !== null) confidenceLevel += 20;
-  if (data.position) confidenceLevel += 10;
-  if (data.currentClub) confidenceLevel += 10;
-  if (data.leagueCompetition) confidenceLevel += 15;
   if (validObservations.length >= 3) confidenceLevel += 25;
   else if (validObservations.length >= 1) confidenceLevel += 15;
   if (totalMinutesObserved >= 180) confidenceLevel += 20;
-  
+  if (statsSignals.totalMinutes >= 500) confidenceLevel += 15;
+  else if (statsSignals.hasStats) confidenceLevel += 8;
+  if (matrixScore !== null) confidenceLevel += 10;
+  if (!statsSignals.hasStats && data.leagueCompetition) confidenceLevel += 10;
+  // Perfil-driving fields — each is a real input to the Perfil pillar now.
+  if (data.currentClub) confidenceLevel += 5;
+  if (data.height != null) confidenceLevel += 4;
+  if (data.weight != null) confidenceLevel += 4;
+  if (data.secondaryPosition) confidenceLevel += 4;
+  if (data.tacticalFunction) confidenceLevel += 4;
+
   const trend30d = calculateTrend(scoreTotal, previousScore);
-  
+
   const calculatedFromRange = data.observations.length > 0
     ? `${data.observations.length} observações`
     : 'sem observações';

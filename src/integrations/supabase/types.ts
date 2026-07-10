@@ -2158,6 +2158,66 @@ export type Database = {
           },
         ]
       }
+      target_competition_stats: {
+        Row: {
+          assists: number | null
+          competition_id: string
+          created_at: string
+          created_by: string | null
+          goals: number | null
+          id: string
+          matches_played: number | null
+          minutes_played: number | null
+          red_cards: number | null
+          target_id: string
+          updated_at: string
+          yellow_cards: number | null
+        }
+        Insert: {
+          assists?: number | null
+          competition_id: string
+          created_at?: string
+          created_by?: string | null
+          goals?: number | null
+          id?: string
+          matches_played?: number | null
+          minutes_played?: number | null
+          red_cards?: number | null
+          target_id: string
+          updated_at?: string
+          yellow_cards?: number | null
+        }
+        Update: {
+          assists?: number | null
+          competition_id?: string
+          created_at?: string
+          created_by?: string | null
+          goals?: number | null
+          id?: string
+          matches_played?: number | null
+          minutes_played?: number | null
+          red_cards?: number | null
+          target_id?: string
+          updated_at?: string
+          yellow_cards?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "target_competition_stats_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "target_competition_stats_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       target_observations: {
         Row: {
           competition: string | null

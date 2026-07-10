@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -10,17 +10,20 @@ import {
   Edit, Plus, Trash2, Sparkles, TrendingUp, TrendingDown, Minus,
   Calendar, Clock, AlertTriangle, ExternalLink, User, Star,
   Video, FileText, Building2, Trophy, CalendarCheck, Briefcase,
+  Users2, BarChart3, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Target, TargetObservation, MarketScoreTrend } from "@/types/marketScore";
+import { Target, TargetObservation, TargetCompetitionStats, MarketScoreTrend } from "@/types/marketScore";
 import { TargetObservationModal } from "./TargetObservationModal";
+import { TargetCompetitionStatsModal } from "./TargetCompetitionStatsModal";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
 import { useTargetMarketScore } from "@/hooks/useTargetMarketScore";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { findSimilarTargets } from "@/lib/targetSimilarity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +41,7 @@ interface TargetDetailModalProps {
   target: TargetWithScore | null;
   onEdit?: (target: TargetWithScore) => void;
   onSuccess?: () => void;
+  onSelectTarget?: (targetId: string) => void;
 }
 
 // ─── Design helpers ───────────────────────────────────────────────────────────
@@ -130,17 +134,24 @@ function StarDisplay({ value }: { value: number | null }) {
   );
 }
 
-function ScoreBar({ label, value }: { label: string; value: number }) {
+function ScoreBar({ label, value, reasoning }: { label: string; value: number; reasoning?: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <Mono className="w-28 shrink-0" style={{ color: MUTED } as React.CSSProperties}>{label}</Mono>
-      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${value}%`, background: `linear-gradient(90deg, ${ACCENT}, #ff6b47)` }}
-        />
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <Mono className="w-28 shrink-0" style={{ color: MUTED } as React.CSSProperties}>{label}</Mono>
+        <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${value}%`, background: `linear-gradient(90deg, ${ACCENT}, #ff6b47)` }}
+          />
+        </div>
+        <span className="font-mono text-[11px] w-6 text-right" style={{ color: FG }}>{value.toFixed(0)}</span>
       </div>
-      <span className="font-mono text-[11px] w-6 text-right" style={{ color: FG }}>{value.toFixed(0)}</span>
+      {reasoning && (
+        <p className="text-[10.5px] leading-snug pl-[calc(7rem+0.75rem)]" style={{ color: "#7a7982" }}>
+          {reasoning}
+        </p>
+      )}
     </div>
   );
 }
@@ -157,12 +168,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSuccess }: TargetDetailModalProps) {
+export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSuccess, onSelectTarget }: TargetDetailModalProps) {
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [observationModalOpen, setObservationModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deletingObsId, setDeletingObsId] = useState<string | null>(null);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [editingStatsRow, setEditingStatsRow] = useState<TargetCompetitionStats | null>(null);
+  const [deletingStatsId, setDeletingStatsId] = useState<string | null>(null);
 
   const { data: observations = [], isLoading: observationsLoading } = useQuery({
     queryKey: ["target-observations", target?.id],
@@ -179,10 +193,43 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
     enabled: !!target && open,
   });
 
+  const { data: competitionStats = [], isLoading: statsLoading } = useQuery({
+    queryKey: ["target-competition-stats", target?.id],
+    queryFn: async () => {
+      if (!target) return [];
+      const { data, error } = await supabase
+        .from("target_competition_stats")
+        .select("*, competitions(name, display_name)")
+        .eq("target_id", target.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as (TargetCompetitionStats & { competitions: { name: string; display_name: string | null } | null })[];
+    },
+    enabled: !!target && open,
+  });
+
   const { breakdown, recalculate, isRecalculating } = useTargetMarketScore({
     targetId: target?.id ?? "",
     enabled: !!target && open,
   });
+
+  const { data: similarityPool = [] } = useQuery({
+    queryKey: ["target-similarity-pool"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("targets")
+        .select("id, name, status, position, secondary_position, current_club, photo_url, score_physical, score_technical, score_tactical, score_mental, tags, notable_characteristics");
+      if (error) throw error;
+      return (data || []) as unknown as Target[];
+    },
+    enabled: open,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const similarTargets = useMemo(() => {
+    if (!target) return [];
+    return findSimilarTargets(target as any, similarityPool as any, 5);
+  }, [target, similarityPool]);
 
   const handleDelete = async () => {
     if (!target || !isAdmin) return;
@@ -222,6 +269,36 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
     queryClient.invalidateQueries({ queryKey: ["target-observations", target?.id] });
     setObservationModalOpen(false);
     recalculate("Nova observação adicionada");
+    onSuccess?.();
+  };
+
+  const handleOpenNewStats = () => { setEditingStatsRow(null); setStatsModalOpen(true); };
+  const handleEditStats = (row: TargetCompetitionStats) => { setEditingStatsRow(row); setStatsModalOpen(true); };
+
+  const handleDeleteStats = async (id: string) => {
+    if (!confirm("Excluir estas estatísticas?")) return;
+    setDeletingStatsId(id);
+    try {
+      const { error } = await supabase.from("target_competition_stats").delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Estatísticas excluídas" });
+      queryClient.invalidateQueries({ queryKey: ["target-competition-stats", target?.id] });
+      queryClient.invalidateQueries({ queryKey: ["target-competition-stats-score-signals", target?.id] });
+      recalculate("Estatísticas por competição removidas");
+      onSuccess?.();
+    } catch {
+      toast({ title: "Erro ao excluir", variant: "destructive" });
+    } finally {
+      setDeletingStatsId(null);
+    }
+  };
+
+  const handleStatsSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["target-competition-stats", target?.id] });
+    queryClient.invalidateQueries({ queryKey: ["target-competition-stats-score-signals", target?.id] });
+    setStatsModalOpen(false);
+    setEditingStatsRow(null);
+    recalculate("Estatísticas por competição atualizadas");
     onSuccess?.();
   };
 
@@ -373,6 +450,75 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                 </div>
               )}
 
+              {/* Estatísticas por Competição */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                    <Mono style={{ color: MUTED } as React.CSSProperties}>Estatísticas por Competição ({competitionStats.length})</Mono>
+                  </div>
+                  <button
+                    onClick={handleOpenNewStats}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md font-mono text-[10px] tracking-wide transition-colors hover:opacity-80"
+                    style={{ color: ACCENT, background: `${ACCENT}10`, border: `1px solid ${ACCENT}25` }}
+                  >
+                    <Plus className="w-3 h-3" /> Nova
+                  </button>
+                </div>
+
+                {statsLoading ? (
+                  <Skeleton className="h-14 w-full rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }} />
+                ) : competitionStats.length === 0 ? (
+                  <p className="text-center text-[11px] font-mono py-4" style={{ color: MUTED }}>
+                    Nenhuma estatística registrada.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {competitionStats.map(row => (
+                      <div
+                        key={row.id}
+                        className="group/stats p-3 rounded-lg space-y-1.5"
+                        style={{ background: BG_CARD, border: `1px solid ${BDR}` }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[12px] font-medium truncate" style={{ color: FG }}>
+                            {row.competitions?.display_name || row.competitions?.name || "—"}
+                          </span>
+                          <div className="flex items-center gap-1 flex-none">
+                            <button
+                              onClick={() => handleEditStats(row)}
+                              className="opacity-0 group-hover/stats:opacity-100 w-6 h-6 flex items-center justify-center rounded-md transition-all duration-150 hover:bg-white/[0.06]"
+                              title="Editar"
+                            >
+                              <Pencil className="w-3 h-3" style={{ color: MUTED }} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStats(row.id)}
+                              disabled={deletingStatsId === row.id}
+                              className="opacity-0 group-hover/stats:opacity-100 w-6 h-6 flex items-center justify-center rounded-md transition-all duration-150 hover:bg-red-500/15"
+                              title="Excluir"
+                            >
+                              {deletingStatsId === row.id
+                                ? <span className="w-3 h-3 border border-t-transparent rounded-full animate-spin" style={{ borderColor: "#ef4444" }} />
+                                : <Trash2 className="w-3.5 h-3.5" style={{ color: "#ef4444" }} />
+                              }
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px]" style={{ color: MUTED }}>
+                          {row.matches_played != null && <span>{row.matches_played} jogos</span>}
+                          {row.minutes_played != null && <span>{row.minutes_played} min</span>}
+                          {row.goals          != null && <span>{row.goals} gols</span>}
+                          {row.assists        != null && <span>{row.assists} assist.</span>}
+                          {row.yellow_cards   != null && <span>{row.yellow_cards} CA</span>}
+                          {row.red_cards      != null && <span>{row.red_cards} CV</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Pilares de Avaliação */}
               {pillars.some(p => p.value !== null) && (
                 <div className="space-y-2">
@@ -445,6 +591,36 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                   <ExternalLink className="w-3.5 h-3.5 ml-auto" style={{ color: ACCENT }} />
                 </a>
               )}
+
+              {/* Targets Parecidos */}
+              {similarTargets.length > 0 && (
+                <div className="space-y-2">
+                  <SectionLabel>Targets Parecidos</SectionLabel>
+                  <div className="space-y-1.5">
+                    {similarTargets.map(({ target: sim, score, matchedOn }) => (
+                      <button
+                        key={sim.id}
+                        onClick={() => onSelectTarget?.(sim.id)}
+                        disabled={!onSelectTarget}
+                        className="w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-colors hover:bg-white/[0.03] disabled:cursor-default"
+                        style={{ background: BG_CARD, border: `1px solid ${BDR}` }}
+                      >
+                        <Users2 className="w-3.5 h-3.5 flex-none" style={{ color: MUTED }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-medium truncate" style={{ color: FG }}>{sim.name}</p>
+                          <p className="text-[10px] font-mono truncate" style={{ color: MUTED }}>
+                            {[sim.position, sim.current_club].filter(Boolean).join(" · ")}
+                            {matchedOn.length > 0 ? ` — ${matchedOn.join(", ")}` : ""}
+                          </p>
+                        </div>
+                        <span className="font-mono text-[11px] font-semibold flex-none" style={{ color: ACCENT }}>
+                          {score}%
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── RIGHT COLUMN ─────────────────────────────────────────── */}
@@ -457,27 +633,57 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                     <Sparkles className="w-4 h-4" style={{ color: ACCENT }} />
                     <Mono style={{ color: MUTED } as React.CSSProperties}>M3 Market Score</Mono>
                   </div>
-                  {!hasScore && (
-                    <button
-                      onClick={() => recalculate("Cálculo manual")}
-                      disabled={isRecalculating}
-                      className="font-mono text-[10px] tracking-wide px-2.5 py-1 rounded-md transition-colors hover:opacity-80 disabled:opacity-50"
-                      style={{ color: ACCENT, background: `${ACCENT}15`, border: `1px solid ${ACCENT}30` }}
-                    >
-                      {isRecalculating ? "Calculando..." : "Calcular"}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => recalculate("Cálculo manual")}
+                    disabled={isRecalculating}
+                    className="font-mono text-[10px] tracking-wide px-2.5 py-1 rounded-md transition-colors hover:opacity-80 disabled:opacity-50"
+                    style={{ color: ACCENT, background: `${ACCENT}15`, border: `1px solid ${ACCENT}30` }}
+                  >
+                    {isRecalculating ? "Calculando..." : hasScore ? "Recalcular" : "Calcular"}
+                  </button>
                 </div>
 
                 {hasScore && scoreTier ? (
                   <>
                     {/* Score card */}
                     <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: `${scoreTier.color}0f`, border: `1px solid ${scoreTier.color}30` }}>
-                      <div className="flex flex-col items-center justify-center w-[68px] h-[68px] rounded-xl" style={{ background: `${scoreTier.color}18`, border: `2px solid ${scoreTier.color}50` }}>
+                      <div className="relative group/score flex flex-col items-center justify-center w-[68px] h-[68px] rounded-xl cursor-help flex-none" style={{ background: `${scoreTier.color}18`, border: `2px solid ${scoreTier.color}50` }}>
                         <span className="font-display font-bold text-[28px] leading-none" style={{ color: scoreTier.color }}>
                           {target.market_score!.score_total.toFixed(0)}
                         </span>
                         <Mono style={{ color: scoreTier.color } as React.CSSProperties}>{scoreTier.label}</Mono>
+
+                        {breakdown && (
+                          <div className="absolute left-0 top-full mt-2 z-20 w-[260px] pointer-events-none opacity-0 group-hover/score:opacity-100 transition-opacity duration-150">
+                            <div
+                              className="rounded-lg shadow-2xl p-3 space-y-1.5"
+                              style={{ background: "#1c1b20", border: `1px solid ${BDR}` }}
+                            >
+                              <p className="font-mono text-[9.5px] uppercase tracking-wider mb-1.5" style={{ color: MUTED }}>
+                                Como esse número é calculado
+                              </p>
+                              {[
+                                { label: "Idade & Janela", value: breakdown.scoreAgeWindow,          weight: breakdown.weightsUsed.ageWindow },
+                                { label: "Performance",    value: breakdown.scorePerformanceImpact,   weight: breakdown.weightsUsed.performanceImpact },
+                                { label: "Contexto",       value: breakdown.scoreCompetitiveContext,  weight: breakdown.weightsUsed.competitiveContext },
+                                { label: "Consistência",   value: breakdown.scoreConsistencyReliability, weight: breakdown.weightsUsed.consistencyReliability },
+                                { label: "Perfil",         value: breakdown.scoreMarketProfile,       weight: breakdown.weightsUsed.marketProfile },
+                              ].map(item => (
+                                <div key={item.label} className="flex items-center justify-between text-[11px] font-mono" style={{ color: "#c9c8cf" }}>
+                                  <span>{item.label} ({Math.round(item.weight * 100)}%)</span>
+                                  <span>{item.value.toFixed(0)} × {item.weight.toFixed(2)} = {(item.value * item.weight).toFixed(1)}</span>
+                                </div>
+                              ))}
+                              <div className="flex items-center justify-between text-[11px] font-mono pt-1.5 border-t" style={{ borderColor: BDR, color: ACCENT }}>
+                                <span>Total</span>
+                                <span className="font-semibold">{breakdown.scoreTotal.toFixed(0)}</span>
+                              </div>
+                              <p className="text-[9.5px] font-mono leading-snug pt-0.5" style={{ color: MUTED }}>
+                                Se diferente do número acima, clique em "Recalcular" pra atualizar.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
@@ -510,13 +716,13 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                       <div className="space-y-2.5 pt-1">
                         <Mono style={{ color: MUTED } as React.CSSProperties}>Composição</Mono>
                         {[
-                          { label: "Idade & Janela", value: breakdown.scoreAgeWindow },
-                          { label: "Performance",    value: breakdown.scorePerformanceImpact },
-                          { label: "Contexto",       value: breakdown.scoreCompetitiveContext },
-                          { label: "Consistência",   value: breakdown.scoreConsistencyReliability },
-                          { label: "Perfil",         value: breakdown.scoreMarketProfile },
+                          { label: "Idade & Janela", value: breakdown.scoreAgeWindow,             reasoning: breakdown.ageWindowDetails.reasoning },
+                          { label: "Performance",    value: breakdown.scorePerformanceImpact,      reasoning: breakdown.performanceImpactDetails.reasoning },
+                          { label: "Contexto",       value: breakdown.scoreCompetitiveContext,      reasoning: breakdown.competitiveContextDetails.reasoning },
+                          { label: "Consistência",   value: breakdown.scoreConsistencyReliability, reasoning: breakdown.consistencyReliabilityDetails.reasoning },
+                          { label: "Perfil",         value: breakdown.scoreMarketProfile,           reasoning: breakdown.marketProfileDetails.reasoning },
                         ].map(item => (
-                          <ScoreBar key={item.label} label={item.label} value={item.value} />
+                          <ScoreBar key={item.label} label={item.label} value={item.value} reasoning={item.reasoning} />
                         ))}
                       </div>
                     )}
@@ -648,6 +854,14 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
         onOpenChange={setObservationModalOpen}
         targetId={target.id}
         onSuccess={handleObservationSuccess}
+      />
+
+      <TargetCompetitionStatsModal
+        open={statsModalOpen}
+        onOpenChange={setStatsModalOpen}
+        targetId={target.id}
+        editingRow={editingStatsRow}
+        onSuccess={handleStatsSuccess}
       />
     </>
   );

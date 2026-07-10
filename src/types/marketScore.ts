@@ -204,6 +204,21 @@ export interface TargetObservation {
   created_at: string;
 }
 
+export interface TargetCompetitionStats {
+  id: string;
+  target_id: string;
+  competition_id: string;
+  matches_played: number | null;
+  minutes_played: number | null;
+  goals: number | null;
+  assists: number | null;
+  yellow_cards: number | null;
+  red_cards: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // =====================================================
 // INPUT DATA FOR CALCULATION
 // =====================================================
@@ -269,6 +284,31 @@ export interface TargetPlayerData {
     performanceRating: number | null; // 1-10
     competition: string | null;
   }[];
+
+  // Competition stats — logged per competition_id, linked to the real competitions table
+  competitionStats: {
+    competitionId: string;
+    matchesPlayed: number | null;
+    minutesPlayed: number | null;
+    goals: number | null;
+    assists: number | null;
+    finalCoefficient: number | null;
+    tier: string | null;
+  }[];
+
+  // Matriz de Avaliação — scout's 0-5 star ratings per pillar
+  evaluationMatrix: {
+    physical: number | null;
+    technical: number | null;
+    tactical: number | null;
+    mental: number | null;
+  };
+
+  // Profile fields used to score Perfil de Mercado
+  secondaryPosition: string | null;
+  tacticalFunction: string | null;
+  height: number | null;
+  weight: number | null;
 }
 
 // =====================================================

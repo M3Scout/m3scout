@@ -2,10 +2,11 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, Handshake, CheckCircle2, XCircle, Plus, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Eye, Handshake, CheckCircle2, XCircle, Plus, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
 import { Target as TargetType, MarketScoreTrend } from "@/types/marketScore";
 import { TargetFormModal } from "@/components/market/TargetFormModal";
 import { TargetDetailModal } from "@/components/market/TargetDetailModal";
+import { getTargetAlertSeverity, type TargetAlert } from "@/lib/targetInsightsEngine";
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
   PointerSensor, TouchSensor, useSensor, useSensors,
@@ -45,6 +46,11 @@ const BG2    = "#0f0e13";
 
 const GRADE_COLOR: Record<string, string> = {
   A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#ef4444",
+};
+
+const ALERT_COLOR: Record<TargetAlert["severity"], string> = {
+  critical: "#f43f5e",
+  alert:    "#f59e0b",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -124,7 +130,7 @@ function FunnelCard({ label, color, Icon, count, total, loading }: {
 
 // ─── Kanban card visual ───────────────────────────────────────────────────────
 
-function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; isOverlay?: boolean }) {
+function CardVisual({ target, isOverlay = false, alert }: { target: TargetWithScore; isOverlay?: boolean; alert?: TargetAlert }) {
   const t = target as any;
   const age       = getAge(target);
   const score     = target.market_score?.score_total ?? null;
@@ -133,6 +139,7 @@ function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; is
   const gradeCfg  = grade ? GRADE_COLOR[grade] : null;
   const stageCfg  = KANBAN_STAGES.find(s => s.key === target.status);
   const stageColor = stageCfg?.color ?? MUTED;
+  const alertColor = alert ? ALERT_COLOR[alert.severity] : null;
 
   const avgPillar = (() => {
     const vals = [t.score_physical, t.score_technical, t.score_tactical, t.score_mental].filter((v): v is number => v != null);
@@ -144,14 +151,14 @@ function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; is
       className="rounded-xl border overflow-hidden transition-all duration-200 group/card"
       style={{
         background: isOverlay ? "#1c1a22" : BG,
-        borderColor: isOverlay ? "rgba(255,255,255,0.2)" : BDR,
+        borderColor: isOverlay ? "rgba(255,255,255,0.2)" : alertColor ? `${alertColor}70` : BDR,
         boxShadow: isOverlay ? "0 20px 60px rgba(0,0,0,0.9)" : "none",
         transform: isOverlay ? "scale(1.05) rotate(1.5deg)" : "none",
         cursor: isOverlay ? "grabbing" : "grab",
       }}
     >
       {/* Stage accent line */}
-      <div className="h-[2px]" style={{ background: `linear-gradient(90deg, ${stageColor}60, transparent)` }} />
+      <div className="h-[2px]" style={{ background: alertColor ? alertColor : `linear-gradient(90deg, ${stageColor}60, transparent)` }} />
 
       <div className="p-3">
         {/* Top: avatar + name + grade */}
@@ -175,6 +182,13 @@ function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; is
               {[target.position, age ? `${age}a` : null, target.current_club].filter(Boolean).join(" · ")}
             </p>
           </div>
+
+          {/* Alert badge */}
+          {alert && alertColor && (
+            <div title={alert.reason} className="flex-none">
+              <AlertTriangle className="w-3.5 h-3.5" style={{ color: alertColor }} />
+            </div>
+          )}
 
           {/* Grade badge */}
           {grade && gradeCfg && (
@@ -222,7 +236,7 @@ function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; is
 
 // ─── Kanban card (draggable) ──────────────────────────────────────────────────
 
-function KanbanCard({ target, onOpenDetail }: { target: TargetWithScore; onOpenDetail: (t: TargetWithScore) => void }) {
+function KanbanCard({ target, onOpenDetail, alert }: { target: TargetWithScore; onOpenDetail: (t: TargetWithScore) => void; alert?: TargetAlert }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: target.id, data: { target } });
   return (
     <div
@@ -231,17 +245,18 @@ function KanbanCard({ target, onOpenDetail }: { target: TargetWithScore; onOpenD
       className="transition-all duration-200 hover:-translate-y-0.5"
       style={{ opacity: isDragging ? 0.25 : 1, touchAction: "none" }}
     >
-      <CardVisual target={target} />
+      <CardVisual target={target} alert={alert} />
     </div>
   );
 }
 
 // ─── Kanban column ────────────────────────────────────────────────────────────
 
-function KanbanColumn({ stageKey, label, color, Icon, stageTargets, isLoading, onOpenDetail }: {
+function KanbanColumn({ stageKey, label, color, Icon, stageTargets, isLoading, onOpenDetail, alertsByTarget }: {
   stageKey: StageKey; label: string; color: string; Icon: React.ElementType;
   stageTargets: TargetWithScore[]; isLoading: boolean;
   onOpenDetail: (t: TargetWithScore) => void;
+  alertsByTarget: Map<string, TargetAlert>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stageKey });
 
@@ -288,7 +303,7 @@ function KanbanColumn({ stageKey, label, color, Icon, stageTargets, isLoading, o
             <div className="w-px h-6" style={{ background: BDR }} />
           </div>
         ) : stageTargets.map(t => (
-          <KanbanCard key={t.id} target={t} onOpenDetail={onOpenDetail} />
+          <KanbanCard key={t.id} target={t} onOpenDetail={onOpenDetail} alert={alertsByTarget.get(t.id)} />
         ))}
       </div>
     </div>
@@ -328,6 +343,32 @@ export default function MarketTargets() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const { data: lastObservationByTarget = new Map<string, string>() } = useQuery({
+    queryKey: ["target-observations-latest"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("target_observations")
+        .select("target_id, observation_date")
+        .order("observation_date", { ascending: false });
+      if (error) throw error;
+      const map = new Map<string, string>();
+      (data || []).forEach(row => {
+        if (!map.has(row.target_id)) map.set(row.target_id, row.observation_date);
+      });
+      return map;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const alertsByTarget = useMemo(() => {
+    const map = new Map<string, TargetAlert>();
+    targets.forEach(t => {
+      const alert = getTargetAlertSeverity(t, lastObservationByTarget.get(t.id) ?? null);
+      if (alert) map.set(t.id, alert);
+    });
+    return map;
+  }, [targets, lastObservationByTarget]);
+
   const { data: recentActivity = [] } = useQuery<ActivityRow[]>({
     queryKey: ["target-activity"],
     queryFn: async () => {
@@ -362,6 +403,10 @@ export default function MarketTargets() {
   );
 
   const handleOpenDetail = (t: TargetWithScore) => { setSelectedTarget(t); setDetailModalOpen(true); };
+  const handleSelectTargetById = (id: string) => {
+    const t = targets.find(x => x.id === id);
+    if (t) handleOpenDetail(t);
+  };
   const handleEdit       = (t: TargetWithScore) => { setEditTarget(t); setFormModalOpen(true); };
   const handleCloseForm  = () => { setFormModalOpen(false); setEditTarget(null); };
   const handleSuccess    = () => {
@@ -444,6 +489,7 @@ export default function MarketTargets() {
               stageTargets={targetsByStatus[key] || []}
               isLoading={isLoading}
               onOpenDetail={handleOpenDetail}
+              alertsByTarget={alertsByTarget}
             />
           ))}
         </div>
@@ -580,7 +626,7 @@ export default function MarketTargets() {
 
       {/* ── MODALS ────────────────────────────────────────────────────── */}
       <TargetFormModal open={formModalOpen} onOpenChange={handleCloseForm} target={editTarget} onSuccess={handleSuccess} />
-      <TargetDetailModal open={detailModalOpen} onOpenChange={setDetailModalOpen} target={selectedTarget} onEdit={handleEdit} onSuccess={handleSuccess} />
+      <TargetDetailModal open={detailModalOpen} onOpenChange={setDetailModalOpen} target={selectedTarget} onEdit={handleEdit} onSuccess={handleSuccess} onSelectTarget={handleSelectTargetById} />
     </div>
   );
 }

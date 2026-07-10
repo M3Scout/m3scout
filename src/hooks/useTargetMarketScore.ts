@@ -106,6 +106,32 @@ export function useTargetMarketScore({
     staleTime: 5 * 60 * 1000,
   });
   
+  // Fetch competition stats (joined to the real competitions table for coefficient/tier)
+  const {
+    data: competitionStats = [],
+    isLoading: competitionStatsLoading,
+  } = useQuery({
+    queryKey: ['target-competition-stats-score-signals', targetId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('target_competition_stats')
+        .select('*, competitions(final_coefficient, tier)')
+        .eq('target_id', targetId);
+
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        competition_id: string;
+        matches_played: number | null;
+        minutes_played: number | null;
+        goals: number | null;
+        assists: number | null;
+        competitions: { final_coefficient: number | null; tier: string | null } | null;
+      }>;
+    },
+    enabled: enabled && !!targetId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Fetch existing score from DB
   const {
     data: score,
@@ -147,8 +173,27 @@ export function useTargetMarketScore({
         performanceRating: o.performance_rating,
         competition: o.competition,
       })),
+      competitionStats: competitionStats.map(c => ({
+        competitionId: c.competition_id,
+        matchesPlayed: c.matches_played,
+        minutesPlayed: c.minutes_played,
+        goals: c.goals,
+        assists: c.assists,
+        finalCoefficient: c.competitions?.final_coefficient ?? null,
+        tier: c.competitions?.tier ?? null,
+      })),
+      evaluationMatrix: {
+        physical:  (target as any).score_physical  ?? null,
+        technical: (target as any).score_technical ?? null,
+        tactical:  (target as any).score_tactical  ?? null,
+        mental:    (target as any).score_mental    ?? null,
+      },
+      secondaryPosition: (target as any).secondary_position ?? null,
+      tacticalFunction:  (target as any).tactical_function  ?? null,
+      height: target.height ?? null,
+      weight: target.weight ? Number(target.weight) : null,
     };
-  }, [targetId, target, observations]);
+  }, [targetId, target, observations, competitionStats]);
   
   // Compute breakdown in real-time
   const breakdown: MarketScoreBreakdown | null = useMemo(() => {
@@ -180,7 +225,7 @@ export function useTargetMarketScore({
     return !!target.position && (!!target.birth_date || !!target.age_estimate);
   }, [target]);
   
-  const breakdownLoading = targetLoading || observationsLoading;
+  const breakdownLoading = targetLoading || observationsLoading || competitionStatsLoading;
   
   return {
     target: target ?? null,
