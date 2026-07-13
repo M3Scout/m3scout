@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Share2, Check } from "lucide-react";
+import { useState } from "react";
 import { getOptimizedImageUrl, getResponsiveSrcSet } from "@/lib/imageUtils";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface AthleteHeroSectionProps {
   player: {
@@ -20,10 +22,28 @@ interface AthleteHeroSectionProps {
 }
 
 export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
+  const [copied, setCopied] = useState(false);
   const nameParts = (player.full_name ?? "").trim().split(/\s+/);
   const mid = Math.ceil(nameParts.length / 2);
   const firstName = nameParts.slice(0, mid).join(" ");
   const lastName  = nameParts.slice(mid).join(" ");
+
+  const handleShare = async () => {
+    const url = `https://m3scout.com/players/${player.slug}?v=${Date.now()}`;
+    const shareData = { title: `${player.full_name} — M3 Agency`, url };
+    try {
+      if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Link copiado!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      // user cancelled share — ignore
+    }
+  };
 
   const identItems = [
     player.age           ? { label: "Idade",  value: String(player.age),  unit: "anos" } : null,
@@ -58,6 +78,15 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
         className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[8px] px-5 py-[13px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white/40 transition-all duration-[220ms] cursor-pointer bg-transparent"
       >
         Perfil técnico
+      </button>
+      <button
+        type="button"
+        onClick={handleShare}
+        className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[8px] px-5 py-[13px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white/40 transition-all duration-[220ms] cursor-pointer bg-transparent"
+        aria-label="Compartilhar perfil"
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+        {copied ? "Copiado" : "Compartilhar"}
       </button>
     </div>
   );
