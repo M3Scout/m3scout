@@ -282,8 +282,8 @@ const PlayerProfile = () => {
 
   const pageTitle = `${player.full_name} — ${player.position}${player.current_club ? ` · ${player.current_club}` : ""} | M3 Agency`;
   const pageDescription = `Perfil do atleta ${player.full_name}${player.age ? `, ${player.age} anos` : ""}${player.nationality ? `, ${player.nationality}` : ""}${player.current_club ? `, ${player.current_club}` : ""}. Estatísticas, atributos e vídeos no M3 Agency.`;
-  const canonicalUrl = `https://m3scout.com/players/${player.slug}`;
-  const ogImage = player.photo_url || "https://m3scout.com/og-default.png";
+  const canonicalUrl = `https://m3agency.com.br/players/${player.slug}`;
+  const ogImage = player.photo_url || "https://m3agency.com.br/og-default.png";
 
   const jsonLd = {
     "@context": "https://schema.org",
