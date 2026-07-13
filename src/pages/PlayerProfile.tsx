@@ -285,6 +285,21 @@ const PlayerProfile = () => {
   const canonicalUrl = `https://m3scout.com/players/${player.slug}`;
   const ogImage = player.photo_url || "https://m3scout.com/og-default.png";
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: player.full_name,
+    image: ogImage,
+    url: canonicalUrl,
+    identifier: player.slug,
+    ...(player.nationality ? { nationality: player.nationality } : {}),
+    ...(player.birth_date ? { birthDate: player.birth_date } : {}),
+    ...(player.current_club
+      ? { memberOf: { "@type": "SportsTeam", name: player.current_club } }
+      : {}),
+    jobTitle: player.position,
+  };
+
   return (
     <div className="min-h-screen bg-[#0c0b0d] overflow-x-hidden">
       <Helmet>
@@ -300,6 +315,7 @@ const PlayerProfile = () => {
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={ogImage} />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
       <div className="pt-24 sm:pt-28 pb-16">
         {/* Container aligned with header logo - uses same max-width and gutters */}
