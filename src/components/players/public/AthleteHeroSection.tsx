@@ -87,6 +87,7 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
       >
         {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
         {copied ? "Copiado" : "Compartilhar"}
+      </button>
     </div>
   );
 
