@@ -29,8 +29,13 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
   const lastName  = nameParts.slice(mid).join(" ");
 
   const handleShare = async () => {
-    const url = `https://m3agency.com.br/players/${player.slug}?v=${Date.now()}`;
-    const shareData = { title: `${player.full_name} — M3 Agency`, url };
+    // Route the shared URL through our OG edge function so WhatsApp / Facebook /
+    // Twitter / LinkedIn crawlers (which don't execute JS) read per-athlete
+    // meta tags (name + photo). The edge function then meta-refreshes the
+    // human visitor to the real /players/:slug page.
+    const OG_BASE = "https://httxbfcvzknyncprzcuy.supabase.co/functions/v1/og-player";
+    const url = `${OG_BASE}?slug=${encodeURIComponent(player.slug)}&v=${Date.now()}`;
+    const shareData = { title: `M3 Agency — ${player.full_name}`, url };
     try {
       if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
         await navigator.share(shareData);
