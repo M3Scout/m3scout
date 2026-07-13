@@ -1437,6 +1437,7 @@ export type Database = {
           body_fat_percentage: number | null
           created_at: string
           created_by: string | null
+          height: number | null
           id: string
           max_speed: number | null
           muscle_mass: number | null
@@ -1451,6 +1452,7 @@ export type Database = {
           body_fat_percentage?: number | null
           created_at?: string
           created_by?: string | null
+          height?: number | null
           id?: string
           max_speed?: number | null
           muscle_mass?: number | null
@@ -1465,6 +1467,7 @@ export type Database = {
           body_fat_percentage?: number | null
           created_at?: string
           created_by?: string | null
+          height?: number | null
           id?: string
           max_speed?: number | null
           muscle_mass?: number | null
@@ -2275,6 +2278,8 @@ export type Database = {
         Row: {
           age_estimate: number | null
           agency_situation: string | null
+          ai_dossier: string | null
+          ai_dossier_generated_at: string | null
           birth_date: string | null
           city: string | null
           competition_id: string | null
@@ -2319,6 +2324,8 @@ export type Database = {
         Insert: {
           age_estimate?: number | null
           agency_situation?: string | null
+          ai_dossier?: string | null
+          ai_dossier_generated_at?: string | null
           birth_date?: string | null
           city?: string | null
           competition_id?: string | null
@@ -2363,6 +2370,8 @@ export type Database = {
         Update: {
           age_estimate?: number | null
           agency_situation?: string | null
+          ai_dossier?: string | null
+          ai_dossier_generated_at?: string | null
           birth_date?: string | null
           city?: string | null
           competition_id?: string | null
