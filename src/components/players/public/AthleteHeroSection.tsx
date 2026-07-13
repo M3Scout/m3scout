@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Share2, Check } from "lucide-react";
+import { useState } from "react";
 import { getOptimizedImageUrl, getResponsiveSrcSet } from "@/lib/imageUtils";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface AthleteHeroSectionProps {
   player: {
