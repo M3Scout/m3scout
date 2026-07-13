@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { useComparePlayerStats } from "@/hooks/useComparePlayerStats";
 import { Loader2 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
