@@ -29,7 +29,7 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
   const lastName  = nameParts.slice(mid).join(" ");
 
   const handleShare = async () => {
-    const url = `https://m3scout.com/players/${player.slug}?v=${Date.now()}`;
+    const url = `https://m3agency.com.br/players/${player.slug}?v=${Date.now()}`;
     const shareData = { title: `${player.full_name} — M3 Agency`, url };
     try {
       if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
