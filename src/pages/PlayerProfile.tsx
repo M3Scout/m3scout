@@ -285,6 +285,21 @@ const PlayerProfile = () => {
   const canonicalUrl = `https://m3scout.com/players/${player.slug}`;
   const ogImage = player.photo_url || "https://m3scout.com/og-default.png";
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: player.full_name,
+    image: ogImage,
+    url: canonicalUrl,
+    identifier: player.slug,
+    ...(player.nationality ? { nationality: player.nationality } : {}),
+    ...(player.birth_date ? { birthDate: player.birth_date } : {}),
+    ...(player.current_club
+      ? { memberOf: { "@type": "SportsTeam", name: player.current_club } }
+      : {}),
+    jobTitle: player.position,
+  };
+
   return (
     <div className="min-h-screen bg-[#0c0b0d] overflow-x-hidden">
       <Helmet>
