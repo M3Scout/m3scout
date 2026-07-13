@@ -12,10 +12,19 @@ export interface SimilarTargetResult {
   matchedOn: string[];
 }
 
-type ScorableTarget = Pick<Target, "id" | "status" | "position" | "score_physical" | "score_technical" | "score_tactical" | "score_mental" | "tags"> & {
+type ScorableTarget = {
+  id: string;
+  status: Target["status"];
+  position: string;
+  score_physical?: number | null;
+  score_technical?: number | null;
+  score_tactical?: number | null;
+  score_mental?: number | null;
+  tags?: string[] | null;
   secondary_position?: string | null;
   notable_characteristics?: string[] | null;
-};
+} & Partial<Target>;
+
 
 const PILLARS = ["score_physical", "score_technical", "score_tactical", "score_mental"] as const;
 
