@@ -7,7 +7,7 @@ import type { Target } from "@/types/marketScore";
 // 4 pillar scores + position + tags to compare.
 
 export interface SimilarTargetResult {
-  target: Target;
+  target: ScorableTarget;
   score: number; // 0-100
   matchedOn: string[];
 }
