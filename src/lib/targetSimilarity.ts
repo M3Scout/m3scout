@@ -91,7 +91,7 @@ export function findSimilarTargets(
       matchedOn.push(`${overlap.length} característica${overlap.length > 1 ? "s" : ""} em comum`);
     }
 
-    return { target: candidate as Target, score: Math.round(Math.min(100, score)), matchedOn };
+    return { target: candidate, score: Math.round(Math.min(100, score)), matchedOn };
   });
 
   return results
