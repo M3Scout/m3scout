@@ -22,12 +22,29 @@ interface AthleteHeroSectionProps {
 }
 
 export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
+  const [copied, setCopied] = useState(false);
   const nameParts = (player.full_name ?? "").trim().split(/\s+/);
   const mid = Math.ceil(nameParts.length / 2);
   const firstName = nameParts.slice(0, mid).join(" ");
   const lastName  = nameParts.slice(mid).join(" ");
 
-  const identItems = [
+  const handleShare = async () => {
+    const url = `https://m3scout.com/players/${player.slug}?v=${Date.now()}`;
+    const shareData = { title: `${player.full_name} — M3 Agency`, url };
+    try {
+      if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Link copiado!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      // user cancelled share — ignore
+    }
+  };
+
     player.age           ? { label: "Idade",  value: String(player.age),  unit: "anos" } : null,
     player.current_club  ? { label: "Clube",  value: player.current_club,  unit: null   } : null,
     player.height        ? { label: "Altura", value: String(player.height), unit: "cm"  } : null,
