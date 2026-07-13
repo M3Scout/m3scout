@@ -79,6 +79,14 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
       >
         Perfil técnico
       </button>
+      <button
+        type="button"
+        onClick={handleShare}
+        className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[8px] px-5 py-[13px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white/40 transition-all duration-[220ms] cursor-pointer bg-transparent"
+        aria-label="Compartilhar perfil"
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+        {copied ? "Copiado" : "Compartilhar"}
     </div>
   );
 
