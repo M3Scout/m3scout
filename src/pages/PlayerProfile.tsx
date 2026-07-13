@@ -315,6 +315,7 @@ const PlayerProfile = () => {
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={ogImage} />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
       <div className="pt-24 sm:pt-28 pb-16">
         {/* Container aligned with header logo - uses same max-width and gutters */}
