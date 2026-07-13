@@ -18,6 +18,8 @@ if (import.meta.env.DEV) {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </React.StrictMode>
 );
