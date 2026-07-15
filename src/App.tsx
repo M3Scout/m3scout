@@ -11,6 +11,7 @@ import { RequirePermission } from "@/components/auth/PermissionGate";
 import { ThemeProvider } from "next-themes";
 import { PWAProvider } from "@/components/pwa/PWAUpdateToast";
 import { AppShell } from "@/components/app/AppShell";
+import { PwaSafeAreaBar } from "@/components/app/PwaSafeAreaBar";
 import { usePrefetchRoutes } from "@/hooks/usePrefetchRoutes";
 import { Suspense, lazy } from "react";
 import { RouteSuspense, LiveMatchSuspense } from "@/components/app/RouteSuspense";
@@ -138,12 +139,14 @@ function AppRoutes() {
   };
 
   return (
-    <AppShell 
-      isLoading={isBootstrapping} 
-      loadingReason={loadingReason}
-      hasAuthTimeout={isProtectedPath && hasAuthTimeout}
-      onLogout={handleLogout}
-    >
+    <>
+      <PwaSafeAreaBar />
+      <AppShell
+        isLoading={isBootstrapping}
+        loadingReason={loadingReason}
+        hasAuthTimeout={isProtectedPath && hasAuthTimeout}
+        onLogout={handleLogout}
+      >
 
       <TooltipProvider>
         <Toaster />
@@ -259,7 +262,8 @@ function AppRoutes() {
           </BrowserRouter>
         </PWAProvider>
       </TooltipProvider>
-    </AppShell>
+      </AppShell>
+    </>
   );
 }
 
