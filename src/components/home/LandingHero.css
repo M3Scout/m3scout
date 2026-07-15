@@ -22,39 +22,16 @@
 .lp-cursor {
   position: fixed;
   top: 0; left: 0;
-  width: 32px; height: 32px;
-  border: 1px solid var(--fg-dark);
-  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
-  transition: width 0.25s, height 0.25s, background 0.25s, border-color 0.25s;
-  mix-blend-mode: difference;
   will-change: transform;
 }
-.lp-cursor-dot {
-  position: fixed;
-  top: 0; left: 0;
-  width: 4px; height: 4px;
-  background: var(--fg-dark);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10000;
-  transform: translate(-50%, -50%);
-  mix-blend-mode: difference;
-  will-change: transform;
-}
-.lp-cursor.is-hover {
-  width: 64px; height: 64px;
-  background: var(--accent);
-  border-color: var(--accent);
-  mix-blend-mode: normal;
-}
-.lp-cursor.is-hover ~ .lp-cursor-dot { opacity: 0; }
-.lp-cursor.is-text { width: 80px; height: 80px; }
 
 @media (hover: none), (pointer: coarse) {
-  .lp-cursor, .lp-cursor-dot { display: none; }
+  .lp-cursor { display: none; }
 }
 
 /* ---------- NAV ---------- */
@@ -86,6 +63,10 @@
   border-bottom-color: var(--line-dark);
   padding-top: calc(18px + env(safe-area-inset-top, 0px));
   padding-bottom: 18px;
+}
+.lp-nav--transparent {
+  background: transparent;
+  border-bottom-color: transparent;
 }
 .lp-nav__logo {
   font-family: var(--display);
@@ -168,12 +149,20 @@
   background: var(--bg-dark);
   overflow: hidden;
 }
+.lp-hero__field-frame {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 72px;
+}
 .lp-hero__overlay {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0.42) 45%, rgba(10, 10, 10, 0.25) 100%);
+  background: linear-gradient(90deg, rgba(10, 10, 10, 0.25) 0%, rgba(10, 10, 10, 0.18) 45%, rgba(10, 10, 10, 0.1) 100%);
 }
 .lp-hero__inner {
   position: relative;
@@ -186,7 +175,7 @@
 .lp-hero__title {
   font-family: var(--display);
   font-weight: 900;
-  font-size: clamp(64px, 11vw, 200px);
+  font-size: clamp(56px, 9.6vw, 175px);
   line-height: 0.92;
   letter-spacing: -0.04em;
   text-transform: uppercase;
@@ -310,8 +299,42 @@
 @media (max-width: 1100px) { .lp-hero__side { display: none; } }
 
 @media (max-width: 800px) {
-  .lp-hero { padding: 96px 0 48px; justify-content: flex-start; min-height: auto; }
+  .lp-hero {
+    padding: 0;
+    min-height: 100dvh;
+    height: 100dvh;
+  }
   .lp-hero__inner { padding: 0 24px; }
+  /* O gramado (fundo verde) do LandingHeroField continua em tela cheia —
+     só o bloco de linhas/jogadores/bola é que gira 90° para virar retrato
+     no mobile, centralizado e usando toda a largura lateral disponível. */
+  .lp-hero__field-frame {
+    inset: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .lp-hero__field-frame .lp-hero__field-lines {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    aspect-ratio: 2 / 1;
+    height: calc(100vw - 40px);
+    width: auto;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  /* O bloco do campo gira 90°, então "esquerda" antes da rotação vira
+     "acima" depois — reposicionamos o rótulo para a esquerda do círculo e
+     giramos -90° para o texto voltar a ficar na horizontal, legível. */
+  .lp-hero__player-label {
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    margin-right: 0 !important;
+    transform: translate(-50%, -50%) translateX(-22px) rotate(-90deg) !important;
+    transform-origin: center !important;
+  }
   .lp-hero__lead { font-size: 16px; }
   .lp-btn { padding: 16px 22px; font-size: 11px; }
   .lp-hero__scroll { display: none; }

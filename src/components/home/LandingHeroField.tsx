@@ -155,64 +155,69 @@ export function LandingHeroField() {
         }}
       />
 
-      {/* Marcações do campo */}
-      <div className="absolute inset-[6%] rounded-sm border border-white/30" />
-      <div className="absolute left-1/2 top-[6%] bottom-[6%] w-px -translate-x-1/2 bg-white/30" />
-      <div className="absolute left-1/2 top-1/2 aspect-square w-[20%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30" />
-      <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/35" />
-      <div className="absolute left-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-l-0 border-white/30" />
-      <div className="absolute left-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-l-0 border-white/30" />
-      <div className="absolute right-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-r-0 border-white/30" />
-      <div className="absolute right-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-r-0 border-white/30" />
+      {/* Bloco do gramado (linhas, jogadores e bola) — deslocado um pouco do
+          topo para não colar no menu, sem afetar o fundo verde, que segue
+          ocupando 100% da altura. */}
+      <div className="lp-hero__field-lines absolute inset-0 top-14">
+        {/* Marcações do campo */}
+        <div className="absolute inset-[6%] rounded-sm border border-white/30" />
+        <div className="absolute left-1/2 top-[6%] bottom-[6%] w-px -translate-x-1/2 bg-white/30" />
+        <div className="absolute left-1/2 top-1/2 aspect-square w-[20%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30" />
+        <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/35" />
+        <div className="absolute left-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-l-0 border-white/30" />
+        <div className="absolute left-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-l-0 border-white/30" />
+        <div className="absolute right-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-r-0 border-white/30" />
+        <div className="absolute right-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-r-0 border-white/30" />
 
-      {/* Jogadores (botões) — a div animada tem o mesmo tamanho do círculo,
-          então o -translate-x/y-1/2 centraliza exatamente sobre a bola. */}
-      {PLAYERS.map((player) => (
+        {/* Jogadores (botões) — a div animada tem o mesmo tamanho do círculo,
+            então o -translate-x/y-1/2 centraliza exatamente sobre a bola. */}
+        {PLAYERS.map((player) => (
+          <motion.div
+            key={player.name}
+            className="absolute h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 sm:h-[26px] sm:w-[26px]"
+            initial={{ left: pct(player.left[0]), top: pct(player.top[0]) }}
+            animate={{
+              left: player.left.map(pct),
+              top: player.top.map(pct),
+            }}
+            transition={{
+              duration: DURATION,
+              times: player.times,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+          >
+            <span className="lp-hero__player-label absolute left-1/2 top-[-15px] -translate-x-1/2 whitespace-nowrap font-mono text-[9px] uppercase tracking-widest text-white/80 sm:top-[-17px] sm:text-[10px]">
+              {player.name}
+            </span>
+            <span
+              className="block h-full w-full rounded-full border-[3px] border-white"
+              style={{
+                backgroundColor: "#E63946",
+                boxShadow:
+                  "inset 0 -2px 3px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.35), 0 2px 4px rgba(0,0,0,0.5)",
+              }}
+            />
+          </motion.div>
+        ))}
+
+        {/* Bola */}
         <motion.div
-          key={player.name}
-          className="absolute h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 sm:h-[26px] sm:w-[26px]"
-          initial={{ left: pct(player.left[0]), top: pct(player.top[0]) }}
+          className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.6), inset 0 -1px 1px rgba(0,0,0,0.25)" }}
+          initial={{ left: BALL.left[0], top: BALL.top[0] }}
           animate={{
-            left: player.left.map(pct),
-            top: player.top.map(pct),
+            left: BALL.left,
+            top: BALL.top,
           }}
           transition={{
             duration: DURATION,
-            times: player.times,
+            times: BALL.times,
             ease: "easeInOut",
             repeat: Infinity,
           }}
-        >
-          <span className="absolute left-1/2 top-[-15px] -translate-x-1/2 whitespace-nowrap font-mono text-[9px] uppercase tracking-widest text-white/80 sm:top-[-17px] sm:text-[10px]">
-            {player.name}
-          </span>
-          <span
-            className="block h-full w-full rounded-full border-[3px] border-white"
-            style={{
-              backgroundColor: "#E63946",
-              boxShadow:
-                "inset 0 -2px 3px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.35), 0 2px 4px rgba(0,0,0,0.5)",
-            }}
-          />
-        </motion.div>
-      ))}
-
-      {/* Bola */}
-      <motion.div
-        className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.6), inset 0 -1px 1px rgba(0,0,0,0.25)" }}
-        initial={{ left: BALL.left[0], top: BALL.top[0] }}
-        animate={{
-          left: BALL.left,
-          top: BALL.top,
-        }}
-        transition={{
-          duration: DURATION,
-          times: BALL.times,
-          ease: "easeInOut",
-          repeat: Infinity,
-        }}
-      />
+        />
+      </div>
     </div>
   );
 }
