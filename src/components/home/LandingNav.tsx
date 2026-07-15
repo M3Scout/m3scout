@@ -30,26 +30,28 @@ export function LandingNav() {
   return (
     <div className="lp-root">
       <header className={`lp-nav ${scrolled ? "is-scrolled" : ""} ${transparent ? "lp-nav--transparent" : ""} ${hideMobile ? "lp-nav--hide-mobile" : ""} ${hideMobileAtTop ? "lp-nav--hide-mobile-at-top" : ""}`}>
-        <div className="lp-nav__inner">
-          {/* Spacer for mobile centering */}
-          <div className="lp-nav__spacer lg:hidden" />
+        <div className="lp-nav__bar">
+          <div className="lp-nav__inner">
+            {/* Spacer for mobile centering */}
+            <div className="lp-nav__spacer lg:hidden" />
 
-          <Link to="/" className="lp-nav__logo" aria-label="M3 Agency">
-            <img src={logoM3} alt="M3 Agency" className="lp-nav__logo-img" width={90} height={36} />
-          </Link>
+            <Link to="/" className="lp-nav__logo" aria-label="M3 Agency">
+              <img src={logoM3} alt="M3 Agency" className="lp-nav__logo-img" width={90} height={36} />
+            </Link>
 
-          <nav className="lp-nav__links" aria-label="Navegação principal">
-            {navLinks.map((l) => (
-              <Link key={l.href} to={l.href} className="lp-nav__link">
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+            <nav className="lp-nav__links" aria-label="Navegação principal">
+              {navLinks.map((l) => (
+                <Link key={l.href} to={l.href} className="lp-nav__link">
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
 
-          <Link to="/dashboard/auth" className="lp-nav__cta">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Área Restrita
-          </Link>
+            <Link to="/dashboard/auth" className="lp-nav__cta">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Área Restrita
+            </Link>
+          </div>
         </div>
       </header>
     </div>
