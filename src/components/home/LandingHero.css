@@ -329,17 +329,22 @@
     padding: 0;
   }
   .lp-hero__field-frame .lp-hero__field-lines {
-    top: 50%;
+    /* Recentraliza dentro da zona "segura" (descontando a área do notch em
+       cima e a barra de baixo), em vez do centro literal da tela — em
+       navegador comum os dois env() são 0 e isso vira 50% normal, sem
+       efeito nenhum; só atua de verdade no PWA instalado. */
+    top: calc(50% + (env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2);
     left: 50%;
     right: auto;
     bottom: auto;
     /* "height" aqui vira a LARGURA final (depois de girar 90°) — sempre
        preenche quase toda a lateral, sem mudar. "width" aqui vira a
        ALTURA final — limitada ao espaço vertical realmente disponível,
-       para não ficar atrás da logo em cima nem da barra debaixo. As duas
-       dimensões são independentes (sem aspect-ratio) de propósito. */
+       descontando também o notch/barra do PWA, para não ficar atrás da
+       logo em cima nem da barra debaixo. As duas dimensões são
+       independentes (sem aspect-ratio) de propósito. */
     height: calc(100vw - 48px);
-    width: min(calc((100vw - 48px) * 3), calc(100dvh - 48px));
+    width: min(calc((100vw - 48px) * 3), calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
     transform: translate(-50%, -50%) rotate(90deg);
   }
   /* A borda do campo tem um recuo de 6% pensado pra tela cheia do desktop.
