@@ -100,6 +100,63 @@ function isAttackingPosition(position: string): boolean {
 }
 
 // =====================================================
+// PERFORMANCE POSITION GROUPS (7-way, used only by Pillar 2)
+// =====================================================
+//
+// Finer-grained than isGoalkeeper/isDefensivePosition/isAttackingPosition
+// above (which still drive Idade & Perfil) because cruzamento only makes
+// sense for Lateral (not Zagueiro) and Ponta (not Centroavante), and
+// duelo/roubada de bola only make sense for whoever actually defends.
+
+type PerformancePositionGroup = 'goleiro' | 'zagueiro' | 'lateral' | 'volante' | 'meia' | 'ponta' | 'centroavante';
+
+function getPerformancePositionGroup(position: string): PerformancePositionGroup {
+  const normalized = position.toLowerCase().trim();
+  if (['goleiro', 'gk', 'goalkeeper'].some(p => normalized.includes(p))) return 'goleiro';
+  if (['zagueiro', 'cb', 'center back', 'defensor central'].some(p => normalized.includes(p))) return 'zagueiro';
+  if (['lateral direito', 'lateral esquerdo', 'rb', 'lb'].some(p => normalized.includes(p))) return 'lateral';
+  if (['volante', 'cdm', 'dm', 'primeiro volante'].some(p => normalized.includes(p))) return 'volante';
+  if (['ponta direita', 'ponta esquerda', 'rw', 'lw', 'meia atacante', 'cam', 'armador'].some(p => normalized.includes(p))) return 'ponta';
+  if (['centroavante', 'atacante', 'st', 'cf', 'striker', 'forward', 'segundo atacante'].some(p => normalized.includes(p))) return 'centroavante';
+  return 'meia'; // "Meia", "Meia Central", or anything unrecognized
+}
+
+// Per-90 rates that earn a full 100 on that single stat — taken from the
+// benchmarks already calibrated for the site's attribute radar
+// (calculateAttributeScores.ts), so a "good" number here means the same
+// thing it means everywhere else on the platform, not a value invented
+// just for this formula.
+const PERF_BENCHMARKS = {
+  goals: 0.60,
+  assists: 0.30,
+  shotsOnTarget: 1.80,
+  shotsTotal: 4.00,
+  chancesCreated: 0.60,
+  keyPasses: 1.50,
+  crossesSuccess: 1.00,
+  dribblesSuccess: 2.00,
+  tackles: 2.00,
+  interceptions: 1.20,
+  recoveries: 4.50,
+  steals: 1.50,
+  clearances: 1.50,
+  groundDuelsWon: 2.50,
+  aerialDuelsWon: 1.50,
+  possessionLost: 15.0, // negative signal
+  wasDribbled: 2.80,    // negative signal
+  penaltiesWon: 0.10,
+  // Lower bar for goals/assists from Zagueiro/Lateral/Volante — it's genuinely
+  // harder for these positions to score/assist than for an attacker, so
+  // holding them to the attacker's 0.60/0.30 benchmark would make a real,
+  // valuable contribution (e.g. a header off a corner) register as ~nothing.
+  goalsDefensive: 0.15,
+  assistsDefensive: 0.12,
+};
+
+const scoreRate = (statP90: number, benchmark: number) => Math.min(100, (statP90 / benchmark) * 100);
+const scoreNegRate = (statP90: number, benchmark: number) => Math.max(0, 100 - (statP90 / benchmark) * 100);
+
+// =====================================================
 // PILLAR 1: AGE & EVOLUTION WINDOW (25%)
 // =====================================================
 
@@ -188,63 +245,110 @@ function calculatePerformanceImpactScore(
 
   const {
     goals, assists, keyPasses, chancesCreated,
-    tackles, interceptions, clearances
+    tackles, interceptions, clearances, recoveries,
+    steals, groundDuelsWon, aerialDuelsWon, crossesSuccess, dribblesSuccess,
+    possessionLost, wasDribbled, penaltiesWon, shots, shotsOnTarget,
   } = seasonStats;
 
-  const matches = Math.max(seasonStats.matches, 1);
   const minutes = Math.max(seasonStats.minutes, 1);
-  // p90 multiplier: stat * per90 = stat per 90 minutes
-  const per90 = 90 / (minutes / matches);
+  // p90 multiplier: stat * per90 = stat per 90 minutes of the WHOLE SEASON.
+  const per90 = 90 / minutes;
+  const p = (stat: number) => stat * per90;
+  const B = PERF_BENCHMARKS;
 
+  const group = getPerformancePositionGroup(position);
   let decisiveActionsScore = 0;
-  const isGK = isGoalkeeper(position);
-  const isDefensive = isDefensivePosition(position);
-  const isAttacking = isAttackingPosition(position);
+  let reasoning = '';
 
-  if (isGK) {
-    // Goalkeeper: defensive contributions p90
-    // Benchmark: ~3 defensive contributions/90 → score ~85
-    const defContrib90 = (clearances + interceptions) * per90;
+  if (group === 'goleiro') {
+    // Unchanged — defensive contributions p90.
+    const defContrib90 = p(clearances + interceptions);
     decisiveActionsScore = Math.min(100, defContrib90 * 15 + 40);
-  } else if (isDefensive) {
-    // Defender: defensive actions p90 + offensive bonus
-    // Benchmark: ~5 def actions/90 → score ~60; ~8/90 → ~84
-    const defActions90 = (tackles + interceptions + clearances) * per90;
-    const offBonus90 = (goals * 10 + assists * 8) * per90;
-    decisiveActionsScore = Math.min(100, defActions90 * 8 + offBonus90 + 20);
-  } else if (isAttacking) {
-    // Attacker: goals+assists p90 most important, then creation
-    // Benchmark: 0.5 G+A/90 → score ~60; 1.0 G+A/90 → score ~85
-    const g90 = goals * per90;
-    const a90 = assists * per90;
-    const cc90 = chancesCreated * per90;
-    const kp90 = keyPasses * per90;
-    decisiveActionsScore = Math.min(100, g90 * 25 + a90 * 20 + cc90 * 8 + kp90 * 5 + 15);
+    reasoning = `${clearances + interceptions} contribuições def. | ${defContrib90.toFixed(2)}/90.`;
+
+  } else if (group === 'zagueiro') {
+    decisiveActionsScore =
+      scoreRate(p(groundDuelsWon), B.groundDuelsWon) * 0.16 +
+      scoreRate(p(aerialDuelsWon), B.aerialDuelsWon) * 0.16 +
+      scoreRate(p(steals), B.steals) * 0.24 +
+      scoreRate(p(tackles + interceptions + clearances), B.tackles + B.interceptions + B.clearances) * 0.19 +
+      scoreRate(p(goals), B.goalsDefensive) * 0.03 +
+      scoreRate(p(assists), B.assistsDefensive) * 0.03 +
+      scoreNegRate(p(possessionLost), B.possessionLost) * 0.07 +
+      scoreNegRate(p(wasDribbled), B.wasDribbled) * 0.06 +
+      scoreRate(p(penaltiesWon), B.penaltiesWon) * 0.06;
+    reasoning = `${groundDuelsWon} duelo(s) de chão, ${aerialDuelsWon} aéreo(s), ${steals} roubada(s) de bola, ${tackles}+${interceptions}+${clearances} desarmes/interc./cortes, ${goals}G, ${assists}A, ${penaltiesWon} pênalti(s) sofrido(s), ${possessionLost} bola(s) perdida(s), ${wasDribbled} vez(es) driblado.`;
+
+  } else if (group === 'lateral') {
+    decisiveActionsScore =
+      scoreRate(p(groundDuelsWon), B.groundDuelsWon) * 0.13 +
+      scoreRate(p(aerialDuelsWon), B.aerialDuelsWon) * 0.09 +
+      scoreRate(p(steals), B.steals) * 0.17 +
+      scoreRate(p(tackles + interceptions + clearances), B.tackles + B.interceptions + B.clearances) * 0.15 +
+      scoreRate(p(crossesSuccess), B.crossesSuccess) * 0.14 +
+      scoreRate(p(goals), B.goalsDefensive) * 0.05 +
+      scoreRate(p(assists), B.assistsDefensive) * 0.05 +
+      scoreRate(p(chancesCreated), B.chancesCreated) * 0.05 +
+      scoreNegRate(p(possessionLost), B.possessionLost) * 0.07 +
+      scoreNegRate(p(wasDribbled), B.wasDribbled) * 0.05 +
+      scoreRate(p(penaltiesWon), B.penaltiesWon) * 0.05;
+    reasoning = `${crossesSuccess} cruzamento(s) certo(s), ${steals} roubada(s) de bola, ${groundDuelsWon} duelo(s) de chão, ${aerialDuelsWon} aéreo(s), ${tackles}+${interceptions}+${clearances} desarmes/interc./cortes, ${goals}G, ${assists}A, ${chancesCreated} chance(s) criada(s), ${penaltiesWon} pênalti(s) sofrido(s), ${possessionLost} bola(s) perdida(s), ${wasDribbled} vez(es) driblado.`;
+
+  } else if (group === 'volante') {
+    decisiveActionsScore =
+      scoreRate(p(steals), B.steals) * 0.19 +
+      scoreRate(p(tackles + interceptions), B.tackles + B.interceptions) * 0.17 +
+      scoreRate(p(groundDuelsWon), B.groundDuelsWon) * 0.11 +
+      scoreRate(p(aerialDuelsWon), B.aerialDuelsWon) * 0.08 +
+      scoreRate(p(keyPasses), B.keyPasses) * 0.11 +
+      scoreRate(p(chancesCreated), B.chancesCreated) * 0.09 +
+      scoreRate(p(goals), B.goalsDefensive) * 0.03 +
+      scoreRate(p(assists), B.assistsDefensive) * 0.03 +
+      scoreNegRate(p(possessionLost), B.possessionLost) * 0.08 +
+      scoreNegRate(p(wasDribbled), B.wasDribbled) * 0.06 +
+      scoreRate(p(penaltiesWon), B.penaltiesWon) * 0.05;
+    reasoning = `${steals} roubada(s) de bola, ${tackles}+${interceptions} desarmes/interc., ${groundDuelsWon} duelo(s) de chão, ${aerialDuelsWon} aéreo(s), ${keyPasses} passe(s) decisivo(s), ${chancesCreated} chance(s) criada(s), ${goals}G, ${assists}A, ${penaltiesWon} pênalti(s) sofrido(s), ${possessionLost} bola(s) perdida(s), ${wasDribbled} vez(es) driblado.`;
+
+  } else if (group === 'meia') {
+    decisiveActionsScore =
+      scoreRate(p(goals), B.goals) * 0.15 +
+      scoreRate(p(assists), B.assists) * 0.20 +
+      scoreRate(p(keyPasses), B.keyPasses) * 0.20 +
+      scoreRate(p(chancesCreated), B.chancesCreated) * 0.20 +
+      scoreRate(p(tackles + interceptions + recoveries), B.tackles + B.interceptions + B.recoveries) * 0.15 +
+      scoreRate(p(penaltiesWon), B.penaltiesWon) * 0.05 +
+      scoreNegRate(p(possessionLost), B.possessionLost) * 0.05;
+    reasoning = `${goals}G, ${assists}A, ${keyPasses} passe(s) decisivo(s), ${chancesCreated} chance(s) criada(s), ${tackles}+${interceptions}+${recoveries} desarmes/interc./recup., ${penaltiesWon} pênalti(s) sofrido(s), ${possessionLost} bola(s) perdida(s).`;
+
+  } else if (group === 'ponta') {
+    decisiveActionsScore =
+      scoreRate(p(goals), B.goals) * 0.15 +
+      scoreRate(p(shotsOnTarget), B.shotsOnTarget) * 0.10 +
+      scoreRate(p(assists), B.assists) * 0.15 +
+      scoreRate(p(chancesCreated), B.chancesCreated) * 0.15 +
+      scoreRate(p(keyPasses), B.keyPasses) * 0.10 +
+      scoreRate(p(crossesSuccess), B.crossesSuccess) * 0.15 +
+      scoreRate(p(dribblesSuccess), B.dribblesSuccess) * 0.15 +
+      scoreRate(p(penaltiesWon), B.penaltiesWon) * 0.05;
+    reasoning = `${goals}G, ${assists}A, ${shotsOnTarget} finalização(ões) no gol, ${dribblesSuccess} drible(s) certo(s), ${crossesSuccess} cruzamento(s) certo(s), ${chancesCreated} chance(s) criada(s), ${keyPasses} passe(s) decisivo(s), ${penaltiesWon} pênalti(s) sofrido(s).`;
+
   } else {
-    // Midfielder: balanced contributions p90
-    // Benchmark: 0.3 G+A/90 + 4 def/90 → score ~60
-    const g90 = goals * per90;
-    const a90 = assists * per90;
-    const kp90 = keyPasses * per90;
-    const defActions90 = (tackles + interceptions + seasonStats.recoveries) * per90;
-    decisiveActionsScore = Math.min(100, g90 * 20 + a90 * 15 + kp90 * 8 + defActions90 * 5 + 20);
+    // centroavante
+    decisiveActionsScore =
+      scoreRate(p(goals), B.goals) * 0.35 +
+      scoreRate(p(shotsOnTarget), B.shotsOnTarget) * 0.15 +
+      scoreRate(p(shots), B.shotsTotal) * 0.05 +
+      scoreRate(p(assists), B.assists) * 0.10 +
+      scoreRate(p(chancesCreated), B.chancesCreated) * 0.10 +
+      scoreRate(p(keyPasses), B.keyPasses) * 0.05 +
+      scoreRate(p(aerialDuelsWon), B.aerialDuelsWon) * 0.10 +
+      scoreNegRate(p(possessionLost), B.possessionLost) * 0.05 +
+      scoreRate(p(penaltiesWon), B.penaltiesWon) * 0.05; // low weight — common for a striker to draw fouls in the box
+    reasoning = `${goals}G, ${shotsOnTarget}/${shots} finalização(ões) no gol/total, ${assists}A, ${chancesCreated} chance(s) criada(s), ${keyPasses} passe(s) decisivo(s), ${aerialDuelsWon} duelo(s) aéreo(s), ${penaltiesWon} pênalti(s) sofrido(s), ${possessionLost} bola(s) perdida(s).`;
   }
 
   // 100% stats-based — no rating weight
   const combinedScore = decisiveActionsScore;
-
-  let reasoning = '';
-  if (isAttacking) {
-    reasoning = `${goals}G + ${assists}A | ${(goals * per90).toFixed(2)}G/90 + ${(assists * per90).toFixed(2)}A/90.`;
-  } else if (isDefensive) {
-    const defTotal = tackles + interceptions + clearances;
-    reasoning = `${defTotal} ações def. | ${(defTotal * per90).toFixed(2)}/90.`;
-  } else if (isGK) {
-    const defContrib = clearances + interceptions;
-    reasoning = `${defContrib} contribuições def. | ${(defContrib * per90).toFixed(2)}/90.`;
-  } else {
-    reasoning = `${goals}G + ${assists}A | ${(keyPasses * per90).toFixed(2)} passes dec./90.`;
-  }
 
   return {
     matchesAnalyzed: seasonStats.matches,
@@ -271,9 +375,14 @@ function calculatePerformanceImpactScore(
 // =====================================================
 
 function calculateCompetitiveContextScore(
-  matchRatings: ActivePlayerData['matchRatings']
+  competitionBreakdown: ActivePlayerData['competitionBreakdown']
 ): CompetitiveContextDetails {
-  if (matchRatings.length === 0) {
+  // Weight by minutes across EVERY competition with data this season — live
+  // or manual. Using matchRatings alone (as this used to) made manual-only
+  // competitions (no live-tracked match) invisible to this pillar entirely.
+  const withMinutes = competitionBreakdown.filter(c => c.minutes > 0 && c.coefficient > 0);
+
+  if (withMinutes.length === 0) {
     return {
       competitionsPlayed: [],
       averageCompetitionCoefficient: 0,
@@ -282,38 +391,23 @@ function calculateCompetitiveContextScore(
       reasoning: 'Sem jogos registrados em competições.',
     };
   }
-  
-  const coefficients = matchRatings
-    .filter(m => m.competitionCoefficient > 0)
-    .map(m => m.competitionCoefficient);
-  
-  if (coefficients.length === 0) {
-    return {
-      competitionsPlayed: [],
-      averageCompetitionCoefficient: 1.0,
-      highestCoefficient: 1.0,
-      contextScore: 50, // Neutral score when coefficients not available
-      reasoning: 'Coeficientes de competição não disponíveis.',
-    };
-  }
-  
-  const avgCoeff = coefficients.reduce((a, b) => a + b, 0) / coefficients.length;
-  const maxCoeff = Math.max(...coefficients);
-  
-  // Competition IDs played
-  const competitionIds = [...new Set(matchRatings.map(m => m.competitionId).filter(Boolean))] as string[];
-  
+
+  const totalMinutes = withMinutes.reduce((sum, c) => sum + c.minutes, 0);
+  const avgCoeff = withMinutes.reduce((sum, c) => sum + c.coefficient * c.minutes, 0) / totalMinutes;
+  const maxCoeff = Math.max(...withMinutes.map(c => c.coefficient));
+  const competitionIds = [...new Set(withMinutes.map(c => c.competitionId).filter(Boolean))] as string[];
+
   // Convert coefficient to score (assuming coefficient ranges from 0.5 to 2.0)
   // Coefficient 1.0 = 50, 1.5 = 75, 2.0 = 100, 0.5 = 25
   const contextScore = clamp((avgCoeff - 0.5) * 50 + 25, 20, 100);
-  
-  let reasoning = `Coeficiente médio de ${avgCoeff.toFixed(2)}`;
+
+  let reasoning = `Coeficiente médio de ${avgCoeff.toFixed(2)} (ponderado por minutos em ${competitionIds.length} competiç${competitionIds.length > 1 ? 'ões' : 'ão'})`;
   if (maxCoeff > avgCoeff * 1.1) {
     reasoning += `, máximo de ${maxCoeff.toFixed(2)} em competição de maior nível.`;
   } else {
     reasoning += '.';
   }
-  
+
   return {
     competitionsPlayed: competitionIds,
     averageCompetitionCoefficient: Math.round(avgCoeff * 100) / 100,
@@ -355,14 +449,18 @@ function calculateConsistencyReliabilityScore(
   }
   
   // Base score components
-  let consistencyScore = 50; // Start neutral
-  
-  // 1. Minutes played factor (25% of score)
+  // 4 factors of up to 25 points each = 100 max. (Previously started at 50
+  // AND summed 4×25 on top AND multiplied the whole thing by samplePenalty
+  // again at the end — max theoretical was 150 pre-clamp, so almost anyone
+  // with decent minutes saturated the 100 cap regardless of real quality.)
+  let consistencyScore = 0;
+
+  // 1. Minutes played factor (up to 25 points)
   // 90 mins/match = max, 45 mins = 50%, less = penalty
   const minutesFactor = Math.min(minutesPerMatch / 90, 1.0);
   consistencyScore += minutesFactor * 25;
-  
-  // 2. Rating consistency factor (25% of score)
+
+  // 2. Rating consistency factor (up to 25 points)
   // Low variance = good, high variance = bad
   if (ratingVariance !== null) {
     // Variance of 0.5 or less = excellent, 1.5+ = poor
@@ -371,17 +469,16 @@ function calculateConsistencyReliabilityScore(
   } else {
     consistencyScore += 10; // Partial credit if not enough data
   }
-  
-  // 3. Recent activity (25% of score)
+
+  // 3. Recent activity (up to 25 points)
   // 4+ matches in last 30 days = excellent, 0 = poor
   const activityFactor = Math.min(matchesLast30Days / 4, 1.0);
   consistencyScore += activityFactor * 25;
-  
-  // 4. Sample size bonus (up to 25%)
+
+  // 4. Sample size / total minutes this season (up to 25 points)
   consistencyScore += samplePenalty * 25;
-  
-  // Cap and apply final penalty
-  consistencyScore = clamp(consistencyScore * samplePenalty, 10, 100);
+
+  consistencyScore = clamp(consistencyScore, 10, 100);
   
   let reasoning = `${matches} jogos, ${Math.round(minutesPerMatch)} min/jogo.`;
   if (ratingVariance !== null) {
@@ -429,10 +526,9 @@ function calculateMarketProfileScore(
   let positionFitScore = 50; // Neutral start
   const keyTraits: string[] = [];
   
-  const matches = Math.max(seasonStats.matches, 1);
   const minutes = Math.max(seasonStats.minutes, 1);
-  const per90 = 90 / (minutes / matches);
-  
+  const per90 = 90 / minutes; // Same fix as calculatePerformanceImpactScore.
+
   if (isGoalkeeper(position)) {
     // GK: aerial duels, clearances
     const aerialWinRate = seasonStats.aerialDuelsTotal > 0
@@ -589,7 +685,7 @@ export function computeMarketScoreActive(
   // Calculate each pillar
   const ageWindowDetails = calculateAgeWindowScore(data.age, data.position);
   const performanceImpactDetails = calculatePerformanceImpactScore(data);
-  const competitiveContextDetails = calculateCompetitiveContextScore(data.matchRatings);
+  const competitiveContextDetails = calculateCompetitiveContextScore(data.competitionBreakdown);
   const consistencyReliabilityDetails = calculateConsistencyReliabilityScore(data);
   const marketProfileDetails = calculateMarketProfileScore(data);
   

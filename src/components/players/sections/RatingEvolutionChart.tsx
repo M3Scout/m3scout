@@ -5,8 +5,8 @@ import { Loader2, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -16,6 +16,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatFixed } from "@/lib/formatters";
+import { RATING_SCALE_CUTOVER } from "@/lib/ratingScale";
 
 interface RatingHistoryEntry {
   id: string;
@@ -29,14 +30,13 @@ interface RatingEvolutionChartProps {
   currentRating: number | null;
 }
 
-// ── Cor por nota (escala Sofascore 0-10) ─────────────────────────────────────
+// ── Cor por nota (escala M3 0-100, mesma paleta do Market Score) ─────────────
 function getMatchRatingColor(rating: number): string {
-  if (rating >= 9.0) return "#1e3a8a"; // azul escuro — excepcional
-  if (rating >= 8.0) return "#06b6d4"; // ciano      — ótimo
-  if (rating >= 7.0) return "#22c55e"; // verde      — bom
-  if (rating >= 6.5) return "#eab308"; // amarelo    — médio-alto
-  if (rating >= 6.0) return "#f97316"; // laranja    — médio-baixo
-  return "#ef4444";                    // vermelho   — fraco
+  if (rating >= 85) return "#2DCE8A"; // elite
+  if (rating >= 70) return "#4ade80"; // alto
+  if (rating >= 50) return "#E8C84A"; // médio
+  if (rating >= 30) return "#f97316"; // baixo
+  return "#ef4444";                   // muito baixo
 }
 
 // ── Dot customizado com badge flutuante ───────────────────────────────────────
@@ -101,6 +101,8 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
       .from("player_rating_history")
       .select("*")
       .eq("player_id", playerId)
+      // Only the current 0-99 scale — see RATING_SCALE_CUTOVER for why.
+      .gte("recorded_at", RATING_SCALE_CUTOVER)
       .order("recorded_at", { ascending: true });
 
     setHistory(Array.isArray(data) ? data : []);
@@ -191,10 +193,17 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
         {/* Gráfico — margem top alta para as badges não serem cortadas */}
         <div className="h-44 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={chartData}
               margin={{ top: 36, right: 12, bottom: 0, left: -25 }}
             >
+              <defs>
+                <linearGradient id="rating-evolution-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor={lastColor} stopOpacity={0.45} />
+                  <stop offset="60%"  stopColor={lastColor} stopOpacity={0.12} />
+                  <stop offset="100%" stopColor={lastColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <XAxis
                 dataKey="date"
                 stroke="transparent"
@@ -204,8 +213,8 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
                 tick={{ fill: "hsl(240,5%,40%)" }}
               />
               <YAxis
-                domain={[3, 10]}
-                ticks={[4, 5, 6, 7, 8, 9, 10]}
+                domain={[0, 100]}
+                ticks={[0, 25, 50, 75, 100]}
                 stroke="transparent"
                 fontSize={9}
                 tickLine={false}
@@ -213,22 +222,23 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
                 tick={{ fill: "hsl(240,5%,40%)" }}
               />
               <Tooltip content={<CustomTooltip />} />
-              {/* Linha de referência na nota 7 */}
+              {/* Linha de referência na nota 50 (limiar "Médio") */}
               <ReferenceLine
-                y={7}
+                y={50}
                 stroke="hsl(240,5%,22%)"
                 strokeDasharray="4 4"
                 strokeWidth={1}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="rating"
-                stroke="#ffffff22"
-                strokeWidth={1.5}
+                stroke={lastColor}
+                strokeWidth={2}
+                fill="url(#rating-evolution-gradient)"
                 dot={<CustomDot />}
                 activeDot={false}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 

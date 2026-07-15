@@ -4,10 +4,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft, Upload, User, Shield, Loader2, Trash2, Activity, Target,
-  Stethoscope, FileText, Eye, X, Plus, BarChart3, Check,
+  Stethoscope, FileText, Eye, X, Plus, BarChart3, Check, ChevronDown,
 } from "lucide-react";
 import { PlayerStatsForm } from "@/components/players/PlayerStatsForm";
 import { toast } from "sonner";
@@ -151,7 +152,7 @@ const initialFormData: FormData = {
 
 // ─── DESIGN PRIMITIVES ────────────────────────────────────────────────────────
 
-const inputCls = "w-full h-[52px] bg-zinc-800/80 border border-zinc-700/60 rounded-xl px-4 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all";
+const inputCls = "w-full h-11 bg-zinc-800/80 border border-zinc-700/60 rounded-xl px-4 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all";
 const textareaCls = "w-full bg-zinc-800/80 border border-zinc-700/60 rounded-xl px-4 py-3 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all resize-none";
 
 function Field({ label, required, filled, children }: {
@@ -178,8 +179,8 @@ function SectionCard({ icon: Icon, title, children, className }: {
   icon: React.ElementType; title: string; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={cn("bg-zinc-900 rounded-3xl p-6 lg:p-8 border border-zinc-800/80", className)}>
-      <div className="flex items-center gap-3 mb-6">
+    <div className={cn("bg-zinc-900 rounded-3xl p-5 lg:p-6 border border-zinc-800/80", className)}>
+      <div className="flex items-center gap-3 mb-4">
         <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
           <Icon className="w-4 h-4 text-red-400" />
         </div>
@@ -220,9 +221,6 @@ export default function EditPlayer() {
     { id: "physical",   label: "Físico",         icon: Activity },
     { id: "technical",  label: "Técnico",        icon: Target },
     { id: "stats",      label: "Estatísticas",   icon: BarChart3 },
-    { id: "medical",    label: "Médico",         icon: Stethoscope },
-    { id: "contract",   label: "Contrato",       icon: FileText },
-    ...(isAdmin ? [{ id: "evaluation", label: "Avaliação", icon: Eye }] : []),
   ], [isAdmin]);
 
   const profileProgress = useMemo(() => {
@@ -497,7 +495,7 @@ export default function EditPlayer() {
             />
             <button type="button"
               onClick={() => { addTag(field, newTag[tagKey] || ""); setNewTag(p => ({ ...p, [tagKey]: "" })); }}
-              className="w-[52px] h-[52px] bg-zinc-800 border border-zinc-700/60 rounded-xl flex items-center justify-center text-zinc-300 hover:text-white hover:border-zinc-600 transition-all flex-shrink-0">
+              className="w-11 h-11 bg-zinc-800 border border-zinc-700/60 rounded-xl flex items-center justify-center text-zinc-300 hover:text-white hover:border-zinc-600 transition-all flex-shrink-0">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -513,7 +511,7 @@ export default function EditPlayer() {
 
       {/* ── Sticky Header ── */}
       <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -554,7 +552,7 @@ export default function EditPlayer() {
 
       <form onSubmit={handleSubmit}>
         {/* ── Tab Bar ── */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
           <div className="flex gap-1 p-1 w-full bg-zinc-900 rounded-2xl border border-zinc-800/80 overflow-x-auto scrollbar-none">
             {TABS.map(tab => (
               <button
@@ -576,17 +574,17 @@ export default function EditPlayer() {
         </div>
 
         {/* ── Tab Content ── */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 space-y-4">
 
           {/* ── BÁSICO ── */}
           {activeTab === "basic" && (
-            <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+            <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
 
               {/* Photo upload */}
               <SectionCard icon={Upload} title="Foto do Atleta">
                 <div
                   className={cn(
-                    "aspect-[3/4] relative rounded-2xl border-2 border-dashed overflow-hidden cursor-pointer transition-all duration-200",
+                    "aspect-[4/5] relative rounded-2xl border-2 border-dashed overflow-hidden cursor-pointer transition-all duration-200",
                     dragActive ? "border-red-500 bg-red-500/5 scale-[1.01]" : "border-zinc-700 bg-zinc-800/40 hover:border-zinc-600"
                   )}
                   onDragOver={e => { e.preventDefault(); setDragActive(true); }}
@@ -629,19 +627,9 @@ export default function EditPlayer() {
                       <input className={inputCls} value={formData.full_name} onChange={e => handleChange("full_name", e.target.value)} placeholder="Ex: João Silva" required />
                     </Field>
                   </div>
-                  <Field label="Posição Principal" required filled={!!formData.position}>
-                    <Select value={formData.position} onValueChange={val => handleChange("position", val)}>
-                      <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        {positions.map(p => <SelectItem key={p} value={p} className="text-zinc-200 focus:bg-zinc-700">{p}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </Field>
                   <Field label="Nacionalidade" required filled={!!formData.nationality}>
                     <Select value={formData.nationality} onValueChange={val => handleChange("nationality", val)}>
-                      <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                      <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -661,9 +649,6 @@ export default function EditPlayer() {
                       title="Preenchido automaticamente pelo primeiro contrato no histórico"
                     />
                   </Field>
-                  <Field label="País de Atuação">
-                    <input className={inputCls} value={formData.country} onChange={e => handleChange("country", e.target.value)} placeholder="Brasil" />
-                  </Field>
                   <div className="sm:col-span-2">
                     <Field label="Link do Vídeo de Destaque">
                       <input className={inputCls} value={formData.highlight_video_url} onChange={e => handleChange("highlight_video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
@@ -672,11 +657,6 @@ export default function EditPlayer() {
                           {extractYouTubeVideoId(formData.highlight_video_url) ? `✓ Vídeo detectado: ${extractYouTubeVideoId(formData.highlight_video_url)}` : "✗ URL inválida. Use um link do YouTube."}
                         </p>
                       )}
-                    </Field>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Field label="Biografia Pública">
-                      <textarea className={cn(textareaCls, "h-24")} value={formData.bio_public} onChange={e => handleChange("bio_public", e.target.value)} placeholder="Breve descrição do atleta para o perfil público..." />
                     </Field>
                   </div>
                   <div className="sm:col-span-2 flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
@@ -723,10 +703,60 @@ export default function EditPlayer() {
           {/* ── TÉCNICO ── */}
           {activeTab === "technical" && (
             <SectionCard icon={Target} title="Perfil Técnico">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-4">
+                <Field label="Posição Principal" required filled={!!formData.position}>
+                  <Select value={formData.position} onValueChange={val => handleChange("position", val)}>
+                    <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                      {positions.map(p => <SelectItem key={p} value={p} className="text-zinc-200 focus:bg-zinc-700">{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <div className="sm:col-span-2 lg:col-span-2">
+                  <Field label="Posição(ões) Secundária(s)" filled={formData.secondary_positions.length > 0}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="w-full h-11 flex items-center justify-between px-3 bg-zinc-800/80 border border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none"
+                        >
+                          <span className={cn("truncate text-left", formData.secondary_positions.length === 0 && "text-zinc-500")}>
+                            {formData.secondary_positions.length > 0
+                              ? formData.secondary_positions.join(", ")
+                              : "Selecione"}
+                          </span>
+                          <ChevronDown className="w-4 h-4 text-zinc-500 flex-shrink-0 ml-2" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-zinc-800 border-zinc-700 w-[--radix-dropdown-menu-trigger-width]">
+                        {positions.filter(p => p !== formData.position).map(p => {
+                          const active = formData.secondary_positions.includes(p);
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={p}
+                              checked={active}
+                              onSelect={e => e.preventDefault()}
+                              onCheckedChange={checked => handleChange(
+                                "secondary_positions",
+                                checked
+                                  ? [...formData.secondary_positions, p]
+                                  : formData.secondary_positions.filter(sp => sp !== p)
+                              )}
+                              className="text-zinc-200 focus:bg-zinc-700"
+                            >
+                              {p}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </Field>
+                </div>
                 <Field label="Pé Dominante" filled={!!formData.dominant_foot}>
                   <Select value={formData.dominant_foot} onValueChange={val => handleChange("dominant_foot", val)}>
-                    <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                    <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -736,7 +766,7 @@ export default function EditPlayer() {
                 </Field>
                 <Field label="Altura de Jogo">
                   <Select value={formData.playing_height_preference} onValueChange={val => handleChange("playing_height_preference", val)}>
-                    <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                    <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -746,7 +776,7 @@ export default function EditPlayer() {
                 </Field>
                 <Field label="Estilo de Jogo" filled={!!formData.play_style}>
                   <Select value={formData.play_style} onValueChange={val => handleChange("play_style", val)}>
-                    <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                    <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
                       <SelectValue placeholder={suggestedStyles.length ? "Ver sugestões ✨" : "Selecione"}>
                         {formData.play_style ? <span>{formData.play_style}</span> : null}
                       </SelectValue>
@@ -791,7 +821,7 @@ export default function EditPlayer() {
                 </Field>
                 <Field label="Função Tática Principal">
                   <Select value={formData.primary_tactical_role} onValueChange={val => handleChange("primary_tactical_role", val)}>
-                    <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                    <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -812,7 +842,7 @@ export default function EditPlayer() {
                 </Field>
                 <Field label="Função Tática Secundária">
                   <Select value={formData.secondary_tactical_role} onValueChange={val => handleChange("secondary_tactical_role", val)}>
-                    <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
+                    <SelectTrigger className="h-11 bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -832,7 +862,7 @@ export default function EditPlayer() {
                   </Select>
                 </Field>
               </div>
-              <div className="border-t border-zinc-800 pt-6 grid gap-6 sm:grid-cols-2">
+              <div className="border-t border-zinc-800 pt-4 grid gap-4 sm:grid-cols-2">
                 <TagInput field="strengths" label="Pontos Fortes" options={strengthOptions} color="green" />
                 <TagInput field="areas_to_develop" label="Pontos a Desenvolver" options={strengthOptions} color="amber" />
               </div>
@@ -846,138 +876,6 @@ export default function EditPlayer() {
             </div>
           )}
 
-          {/* ── MÉDICO ── */}
-          {activeTab === "medical" && (
-            <SectionCard icon={Stethoscope} title="Informações Médicas">
-              <div className="space-y-4">
-                <Field label="Status Físico" filled={!!formData.physical_status}>
-                  <Select value={formData.physical_status} onValueChange={val => handleChange("physical_status", val)}>
-                    <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-800 border-zinc-700">
-                      <SelectItem value="fit" className="text-zinc-200 focus:bg-zinc-700">✓ Apto</SelectItem>
-                      <SelectItem value="recovering" className="text-zinc-200 focus:bg-zinc-700">⚠ Em Recuperação</SelectItem>
-                      <SelectItem value="transition" className="text-zinc-200 focus:bg-zinc-700">↔ Transição</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Observações Médicas">
-                  <textarea className={cn(textareaCls, "h-32")} value={formData.medical_notes} onChange={e => handleChange("medical_notes", e.target.value)} placeholder="Notas sobre condições médicas, restrições, histórico..." />
-                </Field>
-                <p className="text-xs text-zinc-600 flex items-center gap-2">
-                  <span>💡</span> O histórico de lesões pode ser gerenciado na página de detalhes do atleta.
-                </p>
-              </div>
-            </SectionCard>
-          )}
-
-          {/* ── CONTRATO ── */}
-          {activeTab === "contract" && (
-            <SectionCard icon={FileText} title="Situação Contratual">
-              <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <Field label="Status Contratual" filled={!!formData.contract_status}>
-                    <Select value={formData.contract_status} onValueChange={val => handleChange("contract_status", val)}>
-                      <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="contracted" className="text-zinc-200 focus:bg-zinc-700">Contratado</SelectItem>
-                        <SelectItem value="free" className="text-zinc-200 focus:bg-zinc-700">Livre</SelectItem>
-                        <SelectItem value="loan" className="text-zinc-200 focus:bg-zinc-700">Empréstimo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Início do Contrato" filled={!!formData.contract_start}>
-                    <input type="date" className={inputCls} value={formData.contract_start} onChange={e => handleChange("contract_start", e.target.value)} />
-                  </Field>
-                  <Field label="Fim do Contrato" filled={!!formData.contract_end}>
-                    <input type="date" className={inputCls} value={formData.contract_end} onChange={e => handleChange("contract_end", e.target.value)} />
-                  </Field>
-                  <Field label="Empresário / Agência">
-                    <input className={inputCls} value={formData.agent_name} onChange={e => handleChange("agent_name", e.target.value)} placeholder="Nome do agente" />
-                  </Field>
-                  <Field label="Contato do Agente">
-                    <input className={inputCls} value={formData.agent_contact} onChange={e => handleChange("agent_contact", e.target.value)} placeholder="Email ou telefone" />
-                  </Field>
-                  <Field label="Multa Rescisória">
-                    <CurrencyInput
-                      value={formData.release_clause_amount}
-                      currency={formData.release_clause_currency}
-                      onValueChange={val => handleChange("release_clause_amount", val)}
-                      onCurrencyChange={curr => handleChange("release_clause_currency", curr)}
-                      placeholder="0,00"
-                    />
-                  </Field>
-                  <Field label="Salário">
-                    <CurrencyInput
-                      value={formData.salary_amount}
-                      currency={formData.salary_currency}
-                      onValueChange={val => handleChange("salary_amount", val)}
-                      onCurrencyChange={curr => handleChange("salary_currency", curr)}
-                      placeholder="0,00"
-                    />
-                  </Field>
-                  <div className="sm:col-span-2">
-                    <Field label="Notas de Contrato">
-                      <textarea className={cn(textareaCls, "h-24")} value={formData.contract_notes} onChange={e => handleChange("contract_notes", e.target.value)} placeholder="Observações contratuais..." />
-                    </Field>
-                  </div>
-                </div>
-                <div className="border-t border-zinc-800 pt-6">
-                  <TagInput field="passports" label="Passaportes" />
-                </div>
-              </div>
-            </SectionCard>
-          )}
-
-          {/* ── AVALIAÇÃO ── */}
-          {activeTab === "evaluation" && isAdmin && (
-            <SectionCard icon={Eye} title="Avaliação Interna" className="border-amber-500/20 bg-amber-500/[0.03]">
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    🔒 Privado — somente admins
-                  </span>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="sm:col-span-2 p-4 rounded-xl border border-zinc-700/60 bg-zinc-900/40 text-xs text-zinc-400 leading-relaxed">
-                    <strong className="text-zinc-200">OVR e POT são automáticos.</strong> A nota geral (OVR) é calculada pelo algoritmo com base nas estatísticas, e o potencial (POT) deriva do OVR + idade. Não há mais input manual.
-                  </div>
-                  <Field label="Pronto para Competir?">
-                    <Select value={formData.ready_to_compete === null ? "" : formData.ready_to_compete ? "yes" : "no"} onValueChange={val => handleChange("ready_to_compete", val === "" ? null : val === "yes")}>
-                      <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="yes" className="text-zinc-200 focus:bg-zinc-700">Sim</SelectItem>
-                        <SelectItem value="no" className="text-zinc-200 focus:bg-zinc-700">Não</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Nível Estimado" filled={!!formData.estimated_level}>
-                    <Select value={formData.estimated_level} onValueChange={val => handleChange("estimated_level", val)}>
-                      <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        {estimatedLevels.map(l => <SelectItem key={l} value={l} className="text-zinc-200 focus:bg-zinc-700">{l}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-                <Field label="Observações da Avaliação">
-                  <textarea className={cn(textareaCls, "h-28")} value={formData.internal_evaluation_notes} onChange={e => handleChange("internal_evaluation_notes", e.target.value)} placeholder="Análise interna do atleta..." />
-                </Field>
-                <div className="border-t border-zinc-800 pt-4">
-                  <Field label="Notas Internas Gerais">
-                    <textarea className={cn(textareaCls, "h-24")} value={formData.internal_notes} onChange={e => handleChange("internal_notes", e.target.value)} placeholder="Informações internas, contexto, histórico..." />
-                  </Field>
-                </div>
-              </div>
-            </SectionCard>
-          )}
         </div>
 
         {/* ── Fixed Bottom Bar ── */}

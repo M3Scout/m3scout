@@ -1,35 +1,59 @@
 import { useEffect, useState } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   ResponsiveContainer,
   Tooltip,
-  ReferenceLine,
   YAxis,
+  CartesianGrid,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { RATING_SCALE_CUTOVER } from "@/lib/ratingScale";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface NoteEvolutionMiniChartProps {
   playerId: string;
   currentRating: number | null;
 }
 
-function getMatchRatingColor(rating: number): string {
-  if (rating >= 9.0) return "#1e3a8a";
-  if (rating >= 8.0) return "#06b6d4";
-  if (rating >= 7.0) return "#22c55e";
-  if (rating >= 6.5) return "#eab308";
-  if (rating >= 6.0) return "#f97316";
-  return "#ef4444";
+interface ChartPoint {
+  v: number;
+  date: string; // ISO, for the tooltip
+}
+
+// Same 0-100 tier palette used across the M3 Market Score cards, so a color
+// here means the same thing it means everywhere else on the platform.
+function getRatingColor(rating: number): string {
+  if (rating >= 85) return "#2DCE8A";
+  if (rating >= 70) return "#4ade80";
+  if (rating >= 50) return "#E8C84A";
+  if (rating >= 30) return "#f97316";
+  return "#e5173f";
+}
+
+function getRatingLabel(rating: number): string {
+  if (rating >= 85) return "Elite";
+  if (rating >= 70) return "Alto";
+  if (rating >= 50) return "Médio";
+  return "Baixo";
 }
 
 const CustomDot = (props: any) => {
   const { cx, cy, value } = props;
   if (cx === undefined || cy === undefined || value === undefined) return null;
-  const color = getMatchRatingColor(value);
+  const color = getRatingColor(value);
+  return <circle cx={cx} cy={cy} r={3.5} fill={color} stroke="#09090b" strokeWidth={1.5} />;
+};
+
+const CustomActiveDot = (props: any) => {
+  const { cx, cy, value } = props;
+  if (cx === undefined || cy === undefined || value === undefined) return null;
+  const color = getRatingColor(value);
   return (
     <g>
-      <circle cx={cx} cy={cy} r={3} fill={color} stroke="#09090b" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={8} fill={color} opacity={0.18} />
+      <circle cx={cx} cy={cy} r={4.5} fill={color} stroke="#09090b" strokeWidth={1.5} />
     </g>
   );
 };
@@ -37,44 +61,54 @@ const CustomDot = (props: any) => {
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   const value = payload[0].value as number;
-  const color = getMatchRatingColor(value);
+  const point = payload[0].payload as ChartPoint;
+  const color = getRatingColor(value);
   return (
     <div
       style={{
         background: "#0A0A0A",
-        border: "1px solid #1C1C1C",
-        borderRadius: 4,
-        padding: "4px 8px",
+        border: `1px solid ${color}40`,
+        borderRadius: 8,
+        padding: "6px 10px",
         fontSize: 11,
-        fontWeight: "bold",
-        color,
+        fontFamily: "JetBrains Mono, monospace",
       }}
     >
-      {Number(value).toFixed(1)}
+      <div style={{ color, fontWeight: "bold", fontSize: 14, lineHeight: 1.2 }}>
+        {value.toFixed(1)} <span style={{ fontSize: 9, opacity: 0.8 }}>{getRatingLabel(value)}</span>
+      </div>
+      <div style={{ color: "#62616a", fontSize: 9, marginTop: 2 }}>
+        {format(new Date(point.date), "dd MMM yyyy", { locale: ptBR })}
+      </div>
     </div>
   );
 };
 
 export function NoteEvolutionMiniChart({ playerId, currentRating }: NoteEvolutionMiniChartProps) {
-  const [data, setData] = useState<{ v: number }[]>([]);
+  const [data, setData] = useState<ChartPoint[]>([]);
 
   useEffect(() => {
     supabase
       .from("player_rating_history")
       .select("rating, recorded_at")
       .eq("player_id", playerId)
+      // Only the current 0-99 scale — pre-cutover rows are a different unit
+      // entirely and would otherwise show up as a fake huge jump.
+      .gte("recorded_at", RATING_SCALE_CUTOVER)
       .order("recorded_at", { ascending: true })
       .limit(20)
       .then(({ data: rows }) => {
-        if (rows && rows.length > 0) {
-          const entries = (rows as { rating: number; recorded_at: string }[]).map((r) => ({ v: r.rating }));
-          if (currentRating !== null && currentRating !== undefined) {
-            entries.push({ v: currentRating });
+        const entries: ChartPoint[] = (rows as { rating: number; recorded_at: string }[] | null ?? [])
+          .map((r) => ({ v: r.rating, date: r.recorded_at }));
+        if (currentRating !== null && currentRating !== undefined) {
+          const last = entries[entries.length - 1];
+          // Avoid a duplicate final point if the latest history row already
+          // matches the live auto_rating value.
+          if (!last || last.v !== currentRating) {
+            entries.push({ v: currentRating, date: new Date().toISOString() });
           }
-          setData(entries);
-        } else if (currentRating !== null && currentRating !== undefined) {
-          setData([{ v: currentRating }]);
         }
+        setData(entries);
       });
   }, [playerId, currentRating]);
 
@@ -86,22 +120,36 @@ export function NoteEvolutionMiniChart({ playerId, currentRating }: NoteEvolutio
     );
   }
 
+  // Gradient fill uses the CURRENT (latest) value's tier color — matches the
+  // big number shown below the chart, so the whole card reads as one color.
+  const latestColor = getRatingColor(data[data.length - 1].v);
+  const gradientId = "note-evolution-gradient";
+
   return (
     <ResponsiveContainer width="100%" height={68}>
-      <LineChart data={data} margin={{ top: 6, right: 4, left: -40, bottom: 0 }}>
-        <YAxis domain={[3, 10]} hide />
-        <ReferenceLine y={7} stroke="#1C1C1C" strokeDasharray="3 3" strokeWidth={1} />
-        <Line
+      <AreaChart data={data} margin={{ top: 6, right: 4, left: -40, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={latestColor} stopOpacity={0.45} />
+            <stop offset="60%"  stopColor={latestColor} stopOpacity={0.12} />
+            <stop offset="100%" stopColor={latestColor} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <YAxis domain={[0, 100]} hide />
+        <CartesianGrid strokeDasharray="2 4" stroke="#ffffff0d" vertical={false} />
+        <Area
           type="monotone"
           dataKey="v"
-          stroke="#ffffff18"
-          strokeWidth={1.5}
+          stroke={latestColor}
+          strokeWidth={2}
+          fill={`url(#${gradientId})`}
           dot={<CustomDot />}
-          activeDot={false}
-          isAnimationActive={false}
+          activeDot={<CustomActiveDot />}
+          isAnimationActive
+          animationDuration={500}
         />
-        <Tooltip content={<CustomTooltip />} />
-      </LineChart>
+        <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#ffffff20", strokeDasharray: "3 3" }} />
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

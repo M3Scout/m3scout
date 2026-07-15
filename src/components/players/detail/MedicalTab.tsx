@@ -20,6 +20,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Check } from "lucide-react";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ACCENT      = "#ec4525";
@@ -51,6 +58,15 @@ const STATUS_CONFIG: Record<StatusKey, { label: string; description: string; col
 const DEFAULT_STATUS = STATUS_CONFIG.apto;
 const getStatus = (s: string | null | undefined) =>
   STATUS_CONFIG[(s?.toLowerCase() as StatusKey) ?? "apto"] ?? DEFAULT_STATUS;
+
+// One canonical key per status — always WRITE these to players.physical_status
+// (getStatus() already tolerates the English synonyms too, for old data).
+const STATUS_OPTIONS: { key: StatusKey; label: string; color: string; icon: string }[] = [
+  { key: "apto",                ...STATUS_CONFIG.apto },
+  { key: "em_recuperacao",      ...STATUS_CONFIG.em_recuperacao },
+  { key: "retorno_progressivo", ...STATUS_CONFIG.retorno_progressivo },
+  { key: "lesionado",           ...STATUS_CONFIG.lesionado },
+];
 
 // ─── Severity config ──────────────────────────────────────────────────────────
 const SEVERITY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -192,6 +208,22 @@ export function MedicalTab({
 
   const invalidateInjuries = () => qc.invalidateQueries({ queryKey: ["player-injuries", playerId] });
   const status = getStatus(playerPhysicalStatus);
+
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const handleChangeStatus = async (key: StatusKey) => {
+    if (key === (playerPhysicalStatus?.toLowerCase() ?? "apto")) return;
+    setUpdatingStatus(true);
+    try {
+      const { error } = await supabase.from("players").update({ physical_status: key }).eq("id", playerId);
+      if (error) throw error;
+      toast.success(`Status atualizado para ${STATUS_CONFIG[key].label}`);
+      onDataChange();
+    } catch {
+      toast.error("Erro ao atualizar status");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   const openAdd = () => { setInjuryForm(emptyInjuryForm()); setAddOpen(true); };
 
@@ -363,7 +395,43 @@ export function MedicalTab({
 
       {/* ── 1. Status Físico Atual ──────────────────────────────────────── */}
       <div>
-        <SectionHead n="01">STATUS FÍSICO ATUAL</SectionHead>
+        <SectionHead
+          n="01"
+          action={
+            canEdit ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={updatingStatus}
+                    className="flex items-center gap-1.5 font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border rounded-lg transition-colors disabled:opacity-50"
+                    style={{ borderColor: ACCENT, color: ACCENT }}
+                  >
+                    {updatingStatus ? "Atualizando..." : "Alterar Status"}
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" style={{ background: "#141318", borderColor: CARD_BORDER }}>
+                  {STATUS_OPTIONS.map(opt => {
+                    const isCurrent = opt.key === (playerPhysicalStatus?.toLowerCase() ?? "apto");
+                    return (
+                      <DropdownMenuItem
+                        key={opt.key}
+                        onClick={() => handleChangeStatus(opt.key)}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full flex-none" style={{ background: opt.color }} />
+                        <span className="flex-1 font-editorial-mono text-[11px]" style={{ color: TEXT }}>{opt.label}</span>
+                        {isCurrent && <Check className="w-3.5 h-3.5" style={{ color: opt.color }} />}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null
+          }
+        >
+          STATUS FÍSICO ATUAL
+        </SectionHead>
         <div className="rounded-xl border p-8 flex flex-col items-center gap-4 text-center"
           style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <StatusIcon type={status.icon} color={status.color} size={56} />

@@ -89,7 +89,9 @@ function PillarRow({ label, score }: { label: string; score: number }) {
 }
 
 // ── Utility functions (unchanged logic) ───────────────────────────────────────
-function calculateBaseScore(breakdown: MarketScoreBreakdown | null): number | null {
+// Exported for reuse by PlayerDetail.tsx's M3 Market Score card, which used to
+// have its own divergent (and partly-fabricated) versions of this logic.
+export function calculateBaseScore(breakdown: MarketScoreBreakdown | null): number | null {
   if (!breakdown) return null;
   const { consistencyReliabilityDetails, weightsUsed } = breakdown;
   const samplePenalty = consistencyReliabilityDetails.samplePenalty;
@@ -106,7 +108,7 @@ function calculateBaseScore(breakdown: MarketScoreBreakdown | null): number | nu
   return Math.min(100, baseScore);
 }
 
-function getConfidenceExplanation(breakdown: MarketScoreBreakdown | null): string {
+export function getConfidenceExplanation(breakdown: MarketScoreBreakdown | null): string {
   if (!breakdown) return "";
   const { consistencyReliabilityDetails, performanceImpactDetails } = breakdown;
   const matches      = consistencyReliabilityDetails.totalMatches;

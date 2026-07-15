@@ -466,13 +466,26 @@ export async function getMergedSeasonTotals(
   playerId: string,
   seasonYear: number
 ): Promise<MatchDerivedStats> {
-  const [liveRows, psRows] = await Promise.all([
-    fetchLiveSeasonRows(playerId, seasonYear),
-    fetchPlayerStatsRows(playerId, seasonYear),
-  ]);
-  const merged = mergeSeasonRows([...liveRows, ...psRows] as PublicSeasonRow[]);
+  const merged = await getMergedSeasonByCompetition(playerId, seasonYear);
   return merged.reduce(
     (acc, row) => sumMatchDerivedStats(acc, row.stats),
     emptyStats()
   );
+}
+
+/**
+ * Same merge pipeline as getMergedSeasonTotals, but keeps the per-competition
+ * breakdown instead of collapsing to one season total — needed by anything
+ * that has to weight by competition (e.g. Market Score's Contexto pillar,
+ * which needs each competition's real coefficient, not just the season sum).
+ */
+export async function getMergedSeasonByCompetition(
+  playerId: string,
+  seasonYear: number
+): Promise<PublicSeasonRow[]> {
+  const [liveRows, psRows] = await Promise.all([
+    fetchLiveSeasonRows(playerId, seasonYear),
+    fetchPlayerStatsRows(playerId, seasonYear),
+  ]);
+  return mergeSeasonRows([...liveRows, ...psRows] as PublicSeasonRow[]);
 }

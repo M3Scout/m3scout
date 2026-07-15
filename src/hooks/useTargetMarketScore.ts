@@ -207,7 +207,10 @@ export function useTargetMarketScore({
   const recalculateMutation = useMutation({
     mutationFn: async (reason: string) => {
       if (!targetPlayerData) throw new Error('No target data available');
-      return computeAndPersistTargetScore(targetPlayerData, reason, weights);
+      const result = await computeAndPersistTargetScore(targetPlayerData, reason, weights);
+      // Same silent-failure trap as computeAndPersistActiveScore — surface it.
+      if (result.error) throw result.error;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['market-score-target', targetId] });

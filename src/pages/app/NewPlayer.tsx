@@ -324,6 +324,34 @@ export default function NewPlayer() {
                   </Select>
                 </div>
 
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Posição(ões) Secundária(s)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {safeArray(positions).filter((p) => p !== formData.position).map((p) => {
+                      const active = formData.secondary_positions.includes(p);
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => handleChange(
+                            "secondary_positions",
+                            active
+                              ? formData.secondary_positions.filter((sp) => sp !== p)
+                              : [...formData.secondary_positions, p]
+                          )}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                            active
+                              ? "bg-red-500/15 border-red-500/40 text-red-400"
+                              : "bg-muted/40 border-border text-muted-foreground hover:border-muted-foreground/40"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="nationality">Nacionalidade *</Label>
                   <Select

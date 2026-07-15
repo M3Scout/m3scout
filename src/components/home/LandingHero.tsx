@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { LandingHeroField } from "./LandingHeroField";
 import "./LandingHero.css";
 
 const navLinks = [
@@ -74,9 +75,8 @@ export function LandingHero() {
 
       {/* HERO */}
       <section className="lp-hero">
-        <div className="lp-hero__bg" aria-hidden="true">
-          <div className="lp-hero__bg-grid" />
-        </div>
+        <LandingHeroField />
+        <div className="lp-hero__overlay" aria-hidden="true" />
 
         <div className="lp-hero__inner">
           <h1

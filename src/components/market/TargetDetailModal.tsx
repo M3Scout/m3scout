@@ -634,7 +634,14 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                     <Mono style={{ color: MUTED } as React.CSSProperties}>M3 Market Score</Mono>
                   </div>
                   <button
-                    onClick={() => recalculate("Cálculo manual")}
+                    onClick={() => {
+                      recalculate("Cálculo manual")
+                        .then(() => toast({ title: "Market Score recalculado" }))
+                        .catch((err) => {
+                          console.error("[MarketScore] Falha ao recalcular:", err);
+                          toast({ title: "Erro ao recalcular", description: err?.message, variant: "destructive" });
+                        });
+                    }}
                     disabled={isRecalculating}
                     className="font-mono text-[10px] tracking-wide px-2.5 py-1 rounded-md transition-colors hover:opacity-80 disabled:opacity-50"
                     style={{ color: ACCENT, background: `${ACCENT}15`, border: `1px solid ${ACCENT}30` }}

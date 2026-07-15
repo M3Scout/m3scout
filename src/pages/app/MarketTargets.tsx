@@ -41,8 +41,17 @@ const ACCENT = "#ec4525";
 const FG     = "#ededee";
 const MUTED  = "#62616a";
 const BDR    = "rgba(255,255,255,0.07)";
-const BG     = "#0a0a0d";
-const BG2    = "#0f0e13";
+
+// Kanban-specific tokens (Trello-style board look, per reference screenshot)
+// The code-level "Ativo" green is #22c55e, but pixel-sampling the user's own
+// screenshot of /dashboard/contratos shows it actually renders as ~#5ec26a on
+// their display — using the measured value instead of the nominal hex so the
+// wash matches what they actually see, not what the source claims.
+// Same solid colors as the athlete row rectangle in AthleteContractRow.tsx
+// (bg-[#16181a], hover:bg-[#0d0e0f]) — no alpha, straight copy for comparison.
+const CARD_BG   = "#1a1b1d";
+const COLUMN_BG = "#0d0e0f";
+const HOVER_BORDER = "#4BA3FA";
 
 const GRADE_COLOR: Record<string, string> = {
   A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#ef4444",
@@ -70,10 +79,6 @@ function timeAgo(d: string) {
   return `${Math.floor(m / 43200)}mo`;
 }
 
-function initials(n: string) {
-  return n.split(" ").slice(0, 2).map(x => x[0]).join("").toUpperCase();
-}
-
 function getAge(t: TargetWithScore) {
   if (t.age_estimate) return t.age_estimate;
   if (t.birth_date) return new Date().getFullYear() - new Date(t.birth_date).getFullYear();
@@ -82,47 +87,24 @@ function getAge(t: TargetWithScore) {
 
 // ─── Funnel card ──────────────────────────────────────────────────────────────
 
-function FunnelCard({ label, color, Icon, count, total, loading }: {
-  label: string; color: string; Icon: React.ElementType;
-  count: number; total: number; loading: boolean;
+function FunnelCard({ label, count, loading }: {
+  label: string;
+  count: number; loading: boolean;
 }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div
-      className="relative rounded-2xl overflow-hidden p-5 flex flex-col gap-3 group cursor-default transition-all duration-300 hover:scale-[1.02]"
-      style={{ background: BG2, border: `1px solid ${BDR}` }}
+      className="relative rounded-2xl overflow-hidden p-5 flex flex-col gap-3 transition-all duration-300 hover:scale-[1.02]"
+      style={{ background: COLUMN_BG, border: `1px solid ${BDR}` }}
     >
-      {/* Glow blob */}
-      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-[0.12] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.2]"
-        style={{ background: color }} />
-
-      {/* Top row */}
-      <div className="flex items-center justify-between relative z-10">
-        <span className="font-mono text-[9px] tracking-[0.18em] uppercase" style={{ color: MUTED }}>{label}</span>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
-          <Icon style={{ width: 13, height: 13, color }} strokeWidth={1.5} />
-        </div>
-      </div>
+      {/* Title */}
+      <span className="font-mono text-[9px] tracking-[0.18em] uppercase" style={{ color: MUTED }}>{label}</span>
 
       {/* Number */}
-      <div className="relative z-10">
+      <div>
         {loading
           ? <Skeleton className="h-10 w-10 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }} />
           : <span className="font-display font-bold leading-none" style={{ fontSize: 44, color: FG }}>{count}</span>
         }
-      </div>
-
-      {/* Progress bar */}
-      <div className="relative z-10 space-y-1">
-        <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <div
-            className="h-full rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}99, ${color})` }}
-          />
-        </div>
-        <span className="font-mono text-[9px]" style={{ color: `${color}80` }}>
-          {pct}% do total
-        </span>
       </div>
     </div>
   );
@@ -131,14 +113,13 @@ function FunnelCard({ label, color, Icon, count, total, loading }: {
 // ─── Kanban card visual ───────────────────────────────────────────────────────
 
 function CardVisual({ target, isOverlay = false, alert }: { target: TargetWithScore; isOverlay?: boolean; alert?: TargetAlert }) {
+  const [hovered, setHovered] = useState(false);
   const t = target as any;
   const age       = getAge(target);
   const score     = target.market_score?.score_total ?? null;
   const sc        = score !== null ? scoreColor(score) : null;
   const grade     = t.recommendation_grade as string | undefined;
   const gradeCfg  = grade ? GRADE_COLOR[grade] : null;
-  const stageCfg  = KANBAN_STAGES.find(s => s.key === target.status);
-  const stageColor = stageCfg?.color ?? MUTED;
   const alertColor = alert ? ALERT_COLOR[alert.severity] : null;
 
   const avgPillar = (() => {
@@ -149,31 +130,24 @@ function CardVisual({ target, isOverlay = false, alert }: { target: TargetWithSc
   return (
     <div
       className="rounded-xl border overflow-hidden transition-all duration-200 group/card"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        background: isOverlay ? "#1c1a22" : BG,
-        borderColor: isOverlay ? "rgba(255,255,255,0.2)" : alertColor ? `${alertColor}70` : BDR,
-        boxShadow: isOverlay ? "0 20px 60px rgba(0,0,0,0.9)" : "none",
+        background: isOverlay ? "#1c1a22" : CARD_BG,
+        borderColor: isOverlay
+          ? "rgba(255,255,255,0.2)"
+          : hovered
+            ? HOVER_BORDER
+            : alertColor ? `${alertColor}70` : BDR,
+        boxShadow: isOverlay ? "0 20px 60px rgba(0,0,0,0.9)" : hovered ? `0 0 0 1px ${HOVER_BORDER}` : "none",
         transform: isOverlay ? "scale(1.05) rotate(1.5deg)" : "none",
         cursor: isOverlay ? "grabbing" : "grab",
       }}
     >
-      {/* Stage accent line */}
-      <div className="h-[2px]" style={{ background: alertColor ? alertColor : `linear-gradient(90deg, ${stageColor}60, transparent)` }} />
 
       <div className="p-3">
-        {/* Top: avatar + name + grade */}
+        {/* Top: name + grade (no avatar) */}
         <div className="flex items-start gap-2.5 mb-3">
-          {/* Avatar */}
-          <div
-            className="w-9 h-9 rounded-lg flex-none overflow-hidden flex items-center justify-center text-[11px] font-bold font-mono"
-            style={{ background: `${stageColor}18`, border: `1px solid ${stageColor}30`, color: stageColor }}
-          >
-            {target.photo_url
-              ? <img src={target.photo_url} alt={target.name} className="w-full h-full object-cover object-top" loading="lazy" />
-              : initials(target.name)
-            }
-          </div>
-
           <div className="flex-1 min-w-0">
             <p className="font-display font-semibold text-[12px] uppercase leading-tight truncate" style={{ color: FG }}>
               {target.name}
@@ -252,8 +226,8 @@ function KanbanCard({ target, onOpenDetail, alert }: { target: TargetWithScore; 
 
 // ─── Kanban column ────────────────────────────────────────────────────────────
 
-function KanbanColumn({ stageKey, label, color, Icon, stageTargets, isLoading, onOpenDetail, alertsByTarget }: {
-  stageKey: StageKey; label: string; color: string; Icon: React.ElementType;
+function KanbanColumn({ stageKey, label, color, stageTargets, isLoading, onOpenDetail, alertsByTarget }: {
+  stageKey: StageKey; label: string; color: string;
   stageTargets: TargetWithScore[]; isLoading: boolean;
   onOpenDetail: (t: TargetWithScore) => void;
   alertsByTarget: Map<string, TargetAlert>;
@@ -264,27 +238,15 @@ function KanbanColumn({ stageKey, label, color, Icon, stageTargets, isLoading, o
     <div
       className="rounded-2xl border flex flex-col overflow-hidden transition-all duration-200"
       style={{
-        background: isOver ? `${color}07` : BG2,
+        background: isOver ? `${color}07` : COLUMN_BG,
         borderColor: isOver ? `${color}50` : BDR,
       }}
     >
-      {/* Column header */}
-      <div className="px-3 pt-3 pb-2">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
-            <Icon style={{ width: 11, height: 11, color }} strokeWidth={2} />
-          </div>
-          <span className="font-mono text-[10px] tracking-[0.12em] uppercase flex-1" style={{ color }}>
-            {label}
-          </span>
-          <span
-            className="font-mono text-[10px] w-5 h-5 rounded-full flex items-center justify-center"
-            style={{ color, background: `${color}15`, border: `1px solid ${color}25` }}
-          >
-            {stageTargets.length}
-          </span>
-        </div>
-        <div className="h-px rounded-full" style={{ background: `linear-gradient(90deg, ${color}60, transparent)` }} />
+      {/* Column header — title only */}
+      <div className="px-3 pt-4 pb-3">
+        <span className="font-display font-bold text-[15px] tracking-[0.06em] uppercase" style={{ color }}>
+          {label}
+        </span>
       </div>
 
       {/* Droppable area */}
@@ -467,14 +429,11 @@ export default function MarketTargets() {
 
       {/* ── FUNNEL STRIP ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {KANBAN_STAGES.map(({ key, label, color, Icon }) => (
+        {KANBAN_STAGES.map(({ key, label }) => (
           <FunnelCard
             key={key}
             label={label}
-            color={color}
-            Icon={Icon}
             count={statusCounts[key]}
-            total={targets.length}
             loading={isLoading}
           />
         ))}
@@ -483,9 +442,9 @@ export default function MarketTargets() {
       {/* ── KANBAN ────────────────────────────────────────────────────── */}
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {KANBAN_STAGES.map(({ key, label, color, Icon }) => (
+          {KANBAN_STAGES.map(({ key, label, color }) => (
             <KanbanColumn
-              key={key} stageKey={key} label={label} color={color} Icon={Icon}
+              key={key} stageKey={key} label={label} color={color}
               stageTargets={targetsByStatus[key] || []}
               isLoading={isLoading}
               onOpenDetail={handleOpenDetail}
@@ -502,7 +461,7 @@ export default function MarketTargets() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
 
         {/* Atividade Recente — spans 3 kanban columns */}
-        <div className="lg:col-span-3 rounded-2xl border overflow-hidden" style={{ background: BG2, borderColor: BDR }}>
+        <div className="lg:col-span-3 rounded-2xl border overflow-hidden" style={{ background: COLUMN_BG, borderColor: BDR }}>
           <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: BDR }}>
             <span className="font-mono text-[10px] font-semibold" style={{ color: ACCENT }}>01</span>
             <div className="h-px w-5" style={{ background: BDR }} />
@@ -548,7 +507,7 @@ export default function MarketTargets() {
         </div>
 
         {/* Market Score Ranking — spans 1 kanban column (Descartado) */}
-        <div className="lg:col-span-1 rounded-2xl border overflow-hidden" style={{ background: BG2, borderColor: BDR }}>
+        <div className="lg:col-span-1 rounded-2xl border overflow-hidden" style={{ background: COLUMN_BG, borderColor: BDR }}>
           <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: BDR }}>
             <span className="font-mono text-[10px] font-semibold" style={{ color: ACCENT }}>02</span>
             <div className="h-px w-5" style={{ background: BDR }} />
@@ -568,26 +527,15 @@ export default function MarketTargets() {
                 <div
                   key={t.id}
                   onClick={() => handleOpenDetail(t)}
-                  className="group flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-white/[0.03]"
+                  className="group flex items-center gap-3 py-2.5 -mx-2.5 px-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-white/[0.03]"
                   style={{ border: "1px solid transparent" }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = BDR)}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
                 >
                   {/* Rank */}
-                  <span className="font-mono text-[10px] w-4 text-right flex-none" style={{ color: i === 0 ? ACCENT : MUTED }}>
+                  <span className="font-mono text-[10px] w-4 text-left flex-none" style={{ color: i === 0 ? ACCENT : MUTED }}>
                     {i + 1}
                   </span>
-
-                  {/* Avatar */}
-                  <div
-                    className="w-7 h-7 rounded-lg flex-none overflow-hidden flex items-center justify-center text-[9px] font-bold font-mono"
-                    style={{ background: `${bar}18`, border: `1px solid ${bar}30`, color: bar }}
-                  >
-                    {t.photo_url
-                      ? <img src={t.photo_url} alt={t.name} className="w-full h-full object-cover" loading="lazy" />
-                      : initials(t.name)
-                    }
-                  </div>
 
                   {/* Name + bar */}
                   <div className="flex-1 min-w-0 space-y-1">

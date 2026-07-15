@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -26,6 +25,7 @@ import { MarketScoreTrend } from "@/types/marketScore";
 import { computeScoreForAthleteById, recalculateAllActiveMarketScores } from "@/lib/marketScoreService";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { MarketScoreDetailModal } from "@/components/players/MarketScoreDetailModal";
 import { toast } from "sonner";
 
 // ── TYPES ──────────────────────────────────────────────────────────────────────
@@ -89,8 +89,8 @@ const AGE_RANGES = [
 // ── COMPONENT ──────────────────────────────────────────────────────────────────
 
 export default function MarketAtivos() {
-  const navigate      = useNavigate();
   const queryClient   = useQueryClient();
+  const [selectedAthlete, setSelectedAthlete] = useState<AthleteWithScore | null>(null);
   const [search,           setSearch]           = useState("");
   const [searchOpen,       setSearchOpen]       = useState(false);
   const [positionFilter,   setPositionFilter]   = useState("Todos");
@@ -388,7 +388,7 @@ export default function MarketAtivos() {
                 key={athlete.id}
                 className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors duration-[250ms] hover:bg-zinc-800/30"
                 style={{ background: CARD_BG, borderColor: CARD_BORDER }}
-                onClick={() => navigate(`/app/players/${athlete.id}`)}
+                onClick={() => setSelectedAthlete(athlete)}
               >
                 {/* Rank + Photo */}
                 <div className="relative shrink-0">
@@ -483,6 +483,20 @@ export default function MarketAtivos() {
         <p className="font-editorial-mono text-[10px] uppercase text-center tabular-nums" style={{ color: "rgba(255,255,255,0.18)" }}>
           {filteredAthletes.length} atleta(s) encontrado(s)
         </p>
+      )}
+
+      {selectedAthlete && (
+        <MarketScoreDetailModal
+          open={!!selectedAthlete}
+          onOpenChange={(o) => { if (!o) setSelectedAthlete(null); }}
+          athleteId={selectedAthlete.id}
+          athleteName={selectedAthlete.full_name}
+          position={selectedAthlete.position}
+          age={selectedAthlete.age}
+          birthDate={selectedAthlete.birth_date}
+          photoUrl={selectedAthlete.photo_url}
+          currentClub={selectedAthlete.current_club}
+        />
       )}
     </div>
   );

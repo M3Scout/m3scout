@@ -30,6 +30,7 @@ const TEXT        = "#ededee";
 
 // ─── Metric config ────────────────────────────────────────────────────────────
 const METRIC_CONFIG = {
+  height:              { label: "Altura",        unit: "cm",        color: "hsl(330,80%,60%)" },
   weight:              { label: "Peso",          unit: "kg",        color: "hsl(217,91%,60%)" },
   body_fat_percentage: { label: "% Gordura",     unit: "%",         color: "hsl(0,84%,60%)"   },
   muscle_mass:         { label: "Massa Muscular", unit: "kg",       color: "hsl(142,76%,36%)" },
@@ -302,6 +303,7 @@ function FieldInput({ type = "number", value, onChange, placeholder, step }: {
 interface PhysicalHistoryRecord {
   id: string;
   recorded_at: string;
+  height: number | null;
   weight: number | null;
   body_fat_percentage: number | null;
   muscle_mass: number | null;
@@ -311,7 +313,7 @@ interface PhysicalHistoryRecord {
   notes: string | null;
 }
 
-const EMPTY_FORM = { recorded_at: "", weight: "", body_fat_percentage: "", muscle_mass: "", max_speed: "", sprint_30m: "", vo2_max: "", notes: "" };
+const EMPTY_FORM = { recorded_at: "", height: "", weight: "", body_fat_percentage: "", muscle_mass: "", max_speed: "", sprint_30m: "", vo2_max: "", notes: "" };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface PhysicalTabProps {
@@ -383,6 +385,7 @@ export function PhysicalTab({
     return null;
   };
 
+  const resolvedHeight   = latestMetric("height")              ?? playerHeight    ?? null;
   const resolvedWeight   = latestMetric("weight")              ?? playerWeight    ?? null;
   const resolvedBodyFat  = latestMetric("body_fat_percentage") ?? playerBodyFat   ?? null;
   const resolvedMuscle   = latestMetric("muscle_mass")         ?? playerMuscle    ?? null;
@@ -390,7 +393,7 @@ export function PhysicalTab({
   const resolvedSprint   = latestMetric("sprint_30m")          ?? playerSprint30m ?? null;
   const resolvedVo2      = latestMetric("vo2_max")              ?? playerVo2Max    ?? null;
 
-  const bmi = calcBMI(resolvedWeight, playerHeight);
+  const bmi = calcBMI(resolvedWeight, resolvedHeight);
 
   const radarRawValues = radarAxes.map(axis => {
     if (axis.key === "max_speed")           return resolvedMaxSpeed;
@@ -406,6 +409,7 @@ export function PhysicalTab({
 
   const chartData = (history ?? []).map(r => ({
     date: format(parseDateSafe(r.recorded_at), "dd/MM/yy"),
+    height: r.height,
     weight: r.weight,
     body_fat_percentage: r.body_fat_percentage,
     muscle_mass: r.muscle_mass,
@@ -423,13 +427,19 @@ export function PhysicalTab({
   };
 
   const openDialog = () => {
-    setForm({ ...EMPTY_FORM, recorded_at: format(new Date(), "yyyy-MM-dd") });
+    setForm({
+      ...EMPTY_FORM,
+      recorded_at: format(new Date(), "yyyy-MM-dd"),
+      // Height rarely changes between evaluations, so prefill with the last
+      // known value instead of making the user retype it every time.
+      height: resolvedHeight != null ? String(resolvedHeight) : "",
+    });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!user) { toast.error("É necessário estar autenticado"); return; }
-    const hasAtLeastOne = form.weight || form.body_fat_percentage || form.muscle_mass ||
+    const hasAtLeastOne = form.height || form.weight || form.body_fat_percentage || form.muscle_mass ||
       form.max_speed || form.sprint_30m || form.vo2_max;
     if (!hasAtLeastOne) { toast.error("Preencha ao menos um campo de medida"); return; }
     setSubmitting(true);
@@ -437,6 +447,7 @@ export function PhysicalTab({
       const { error } = await supabase.from("player_physical_history").insert({
         player_id: playerId,
         recorded_at: form.recorded_at,
+        height:               form.height             ? parseInt(form.height, 10)            : null,
         weight:              form.weight              ? parseFloat(form.weight)              : null,
         body_fat_percentage: form.body_fat_percentage ? parseFloat(form.body_fat_percentage) : null,
         muscle_mass:         form.muscle_mass         ? parseFloat(form.muscle_mass)         : null,
@@ -635,7 +646,7 @@ export function PhysicalTab({
         <div>
           <SectionHead n="03" action={addButton}>MEDIDAS CORPORAIS</SectionHead>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <MetricCard label="Altura"      value={playerHeight ?? null} unit="cm"  rangeKey="height"  decimals={0} eliteValue={eliteBenchmark.altura} />
+            <MetricCard label="Altura"      value={resolvedHeight}       unit="cm"  rangeKey="height"  decimals={0} eliteValue={eliteBenchmark.altura} />
             <MetricCard label="Peso"        value={resolvedWeight}       unit="kg"  rangeKey="weight"              eliteValue={eliteBenchmark.peso} />
             <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
           </div>
@@ -687,6 +698,7 @@ export function PhysicalTab({
               <FieldInput type="date" value={form.recorded_at} onChange={v => setForm(f => ({ ...f, recorded_at: v }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div><FieldLabel>Altura (cm)</FieldLabel><FieldInput value={form.height} onChange={v => setForm(f => ({ ...f, height: v }))} placeholder="180" step="1" /></div>
               <div><FieldLabel>Peso (kg)</FieldLabel><FieldInput value={form.weight} onChange={v => setForm(f => ({ ...f, weight: v }))} placeholder="75.5" step="0.1" /></div>
               <div><FieldLabel>% Gordura</FieldLabel><FieldInput value={form.body_fat_percentage} onChange={v => setForm(f => ({ ...f, body_fat_percentage: v }))} placeholder="12.5" step="0.1" /></div>
               <div><FieldLabel>Massa Muscular (kg)</FieldLabel><FieldInput value={form.muscle_mass} onChange={v => setForm(f => ({ ...f, muscle_mass: v }))} placeholder="38.0" step="0.1" /></div>

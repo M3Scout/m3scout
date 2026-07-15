@@ -8,7 +8,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { usePlayerMatchStats } from './usePlayerMatchStats';
+import { getMergedSeasonTotals, getMergedSeasonByCompetition } from '@/lib/recalculatePlayerScores';
 import { usePlayerMatchRatings } from './usePlayerMatchRatings';
 import { 
   MarketScore, 
@@ -100,17 +100,24 @@ export function useMarketScore({
     staleTime: 5 * 60 * 1000,
   });
   
-  // Fetch player stats using existing hook
+  // Fetch season stats from the SAME merge pipeline that persists
+  // player_attribute_scores (live match + player_stats, deliberately
+  // excluding manual_player_stats — that table is documented as
+  // "NOT used for rating calculations", games not tracked via Live Match).
+  // This is the authoritative aggregation, not a parallel reimplementation.
   const {
-    totals: seasonStats,
+    data: seasonStats,
     isLoading: statsLoading,
-  } = usePlayerMatchStats({
-    playerId,
-    seasonYear: currentYear,
+  } = useQuery({
+    queryKey: ['market-score-season-totals', playerId, currentYear],
+    queryFn: () => getMergedSeasonTotals(playerId, currentYear),
     enabled: enabled && !!playerId,
+    staleTime: 30 * 1000,
   });
-  
-  // Fetch player ratings using existing hook
+
+  // Fetch player ratings using existing hook (per-match granularity — needed
+  // for rating variance/last-30-days activity, which manual season-total
+  // rows can't provide since they have no individual match date).
   const {
     matches: matchesWithRatings,
     isLoading: ratingsLoading,
@@ -120,7 +127,32 @@ export function useMarketScore({
     seasonYear: currentYear,
     enabled: enabled && !!playerId,
   });
-  
+
+  // Fetch real competition coefficients (same field used for Targets) to
+  // replace the previous hardcoded 1.0 used for every match's Contexto weight.
+  const { data: competitionCoefficients = new Map<string, number>() } = useQuery({
+    queryKey: ['competitions-coefficients'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('competitions').select('id, final_coefficient');
+      if (error) throw error;
+      const map = new Map<string, number>();
+      (data || []).forEach(c => map.set(c.id, c.final_coefficient));
+      return map;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Per-competition breakdown (live + manual merged, same pipeline as
+  // seasonStats above) — Contexto needs this instead of matchRatings alone,
+  // since a competition with only manual stats (no live match) never shows
+  // up in matchRatings and would otherwise be invisible to this pillar.
+  const { data: competitionRows = [] } = useQuery({
+    queryKey: ['market-score-season-by-competition', playerId, currentYear],
+    queryFn: () => getMergedSeasonByCompetition(playerId, currentYear),
+    enabled: enabled && !!playerId,
+    staleTime: 30 * 1000,
+  });
+
   // Calculate matches in last 30 days
   const matchesLast30Days = useMemo(() => {
     const thirtyDaysAgo = new Date();
@@ -164,19 +196,32 @@ export function useMarketScore({
         passesTotal: seasonStats.passes_total || 0,
         crossesSuccess: seasonStats.crosses_success || 0,
         crossesFailed: seasonStats.crosses_failed || 0,
+        shots: seasonStats.shots || 0,
+        shotsOnTarget: seasonStats.shots_on_target || 0,
+        steals: seasonStats.steals || 0,
+        possessionLost: seasonStats.possession_lost || 0,
+        wasDribbled: seasonStats.was_dribbled || 0,
+        penaltiesWon: seasonStats.penalties_won || 0,
+        groundDuelsWon: seasonStats.ground_duels_won || 0,
+        groundDuelsTotal: seasonStats.ground_duels_total || 0,
       },
       matchRatings: matchesWithRatings.map(m => ({
         matchId: m.match_id,
         matchDate: m.match_date,
         rating: m.rating.rating ?? 0,
         competitionId: m.competition_id ?? null,
-        competitionCoefficient: 1.0, // Default coefficient - will be enhanced when competition data is joined
+        competitionCoefficient: (m.competition_id && competitionCoefficients.get(m.competition_id)) || 1.0,
       })),
       matchesLast30Days,
+      competitionBreakdown: competitionRows.map(row => ({
+        competitionId: row.competition_id,
+        minutes: row.stats.minutes,
+        coefficient: (row.competition_id && competitionCoefficients.get(row.competition_id)) || 1.0,
+      })),
     };
   }, [
     playerId, playerName, position, secondaryPositions, birthDate, age,
-    seasonStats, matchesWithRatings, matchesLast30Days
+    seasonStats, matchesWithRatings, matchesLast30Days, competitionCoefficients, competitionRows
   ]);
   
   // Compute breakdown in real-time (not persisted until recalculate)
@@ -191,7 +236,13 @@ export function useMarketScore({
   const recalculateMutation = useMutation({
     mutationFn: async (reason: string) => {
       if (!activePlayerData) throw new Error('No player data available');
-      return computeAndPersistActiveScore(activePlayerData, reason, weights);
+      const result = await computeAndPersistActiveScore(activePlayerData, reason, weights);
+      // computeAndPersistActiveScore returns { error } instead of throwing on a
+      // failed write (e.g. RLS denial) — without this check the mutation
+      // reports success and invalidates queries even though nothing was
+      // persisted, silently leaving the old score on screen.
+      if (result.error) throw result.error;
+      return result;
     },
     onSuccess: () => {
       // Invalidate queries to refresh data across all views

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { safeArray } from "@/lib/utils";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { useAuth } from "@/hooks/authContext";
@@ -11,6 +12,9 @@ import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
 import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
 import { useMarketScore } from "@/hooks/useMarketScore";
+import { calculateBaseScore, getConfidenceExplanation } from "@/components/players/sections/MarketScoreCard";
+import { MarketScoreDetailModal } from "@/components/players/MarketScoreDetailModal";
+import { RATING_SCALE_CUTOVER } from "@/lib/ratingScale";
 import { AtributoRadar } from "@/components/players/detail/AtributoRadar";
 import { MarketValueMiniChart } from "@/components/players/detail/MarketValueMiniChart";
 import { NoteEvolutionMiniChart } from "@/components/players/detail/NoteEvolutionMiniChart";
@@ -187,18 +191,6 @@ function getMarketScoreTier(score: number): { label: string; color: string } {
 }
 
 
-function getMarketScoreExplanation(score: number, confidence: number, sample: number): string {
-  if (sample < 2)
-    return "Amostra de observações insuficiente. O score reflete dados preliminares e pode divergir do valor real de mercado.";
-  if (confidence < 60)
-    return "Confiabilidade baixa devido à amostra reduzida. Score ajustado para refletir a incerteza dos dados disponíveis.";
-  if (score < 50)
-    return "Score abaixo da média de mercado. Pode indicar baixa regularidade, nível competitivo reduzido ou janela de idade desfavorável.";
-  if (score < 70)
-    return "Score na faixa intermediária. O atleta apresenta potencial de valorização com mais dados de observação.";
-  return "Score consistente com perfil de mercado. Dados suficientes para avaliação confiável do valor do atleta.";
-}
-
 const RECENT_REPORTS_LIMIT = 5;
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -225,6 +217,7 @@ const PlayerDetail = () => {
   const [currentContract, setCurrentContract] = useState<ContractRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [marketScoreModalOpen, setMarketScoreModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
 
   const hasViewPermission = can("players", "view");
@@ -314,7 +307,10 @@ const PlayerDetail = () => {
 
   const statsLoading = liveStatsLoading || manualLoading || psLoading;
 
-  const { displayScore: marketScore, scoreLoading: marketScoreLoading, dataConfidence, hasEnoughData: marketHasData } = useMarketScore({
+  const {
+    displayScore: marketScore, scoreLoading: marketScoreLoading, dataConfidence,
+    breakdown: marketBreakdown, recalculate: recalculateMarketScore, isRecalculating: isRecalculatingMarketScore,
+  } = useMarketScore({
     playerId: id ?? "",
     playerName: player?.full_name ?? "",
     position: player?.position ?? "",
@@ -404,6 +400,8 @@ const PlayerDetail = () => {
         .from("player_rating_history")
         .select("rating")
         .eq("player_id", id!)
+        // Only the current 0-99 scale — see RATING_SCALE_CUTOVER for why.
+        .gte("recorded_at", RATING_SCALE_CUTOVER)
         .order("recorded_at", { ascending: true })
         .limit(20);
       return (data ?? []) as { rating: number }[];
@@ -881,68 +879,29 @@ const PlayerDetail = () => {
                 </div>
               </section>
 
-              {/* Internal Evaluation */}
-              <section>
-                <SectionLabel n="03">
-                  <span className="inline-flex items-center gap-1.5">
-                    AVALIAÇÃO INTERNA <Lock className="w-3 h-3 inline" style={{ color: MUTED }} />
-                  </span>
-                </SectionLabel>
-                <div className="grid grid-cols-2 gap-3">
-
-                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
-                    <CardLabel>NOTA GERAL</CardLabel>
-                    <p className="font-display font-bold leading-none" style={{ fontSize: 40, color: FG }}>
-                      {player.auto_rating !== null && player.auto_rating !== undefined
-                        ? Math.round(player.auto_rating)
-                        : "—"}
-                      <span className="font-editorial-mono text-[13px] ml-1" style={{ color: MUTED }}>/99</span>
-                    </p>
-                  </div>
-
-                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
-                    <CardLabel>POTENCIAL</CardLabel>
-                    <p className="font-display font-bold leading-none" style={{ fontSize: 40, color: GREEN }}>
-                      {player.auto_potential !== null && player.auto_potential !== undefined && player.auto_potential > 0
-                        ? Math.round(player.auto_potential)
-                        : "—"}
-                      <span className="font-editorial-mono text-[13px] ml-1" style={{ color: MUTED }}>/99</span>
-                    </p>
-                  </div>
-
-                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
-                    <CardLabel>PRONTO PARA COMPETIR?</CardLabel>
-                    {player.ready_to_compete !== null && player.ready_to_compete !== undefined ? (
-                      <p className="font-display font-bold text-[22px] uppercase" style={{ color: player.ready_to_compete ? GREEN : AMBER }}>
-                        {player.ready_to_compete ? "SIM" : "NÃO"}
-                      </p>
-                    ) : (
-                      <p className="font-display font-bold text-[24px]" style={{ color: MUTED }}>—</p>
-                    )}
-                  </div>
-
-                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
-                    <CardLabel>NÍVEL ESTIMADO</CardLabel>
-                    {player.estimated_level ? (
-                      <span
-                        className="font-editorial-mono text-[11px] uppercase tracking-wide px-2.5 py-1 rounded-lg border inline-block"
-                        style={{ borderColor: AMBER, color: AMBER }}
-                      >
-                        {player.estimated_level}
-                      </span>
-                    ) : (
-                      <p className="font-display font-bold text-[24px]" style={{ color: MUTED }}>—</p>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-            {/* ── Sidebar cards — abaixo do tópico 03 ─────────────────── */}
+            {/* ── Sidebar cards ──────────────────────────────────────── */}
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
 
               {/* M3 Market Score */}
               <section className={`${CARD} p-5`} style={CARD_STYLE}>
-                <CardLabel>M3 MARKET SCORE</CardLabel>
+                <div className="flex items-center justify-between mb-[10px]">
+                  <CardLabel>M3 MARKET SCORE</CardLabel>
+                  <button
+                    onClick={() => {
+                      recalculateMarketScore("Cálculo manual")
+                        .then(() => toast({ title: "Market Score recalculado" }))
+                        .catch((err) => {
+                          console.error("[MarketScore] Falha ao recalcular:", err);
+                          toast({ title: "Erro ao recalcular", description: err?.message, variant: "destructive" });
+                        });
+                    }}
+                    disabled={isRecalculatingMarketScore}
+                    className="font-editorial-mono text-[9px] tracking-wide px-2.5 py-1 rounded-md transition-colors hover:opacity-80 disabled:opacity-50"
+                    style={{ color: ACCENT, background: `${ACCENT}15`, border: `1px solid ${ACCENT}30` }}
+                  >
+                    {isRecalculatingMarketScore ? "Calculando..." : marketScore !== null ? "Recalcular" : "Calcular"}
+                  </button>
+                </div>
 
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="font-display font-bold leading-none" style={{ fontSize: 68, color: FG, lineHeight: 1 }}>
@@ -964,18 +923,32 @@ const PlayerDetail = () => {
 
                 {!marketScoreLoading && marketScore !== null ? (
                   <>
-                    <p className="font-editorial-mono text-[11px] mb-1" style={{ color: MUTED }}>
-                      Base: {player.auto_rating !== null ? Math.min(100, Math.round(player.auto_rating)) : "—"} → Ajustado: {Math.min(100, Math.round(marketScore))}
-                    </p>
-                    <p className="font-editorial-mono text-[11px] mb-3" style={{ color: AMBER }}>
-                      {dataConfidence < 75 ? "↓" : "→"} Confiança {Math.round(dataConfidence)}%{(!marketHasData || reports.length < 3) ? " · Amostra reduzida" : ""}
-                    </p>
-                    <div
-                      className="font-editorial-mono text-[11px] leading-relaxed rounded-lg p-3"
-                      style={{ background: "rgba(255,255,255,0.04)", borderLeft: `2px solid ${AMBER}`, color: MUTED }}
-                    >
-                      {getMarketScoreExplanation(Math.round(marketScore), Math.round(dataConfidence), reports.length)}
-                    </div>
+                    {(() => {
+                      const baseScore = calculateBaseScore(marketBreakdown);
+                      const samplePenalty = marketBreakdown?.consistencyReliabilityDetails.samplePenalty ?? 1.0;
+                      const hasConfidenceAdjust = samplePenalty < 1.0 && baseScore !== null && baseScore > Math.round(marketScore);
+                      const sampleReduced = (marketBreakdown?.consistencyReliabilityDetails.totalMatches ?? 0) < 3;
+                      return (
+                        <>
+                          {hasConfidenceAdjust && (
+                            <p className="font-editorial-mono text-[11px] mb-1" style={{ color: MUTED }}>
+                              Base: {baseScore} → Ajustado: {Math.min(100, Math.round(marketScore))}
+                            </p>
+                          )}
+                          <p className="font-editorial-mono text-[11px] mb-3" style={{ color: AMBER }}>
+                            {dataConfidence < 75 ? "↓" : "→"} Confiança {Math.round(dataConfidence)}%{sampleReduced ? " · Amostra reduzida" : ""}
+                          </p>
+                          <button
+                            onClick={() => setMarketScoreModalOpen(true)}
+                            className="w-full font-editorial-mono text-[11px] leading-relaxed rounded-lg p-3 text-left transition-colors hover:bg-white/[0.06]"
+                            style={{ background: "rgba(255,255,255,0.04)", borderLeft: `2px solid ${AMBER}`, color: MUTED }}
+                          >
+                            {getConfidenceExplanation(marketBreakdown)}
+                            <span className="block mt-1.5" style={{ color: ACCENT }}>Ver composição completa →</span>
+                          </button>
+                        </>
+                      );
+                    })()}
                   </>
                 ) : !marketScoreLoading && (
                   <ul className="space-y-1.5">
@@ -1041,7 +1014,7 @@ const PlayerDetail = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-editorial-mono text-[9px] uppercase tracking-[0.14em] mb-1" style={{ color: MUTED }}>ATUAL</p>
-                      <p className="font-display font-bold text-[22px]" style={{ color: ratingDelta !== null && ratingDelta >= 0 ? GREEN : ACCENT }}>
+                      <p className="font-display font-bold text-[22px]" style={{ color: getMarketScoreTier(player.auto_rating).color }}>
                         {player.auto_rating.toFixed(1)}
                       </p>
                     </div>
@@ -1130,6 +1103,20 @@ const PlayerDetail = () => {
         player={player ? { id: player.id, full_name: player.full_name } : null}
         onSuccess={handleDeleteSuccess}
       />
+
+      {player && (
+        <MarketScoreDetailModal
+          open={marketScoreModalOpen}
+          onOpenChange={setMarketScoreModalOpen}
+          athleteId={player.id}
+          athleteName={player.full_name}
+          position={player.position}
+          age={player.age}
+          birthDate={player.birth_date}
+          photoUrl={player.photo_url}
+          currentClub={player.current_club}
+        />
+      )}
     </div>
   );
 };

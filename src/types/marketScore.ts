@@ -253,6 +253,14 @@ export interface ActivePlayerData {
     passesTotal: number;
     crossesSuccess: number;
     crossesFailed: number;
+    shots: number;
+    shotsOnTarget: number;
+    steals: number;
+    possessionLost: number;
+    wasDribbled: number;
+    penaltiesWon: number;
+    groundDuelsWon: number;
+    groundDuelsTotal: number;
   };
   
   // Match ratings from usePlayerMatchRatings
@@ -266,6 +274,17 @@ export interface ActivePlayerData {
   
   // Last 30 days activity
   matchesLast30Days: number;
+
+  // Minutes played per competition this season (live + manual, merged) — used
+  // by Contexto to weight the REAL competition coefficient by real minutes,
+  // across every competition the player has data in, not just the ones with
+  // a live-tracked match (manual-only competitions were previously invisible
+  // to this pillar entirely).
+  competitionBreakdown: {
+    competitionId: string | null;
+    minutes: number;
+    coefficient: number;
+  }[];
 }
 
 export interface TargetPlayerData {

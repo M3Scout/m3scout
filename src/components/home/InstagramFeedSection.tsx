@@ -293,8 +293,8 @@ export function InstagramFeedSection() {
                 rel="noopener noreferrer"
                 className="group relative flex-shrink-0 snap-start"
               >
-                {/* Square Card */}
-                <div className="relative w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] overflow-hidden">
+                {/* Portrait card — matches the 4:5 aspect most of these designs actually use, so less gets cropped off top/bottom than a forced square */}
+                <div className="relative w-[140px] h-[175px] sm:w-[160px] sm:h-[200px] md:w-[180px] md:h-[225px] lg:w-[200px] lg:h-[250px] overflow-hidden">
                   <img
                     src={post.imageUrl}
                     alt="Instagram post"
