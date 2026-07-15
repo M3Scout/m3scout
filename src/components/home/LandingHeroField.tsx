@@ -120,7 +120,7 @@ const BALL = {
     foot(MATHEUS.left[6]), // t0.66 — Matheus toca de primeira
     foot(CORONA.left[6]), // t0.72 — Corona recebe o toque final
     foot(CORONA.left[7]), // t0.72 — Corona bate de primeira pro gol
-    foot(92), // t0.78 — bola chega ao gol
+    foot(97), // t0.78 — bola chega ao gol (cruza a linha, dentro da rede)
     foot(VITOR.left[0]), // t1.00 — reinício do loop
   ],
   top: [
@@ -160,14 +160,14 @@ export function LandingHeroField() {
           ocupando 100% da altura. */}
       <div className="lp-hero__field-lines absolute inset-0 top-14">
         {/* Marcações do campo */}
-        <div className="absolute inset-[6%] rounded-sm border border-white/30" />
-        <div className="absolute left-1/2 top-[6%] bottom-[6%] w-px -translate-x-1/2 bg-white/30" />
+        <div className="lp-hero__pitch-border absolute inset-[6%] rounded-sm border border-white/30" />
+        <div className="lp-hero__pitch-midline absolute left-1/2 top-[6%] bottom-[6%] w-px -translate-x-1/2 bg-white/30" />
         <div className="absolute left-1/2 top-1/2 aspect-square w-[20%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30" />
         <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/35" />
-        <div className="absolute left-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-l-0 border-white/30" />
-        <div className="absolute left-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-l-0 border-white/30" />
-        <div className="absolute right-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-r-0 border-white/30" />
-        <div className="absolute right-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-r-0 border-white/30" />
+        <div className="lp-hero__pitch-box-start absolute left-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-l-0 border-white/30" />
+        <div className="lp-hero__pitch-box-start absolute left-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-l-0 border-white/30" />
+        <div className="lp-hero__pitch-box-end absolute right-[6%] top-1/2 h-[38%] w-[12%] -translate-y-1/2 border border-r-0 border-white/30" />
+        <div className="lp-hero__pitch-box-end absolute right-[6%] top-1/2 h-[16%] w-[5%] -translate-y-1/2 border border-r-0 border-white/30" />
 
         {/* Jogadores (botões) — a div animada tem o mesmo tamanho do círculo,
             então o -translate-x/y-1/2 centraliza exatamente sobre a bola. */}

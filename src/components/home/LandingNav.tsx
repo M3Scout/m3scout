@@ -18,6 +18,7 @@ export function LandingNav() {
   const hideMobile = TITLE_HEADER_ROUTES.some(r => location.pathname.startsWith(r));
   const isHome = location.pathname === "/";
   const transparent = isHome && !scrolled;
+  const hideMobileAtTop = isHome && !scrolled;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -28,7 +29,7 @@ export function LandingNav() {
 
   return (
     <div className="lp-root">
-      <header className={`lp-nav ${scrolled ? "is-scrolled" : ""} ${transparent ? "lp-nav--transparent" : ""} ${hideMobile ? "lp-nav--hide-mobile" : ""}`}>
+      <header className={`lp-nav ${scrolled ? "is-scrolled" : ""} ${transparent ? "lp-nav--transparent" : ""} ${hideMobile ? "lp-nav--hide-mobile" : ""} ${hideMobileAtTop ? "lp-nav--hide-mobile-at-top" : ""}`}>
         <div className="lp-nav__inner">
           {/* Spacer for mobile centering */}
           <div className="lp-nav__spacer lg:hidden" />

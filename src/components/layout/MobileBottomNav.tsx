@@ -16,6 +16,16 @@ export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
+  const isHome = location.pathname === "/";
+  const hideAtTop = isHome && !scrolled;
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 30);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const authItem = user
     ? { to: "/dashboard", label: "Dashboard", Icon: Lock, match: (p: string) => p.startsWith("/dashboard") }
@@ -116,7 +126,7 @@ export function MobileBottomNav() {
 
 
   return (
-    <nav className="m3-bottom-nav" aria-label="Navegação principal">
+    <nav className={`m3-bottom-nav ${hideAtTop ? "m3-bottom-nav--hidden" : ""}`} aria-label="Navegação principal">
       <svg width="0" height="0" style={{ position: "absolute" }}>
         <defs>
           <filter id="m3-public-glass-lens" x="-20%" y="-20%" width="140%" height="140%">

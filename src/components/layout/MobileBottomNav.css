@@ -6,6 +6,17 @@
   z-index: 90;
   display: none;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+/* No topo do Hero (mobile), a barra só aparece depois que a página rola */
+.m3-bottom-nav--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.m3-bottom-nav--hidden .m3-bottom-nav__inner {
+  pointer-events: none;
 }
 
 @media (max-width: 767px) {

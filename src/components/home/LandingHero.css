@@ -136,6 +136,12 @@
 /* Hide nav entirely on mobile for pages that use their own title header */
 @media (max-width: 767px) {
   .lp-nav--hide-mobile { display: none; }
+  /* No topo do Hero (mobile), o menu só aparece depois que a página rola */
+  .lp-nav--hide-mobile-at-top {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
 }
 
 /* ---------- HERO ---------- */
@@ -324,9 +330,32 @@
        ALTURA final — limitada ao espaço vertical realmente disponível,
        para não ficar atrás da logo em cima nem da barra debaixo. As duas
        dimensões são independentes (sem aspect-ratio) de propósito. */
-    height: calc(100vw - 40px);
-    width: min(calc((100vw - 40px) * 2), calc(100dvh - 220px));
+    height: calc(100vw - 48px);
+    width: min(calc((100vw - 48px) * 3), calc(100dvh - 48px));
     transform: translate(-50%, -50%) rotate(90deg);
+  }
+  /* A borda do campo tem um recuo de 6% pensado pra tela cheia do desktop.
+     No mobile isso soma um respiro extra além da margem do bloco — zeramos
+     o recuo nos dois eixos (laterais e de fundo) pra sobrar só a folga de
+     24px definida pelo tamanho do próprio bloco. */
+  .lp-hero__pitch-border {
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  /* Mesmo ajuste nas outras marcações (linha do meio e grandes áreas),
+     senão elas ficam "presas" no recuo antigo enquanto a borda já andou
+     até a nova posição — desalinhando tudo. */
+  .lp-hero__pitch-midline {
+    top: 0 !important;
+    bottom: 0 !important;
+  }
+  .lp-hero__pitch-box-start {
+    left: 0 !important;
+  }
+  .lp-hero__pitch-box-end {
+    right: 0 !important;
   }
   /* O bloco do campo gira 90°, então "esquerda" antes da rotação vira
      "acima" depois — reposicionamos o rótulo para a esquerda do círculo e
