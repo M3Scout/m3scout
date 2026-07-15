@@ -319,9 +319,13 @@
     left: 50%;
     right: auto;
     bottom: auto;
-    aspect-ratio: 2 / 1;
+    /* "height" aqui vira a LARGURA final (depois de girar 90°) — sempre
+       preenche quase toda a lateral, sem mudar. "width" aqui vira a
+       ALTURA final — limitada ao espaço vertical realmente disponível,
+       para não ficar atrás da logo em cima nem da barra debaixo. As duas
+       dimensões são independentes (sem aspect-ratio) de propósito. */
     height: calc(100vw - 40px);
-    width: auto;
+    width: min(calc((100vw - 40px) * 2), calc(100dvh - 220px));
     transform: translate(-50%, -50%) rotate(90deg);
   }
   /* O bloco do campo gira 90°, então "esquerda" antes da rotação vira
