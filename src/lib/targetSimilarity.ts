@@ -7,15 +7,24 @@ import type { Target } from "@/types/marketScore";
 // 4 pillar scores + position + tags to compare.
 
 export interface SimilarTargetResult {
-  target: Target;
+  target: ScorableTarget;
   score: number; // 0-100
   matchedOn: string[];
 }
 
-type ScorableTarget = Pick<Target, "id" | "status" | "position" | "score_physical" | "score_technical" | "score_tactical" | "score_mental" | "tags"> & {
+type ScorableTarget = {
+  id: string;
+  status: Target["status"];
+  position: string;
+  score_physical?: number | null;
+  score_technical?: number | null;
+  score_tactical?: number | null;
+  score_mental?: number | null;
+  tags?: string[] | null;
   secondary_position?: string | null;
   notable_characteristics?: string[] | null;
-};
+} & Partial<Target>;
+
 
 const PILLARS = ["score_physical", "score_technical", "score_tactical", "score_mental"] as const;
 
@@ -82,7 +91,7 @@ export function findSimilarTargets(
       matchedOn.push(`${overlap.length} característica${overlap.length > 1 ? "s" : ""} em comum`);
     }
 
-    return { target: candidate as Target, score: Math.round(Math.min(100, score)), matchedOn };
+    return { target: candidate, score: Math.round(Math.min(100, score)), matchedOn };
   });
 
   return results

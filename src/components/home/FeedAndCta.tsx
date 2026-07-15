@@ -198,7 +198,7 @@ export function FeedAndCta() {
                     rel="noreferrer"
                     className="post"
                   >
-                    <span className="post__tag">{tag}</span>
+                    
                     <img
                       src={img}
                       alt={caption}
