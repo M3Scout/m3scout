@@ -176,7 +176,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(10, 10, 10, 0.25) 0%, rgba(10, 10, 10, 0.18) 45%, rgba(10, 10, 10, 0.1) 100%);
+  background: linear-gradient(90deg, rgba(10, 10, 10, 0.1) 0%, rgba(10, 10, 10, 0.07) 45%, rgba(10, 10, 10, 0.04) 100%);
 }
 .lp-hero__inner {
   position: relative;
