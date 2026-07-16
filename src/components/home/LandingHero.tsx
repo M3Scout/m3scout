@@ -63,6 +63,15 @@ export function LandingHero() {
 
       {/* HERO */}
       <section className="lp-hero">
+        <div className="lp-hero__turf" aria-hidden="true">
+          <div
+            className="lp-hero__turf-stripes"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 40px, transparent 40px, transparent 80px)",
+            }}
+          />
+        </div>
         <div className="lp-hero__field-frame">
           <LandingHeroField />
         </div>

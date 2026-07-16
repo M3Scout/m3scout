@@ -145,19 +145,10 @@ const BALL = {
 export function LandingHeroField() {
   return (
     <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-      {/* Gramado */}
-      <div className="absolute inset-0 bg-[#0a1f15]" />
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 40px, transparent 40px, transparent 80px)",
-        }}
-      />
-
-      {/* Bloco do gramado (linhas, jogadores e bola) — deslocado um pouco do
-          topo para não colar no menu, sem afetar o fundo verde, que segue
-          ocupando 100% da altura. */}
+      {/* O gramado (fundo verde) mora em LandingHero.tsx, fora do frame de
+          largura limitada, para poder ocupar 100% da tela em qualquer
+          resolução. Aqui só ficam as linhas, jogadores e bola, alinhados
+          com a logo/botão do menu. */}
       <div className="lp-hero__field-lines absolute inset-0 top-14">
         {/* Marcações do campo */}
         <div className="lp-hero__pitch-border absolute inset-[6%] rounded-sm border border-white/30" />

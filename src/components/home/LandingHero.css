@@ -163,6 +163,21 @@
   background: var(--bg-dark);
   overflow: hidden;
 }
+/* Gramado — sempre em tela cheia, mesmo em monitores bem largos (o
+   .lp-hero__field-frame abaixo é que fica limitado a 1600px, para as
+   linhas/jogadores ficarem alinhados com a logo e o botão do menu). */
+.lp-hero__turf {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #0a1f15;
+  overflow: hidden;
+}
+.lp-hero__turf-stripes {
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+}
 .lp-hero__field-frame {
   position: absolute;
   z-index: 0;
