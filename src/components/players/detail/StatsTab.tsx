@@ -405,7 +405,7 @@ export function StatsTab({ playerId, playerPosition, playerName }: StatsTabProps
   // Career totals — derived from the same merged rows the table displays so
   // live_correction overrides are not double-counted with the original live data.
   const careerTotals = useMemo(() => {
-    const t = { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0, tackles: 0, yellow_cards: 0 };
+    const t = { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0, chances_created: 0, tackles: 0, yellow_cards: 0 };
     allSeasons.forEach(yr => {
       mergeSeasonRows(mergedBySeason[yr] ?? []).forEach(row => {
         t.matches     += row.stats.matches;
@@ -414,6 +414,7 @@ export function StatsTab({ playerId, playerPosition, playerName }: StatsTabProps
         t.assists     += row.stats.assists;
         t.shots       += row.stats.shots;
         t.key_passes  += row.stats.key_passes;
+        t.chances_created += row.stats.chances_created;
         t.tackles     += row.stats.tackles;
         t.yellow_cards += row.stats.yellow_cards;
       });
@@ -608,7 +609,7 @@ export function StatsTab({ playerId, playerPosition, playerName }: StatsTabProps
             { label: "GOLS",     value: careerTotals.goals,                        highlight: true  },
             { label: "ASSIST",   value: careerTotals.assists,                      highlight: true  },
             { label: "CHUTES",   value: careerTotals.shots,                        highlight: false },
-            { label: "CHANCES",  value: careerTotals.key_passes,                   highlight: false },
+            { label: "CHANCES",  value: careerTotals.chances_created,              highlight: false },
             { label: "DESARMES", value: careerTotals.tackles,                      highlight: false },
             { label: "AMARELOS", value: careerTotals.yellow_cards,                 highlight: false },
           ].map((stat, i) => (
