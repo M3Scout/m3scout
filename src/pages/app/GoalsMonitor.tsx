@@ -10,7 +10,9 @@ import {
   AlertTriangle,
   Calendar,
   User,
-  Users
+  Users,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,6 +43,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PlayerGoalsCard } from "@/components/goals/PlayerGoalsCard";
 import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { toast } from "@/hooks/use-toast";
 
 // Goal type configuration (mirrored from AthleteSeasonGoalsCard)
 interface GoalTypeConfig {
@@ -246,6 +249,11 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedGoal, setSelectedGoal] = useState<GoalWithProgress | null>(null);
   const [addGoalOpen, setAddGoalOpen] = useState(false);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [savingGoalEdit, setSavingGoalEdit] = useState(false);
+  const [editGoalType, setEditGoalType] = useState("");
+  const [editTargetValue, setEditTargetValue] = useState(0);
+  const [editSeasonYear, setEditSeasonYear] = useState(new Date().getFullYear());
 
   const { data: playerProfile } = useQuery({
     queryKey: ["player-position", playerIdFilter],
@@ -487,6 +495,58 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
 
   const goals = goalsRaw ?? [];
   const rbacAllowed = isPlayerView || isAdmin || can("users", "manage");
+  const canEditGoal = isAdmin || isPlayerView;
+
+  const closeGoalModal = () => {
+    setSelectedGoal(null);
+    setIsEditingGoal(false);
+  };
+
+  const startEditingGoal = () => {
+    if (!selectedGoal) return;
+    setEditGoalType(selectedGoal.goal_type);
+    setEditTargetValue(selectedGoal.target_value);
+    setEditSeasonYear(selectedGoal.season_year);
+    setIsEditingGoal(true);
+  };
+
+  const handleSaveGoalEdit = async () => {
+    if (!selectedGoal) return;
+    if (!editGoalType || editTargetValue <= 0 || !editSeasonYear) {
+      toast({ title: "Preencha um tipo, alvo e temporada válidos", variant: "destructive" });
+      return;
+    }
+    setSavingGoalEdit(true);
+    try {
+      const { error } = await supabase
+        .from("player_season_goals")
+        .update({
+          goal_type: editGoalType,
+          target_value: editTargetValue,
+          season_year: editSeasonYear,
+        })
+        .eq("id", selectedGoal.id);
+
+      if (error) {
+        if (error.code === "23505") {
+          toast({ title: "Já existe uma meta desse tipo para essa temporada", variant: "destructive" });
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast({ title: "Meta atualizada com sucesso!" });
+      void queryClient.invalidateQueries({ queryKey: ["admin-metas", playerIdFilter] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-goals-player-stats-v2"] });
+      closeGoalModal();
+    } catch (err) {
+      console.error("[GoalsMonitor] Failed to update goal:", err);
+      toast({ title: "Erro ao atualizar meta", variant: "destructive" });
+    } finally {
+      setSavingGoalEdit(false);
+    }
+  };
 
   // Debug log (dev only)
   if (isDev) {
@@ -729,17 +789,120 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
       )}
 
       {/* Detail Modal */}
-      <Dialog open={!!selectedGoal} onOpenChange={() => setSelectedGoal(null)}>
+      <Dialog open={!!selectedGoal} onOpenChange={v => { if (!v) closeGoalModal(); }}>
 
         <DialogContent className="bg-zinc-900 border-zinc-800 max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Target className="w-5 h-5 text-emerald-400" />
-              Detalhes da Meta
+            <DialogTitle className="flex items-center justify-between gap-2 text-lg pr-6">
+              <span className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-emerald-400" />
+                {isEditingGoal ? "Editar Meta" : "Detalhes da Meta"}
+              </span>
+              {canEditGoal && !isEditingGoal && selectedGoal && (
+                <button
+                  onClick={startEditingGoal}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Editar
+                </button>
+              )}
             </DialogTitle>
           </DialogHeader>
 
-          {selectedGoal && (
+          {selectedGoal && isEditingGoal && (
+            <div className="space-y-5 pt-2">
+              {/* Player Info (read-only recap) */}
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-zinc-800/50">
+                {selectedGoal.player?.photo_url ? (
+                  <img
+                    src={getOptimizedImageUrl(selectedGoal.player.photo_url, { width: 400, quality: 85, format: "avif" }) || selectedGoal.player.photo_url || ""}
+                    alt={selectedGoal.player.full_name}
+                    className="w-14 h-14 rounded-full object-cover object-center" width={400} height={400}
+                    onError={e => { if (selectedGoal.player.photo_url) (e.target as HTMLImageElement).src = selectedGoal.player.photo_url; }}
+                    loading="lazy" decoding="async"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-zinc-700 flex items-center justify-center">
+                    <User className="w-7 h-7 text-zinc-500" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-lg font-semibold text-foreground">
+                    {selectedGoal.player?.full_name || "Jogador"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedGoal.player?.position}
+                    {selectedGoal.player?.age && ` • ${selectedGoal.player.age} anos`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Editable fields */}
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-wider">Estatística</label>
+                  <Select value={editGoalType} onValueChange={setEditGoalType}>
+                    <SelectTrigger className="h-10 text-[13px] font-mono bg-zinc-800/50 border-zinc-700">
+                      <SelectValue placeholder="Selecione uma estatística" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0f0e13] border-white/[0.07]">
+                      {Object.entries(GOAL_TYPE_CONFIG).map(([key, cfg]) => (
+                        <SelectItem key={key} value={key} className="font-mono text-[12px]">{cfg.icon} {cfg.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-wider">Alvo</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={editTargetValue}
+                      onChange={e => setEditTargetValue(Number(e.target.value))}
+                      className="h-10 text-[13px] font-mono bg-zinc-800/50 border-zinc-700"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-wider">Temporada</label>
+                    <Input
+                      type="number"
+                      value={editSeasonYear}
+                      onChange={e => setEditSeasonYear(Number(e.target.value))}
+                      className="h-10 text-[13px] font-mono bg-zinc-800/50 border-zinc-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2.5">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={savingGoalEdit}
+                  onClick={() => setIsEditingGoal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white"
+                  disabled={savingGoalEdit}
+                  onClick={handleSaveGoalEdit}
+                >
+                  {savingGoalEdit ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando…</>
+                  ) : (
+                    "Salvar alterações"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {selectedGoal && !isEditingGoal && (
             <div className="space-y-6 pt-2">
               {/* Player Info */}
               <div className="flex items-center gap-4 p-4 rounded-xl bg-zinc-800/50">
@@ -856,10 +1019,10 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
               })()}
 
               {/* Close Button */}
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                onClick={() => setSelectedGoal(null)}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={closeGoalModal}
               >
                 Fechar
               </Button>
