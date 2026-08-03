@@ -58,22 +58,23 @@ export default defineConfig(({ mode }) => ({
           },
           {
             // CRITICAL: Handle ALL navigation requests with NetworkFirst
-            // This replaces navigateFallback and prevents "non-precached-url" errors
-            // Falls back to cache only if offline (after 3s timeout)
+            // Long network timeout + short cache TTL so users never run a stale
+            // app version just because the connection was slow for a moment.
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
-              cacheName: "html-pages-cache",
+              cacheName: "html-pages-cache-v2",
               expiration: {
                 maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxAgeSeconds: 60 * 30, // 30 minutes
               },
-              networkTimeoutSeconds: 3,
+              networkTimeoutSeconds: 12,
               cacheableResponse: {
                 statuses: [200],
               },
             },
           },
+
           {
             // Cache Google Fonts
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
