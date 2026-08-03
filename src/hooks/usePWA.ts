@@ -34,7 +34,7 @@ export function usePWA(): PWAUpdateState {
             )
             .finally(() => window.location.reload());
         } else {
-          window.location.reload();
+          globalThis.location.reload();
         }
       });
     }
