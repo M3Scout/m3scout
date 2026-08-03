@@ -15,13 +15,39 @@ interface PWAUpdateState {
 
 export function usePWA(): PWAUpdateState {
   useEffect(() => {
+    // When a new SW takes control (autoUpdate + skipWaiting), the current page
+    // is still running the OLD bundle. Reload once so the user always sees the
+    // latest version instead of a stale cached app.
+    if ("serviceWorker" in navigator) {
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloading) return;
+        reloading = true;
+        // Drop stale HTML caches before reloading
+        if ("caches" in window) {
+          caches
+            .keys()
+            .then((keys) =>
+              Promise.all(
+                keys.filter((k) => k.startsWith("html-pages-cache")).map((k) => caches.delete(k))
+              )
+            )
+            .finally(() => window.location.reload());
+        } else {
+          window.location.reload();
+        }
+      });
+    }
+
     registerSW({
+      immediate: true,
       onRegistered(registration) {
         if (import.meta.env.DEV) {
           console.log("[PWA] Service Worker registered:", registration);
         }
         // Periodically check for SW updates (every 60s)
         if (registration) {
+          registration.update();
           setInterval(() => {
             registration.update();
           }, 60 * 1000);
@@ -32,6 +58,7 @@ export function usePWA(): PWAUpdateState {
       },
     });
   }, []);
+
 
   return {
     needRefresh: false,
