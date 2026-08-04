@@ -57,6 +57,7 @@ interface GoalTypeConfig {
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   goals: { label: "Gols", icon: "⚽", color: "emerald", type: "accumulation" },
   assists: { label: "Assistências", icon: "🅰️", color: "blue", type: "accumulation" },
+  key_passes: { label: "Passes Decisivos", icon: "🔑", color: "sky", type: "accumulation" },
   matches: { label: "Partidas", icon: "🏟️", color: "violet", type: "accumulation" },
   minutes: { label: "Minutos", icon: "⏱️", color: "amber", type: "accumulation" },
   shots: { label: "Finalizações", icon: "🎯", color: "orange", type: "accumulation" },
@@ -76,6 +77,26 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
 
 type GoalStatus = "in_progress" | "completed" | "exceeded";
 type SortOption = "recent" | "oldest" | "progress_high" | "progress_low" | "player_name";
+
+function isGoalkeeperPosition(position?: string | null): boolean {
+  const pos = (position ?? "").toLowerCase();
+  return pos.includes("goleiro") || pos === "gk" || pos.includes("goalkeeper");
+}
+
+interface PlayerPickerOption {
+  id: string;
+  full_name: string;
+  position: string;
+  age: number | null;
+  photo_url: string | null;
+}
+
+function normalizeSearch(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
+    .toLowerCase();
+}
 
 interface GoalWithPlayer {
   id: string;
@@ -249,6 +270,9 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedGoal, setSelectedGoal] = useState<GoalWithProgress | null>(null);
   const [addGoalOpen, setAddGoalOpen] = useState(false);
+  const [playerPickerOpen, setPlayerPickerOpen] = useState(false);
+  const [playerPickerSearch, setPlayerPickerSearch] = useState("");
+  const [addGoalTargetPlayer, setAddGoalTargetPlayer] = useState<PlayerPickerOption | null>(null);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [savingGoalEdit, setSavingGoalEdit] = useState(false);
   const [editGoalType, setEditGoalType] = useState("");
@@ -265,11 +289,31 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
     staleTime: 10 * 60 * 1000,
   });
 
-  const isGoalkeeper = useMemo(() => {
-    const pos = (playerProfile?.position ?? "").toLowerCase();
-    return pos.includes("goleiro") || pos === "gk" || pos.includes("goalkeeper");
-  }, [playerProfile]);
-  
+  const isGoalkeeper = useMemo(() => isGoalkeeperPosition(playerProfile?.position), [playerProfile]);
+
+  // Full player list for the admin "+ Nova Meta" picker (lazy — only fetched once the picker opens)
+  const { data: allPlayers, isLoading: allPlayersLoading } = useQuery({
+    queryKey: ["all-players-goal-picker"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, full_name, position, age, photo_url")
+        .eq("is_archived", false)
+        .order("full_name");
+      if (error) throw error;
+      return data as PlayerPickerOption[];
+    },
+    enabled: playerPickerOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const filteredPlayerPicker = useMemo(() => {
+    if (!allPlayers) return [];
+    if (!playerPickerSearch.trim()) return allPlayers;
+    const q = normalizeSearch(playerPickerSearch);
+    return allPlayers.filter(p => normalizeSearch(p.full_name).includes(q));
+  }, [allPlayers, playerPickerSearch]);
+
   const currentYear = new Date().getFullYear();
 
   // Fetch all goals with player info
@@ -360,6 +404,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
         switch (goal.goal_type) {
           case "goals": currentValue = playerSeasonStats.goals; break;
           case "assists": currentValue = playerSeasonStats.assists; break;
+          case "key_passes": currentValue = playerSeasonStats.key_passes ?? 0; break;
           case "matches": currentValue = playerSeasonStats.matches; break;
           case "minutes": currentValue = playerSeasonStats.minutes; break;
           case "shots": currentValue = playerSeasonStats.shots; break;
@@ -593,6 +638,16 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
                 <span className="hidden sm:inline">Meta</span>
               </button>
             )}
+            {!isPlayerView && rbacAllowed && (
+              <button
+                onClick={() => { setAddGoalTargetPlayer(null); setPlayerPickerSearch(""); setPlayerPickerOpen(true); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.1em] uppercase text-white transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{ background: DT.accent }}
+              >
+                <span className="text-base leading-none">+</span>
+                <span className="hidden sm:inline">Nova Meta</span>
+              </button>
+            )}
             {!isPlayerView && (
               <button
                 className="sm:hidden p-1 transition-colors" style={{ color: DT.muted }}
@@ -775,18 +830,91 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
         )}
       </div>
 
-      {/* Add Goal Dialog — player view only */}
-      {isPlayerView && playerIdFilter && (
-        <AddGoalDialog
-          open={addGoalOpen}
-          onOpenChange={setAddGoalOpen}
-          playerId={playerIdFilter}
-          isGoalkeeper={isGoalkeeper}
-          playerPosition={playerProfile?.position ?? ""}
-          existingGoalTypes={goalsRaw?.filter(g => g.season_year === new Date().getFullYear()).map(g => g.goal_type) ?? []}
-          onSuccess={() => { void queryClient.invalidateQueries({ queryKey: ["admin-metas", playerIdFilter] }); }}
-        />
+      {/* Player Picker — admin flow only, to choose who the new goal is for */}
+      {!isPlayerView && (
+        <Dialog open={playerPickerOpen} onOpenChange={setPlayerPickerOpen}>
+          <DialogContent className="bg-zinc-900 border-zinc-800 max-w-md p-0 gap-0 overflow-hidden">
+            <DialogHeader className="p-5 pb-3">
+              <DialogTitle className="text-lg">Selecionar jogador</DialogTitle>
+            </DialogHeader>
+            <div className="px-5 pb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                <input
+                  autoFocus
+                  value={playerPickerSearch}
+                  onChange={e => setPlayerPickerSearch(e.target.value)}
+                  placeholder="Buscar jogador..."
+                  className="w-full pl-8 pr-3 h-10 rounded-lg text-[13px] font-mono bg-zinc-800/50 border border-zinc-700 outline-none text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-1 focus-visible:ring-[#ec4525]/40"
+                />
+              </div>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto px-2 pb-2">
+              {allPlayersLoading ? (
+                <div className="py-10 flex justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+                </div>
+              ) : filteredPlayerPicker.length === 0 ? (
+                <p className="py-10 text-center text-sm text-zinc-500">Nenhum jogador encontrado</p>
+              ) : (
+                filteredPlayerPicker.map(player => (
+                  <button
+                    key={player.id}
+                    onClick={() => {
+                      setAddGoalTargetPlayer(player);
+                      setPlayerPickerOpen(false);
+                      setAddGoalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-white/5 transition-colors"
+                  >
+                    {player.photo_url ? (
+                      <img
+                        src={getOptimizedImageUrl(player.photo_url, { width: 200, quality: 85, format: "avif" }) || player.photo_url}
+                        alt={player.full_name}
+                        className="w-9 h-9 rounded-full object-cover object-center flex-none"
+                        onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center flex-none">
+                        <User className="w-4 h-4 text-zinc-500" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-zinc-100 truncate">{player.full_name}</p>
+                      <p className="text-[11px] text-zinc-500 truncate">
+                        {player.position}{player.age ? ` • ${player.age} anos` : ""}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
+
+      {/* Add Goal Dialog — player view (self) or admin flow (picked player) */}
+      {(() => {
+        const targetPlayerId = isPlayerView ? playerIdFilter : addGoalTargetPlayer?.id;
+        if (!targetPlayerId) return null;
+        const targetPosition = isPlayerView ? (playerProfile?.position ?? "") : (addGoalTargetPlayer?.position ?? "");
+        const targetIsGoalkeeper = isPlayerView ? isGoalkeeper : isGoalkeeperPosition(addGoalTargetPlayer?.position);
+        const existingGoalTypes = (goalsRaw ?? [])
+          .filter(g => g.player_id === targetPlayerId && g.season_year === currentYear)
+          .map(g => g.goal_type);
+
+        return (
+          <AddGoalDialog
+            open={addGoalOpen}
+            onOpenChange={setAddGoalOpen}
+            playerId={targetPlayerId}
+            isGoalkeeper={targetIsGoalkeeper}
+            playerPosition={targetPosition}
+            existingGoalTypes={existingGoalTypes}
+            onSuccess={() => { void queryClient.invalidateQueries({ queryKey: ["admin-metas", playerIdFilter] }); }}
+          />
+        );
+      })()}
 
       {/* Detail Modal */}
       <Dialog open={!!selectedGoal} onOpenChange={v => { if (!v) closeGoalModal(); }}>

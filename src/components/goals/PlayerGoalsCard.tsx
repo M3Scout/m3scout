@@ -18,6 +18,7 @@ interface GoalTypeConfig {
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   goals:                    { label: "Gols",            icon: "⚽", color: "emerald", hex: "#22c55e", type: "accumulation" },
   assists:                  { label: "Assistências",    icon: "🅰️", color: "blue",    hex: "#3b82f6", type: "accumulation" },
+  key_passes:               { label: "Passes Decisivos", icon: "🔑", color: "sky",     hex: "#0ea5e9", type: "accumulation" },
   matches:                  { label: "Partidas",        icon: "🏟️", color: "violet",  hex: "#8b5cf6", type: "accumulation" },
   minutes:                  { label: "Minutos",         icon: "⏱️", color: "amber",   hex: "#f59e0b", type: "accumulation" },
   shots:                    { label: "Finalizações",    icon: "🎯", color: "orange",  hex: "#f97316", type: "accumulation" },

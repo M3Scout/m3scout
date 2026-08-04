@@ -49,6 +49,21 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeCfg> = {
     description: "Passes decisivos que resultam em gol",
     benchmark: () => "Referência: meias e pontas buscam 6–12 assistências",
   },
+  key_passes: {
+    label: "Passes Decisivos", icon: "🔑", hex: "#0ea5e9",
+    minValue: 5, maxValue: 120, step: 5,
+    type: "accumulation",
+    description: "Passes que geram uma finalização do companheiro",
+    benchmark: (pos) => ({
+      cb:      "Zagueiros: 5 – 15 passes decisivos",
+      lb:      "Laterais: 15 – 35 passes decisivos",
+      dm:      "Volantes e Meias Centrais: 20 – 45 passes decisivos",
+      cam:     "Meias Ofensivos: 40 – 70 passes decisivos",
+      winger:  "Pontas / Extremos: 35 – 65 passes decisivos",
+      st:      "Centroavantes: 10 – 25 passes decisivos",
+      unknown: "Varia por posição: 10 (zagueiro) a 70 (armador)",
+    }[pos]),
+  },
   matches: {
     label: "Partidas", icon: "🏟️", hex: "#8b5cf6",
     minValue: 5, maxValue: 60, step: 5,
@@ -205,7 +220,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeCfg> = {
 };
 
 const OUTFIELD_TYPES = [
-  "goals", "assists", "matches", "minutes", "shots",
+  "goals", "assists", "key_passes", "matches", "minutes", "shots",
   "tackles", "interceptions", "clearances",
   "pass_accuracy", "dribble_accuracy", "yellow_cards_max",
 ];
@@ -561,6 +576,7 @@ function getQuickValues(type: string, cfg: GoalTypeCfg, pos: PosGroup): number[]
     tackles:         { cb: [40,50,55,60], lb: [80,90,100,120], dm: [75,100,120,140], cam: [25,30,35,45], winger: [40,45,55,60], st: [15,20,25,30] },
     interceptions:   { cb: [60,65,70,80], lb: [40,45,50,60], dm: [60,70,80,90], cam: [20,25,30,35], winger: [20,25,30,40], st: [10,12,15,20] },
     clearances:      { cb: [160,180,200,240], lb: [60,80,100,120], dm: [20,30,45,60], cam: [10,12,15,20], winger: [10,12,15,20], st: [20,25,30,40] },
+    key_passes:      { cb: [5,8,10,15], lb: [15,20,25,35], dm: [20,25,35,45], cam: [40,50,60,70], winger: [35,45,55,65], st: [10,15,20,25] },
     pass_accuracy:   { cb: [88,90,91,93], lb: [75,78,82,85], dm: [85,88,90,92], cam: [75,78,80,82], winger: [70,74,77,80], st: [65,68,72,75] },
     dribble_accuracy:{ cb: [75,78,80,85], lb: [55,58,62,65], dm: [65,68,72,75], cam: [50,54,57,60], winger: [45,48,52,55], st: [45,48,52,55] },
   };
