@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
+import { resolveCurrentContract } from "@/lib/currentContract";
+
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
