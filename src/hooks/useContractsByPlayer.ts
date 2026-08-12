@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContractWithPlayer } from "./useContracts";
+import { resolveCurrentContract } from "@/lib/currentContract";
 
 export interface PlayerContractGroup {
   player_id: string;
