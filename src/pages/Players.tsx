@@ -428,11 +428,17 @@ const Players = () => {
 
       const statsMap = new Map<string, { minutes: number; matches: number; averageRating: number | null }>();
       playerIds.forEach((playerId) => {
-        const liveComps = liveByPlayerComp.get(playerId) || new Map();
-        const manualComps = manualByPlayerComp.get(playerId) || new Map();
+        const liveComps: Map<string, { minutes: number; matches: number }> = liveByPlayerComp.get(playerId) || new Map();
+        const correctionComps: Map<string, { minutes: number; matches: number }> = correctionByPlayerComp.get(playerId) || new Map();
+        const additiveComps: Map<string, { minutes: number; matches: number }> = additiveByPlayerComp.get(playerId) || new Map();
         let minutes = 0, matches = 0;
-        for (const v of liveComps.values()) { minutes += v.minutes; matches += v.matches; }
-        for (const [compKey, v] of manualComps.entries()) { if (liveComps.has(compKey)) continue; minutes += v.minutes; matches += v.matches; }
+        const compKeys = new Set<string>([...liveComps.keys(), ...correctionComps.keys(), ...additiveComps.keys()]);
+        for (const compKey of compKeys) {
+          const base = correctionComps.get(compKey) ?? liveComps.get(compKey) ?? { minutes: 0, matches: 0 };
+          const extra = additiveComps.get(compKey) ?? { minutes: 0, matches: 0 };
+          minutes += base.minutes + extra.minutes;
+          matches += base.matches + extra.matches;
+        }
         const ratings = ratingsMap.get(playerId) || [];
         const averageRating = ratings.length > 0 ? Math.round((ratings.reduce((acc, r) => acc + r, 0) / ratings.length) * 10) / 10 : null;
         statsMap.set(playerId, { minutes, matches, averageRating });
