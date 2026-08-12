@@ -231,6 +231,30 @@ export function ContractTab({
   });
 
 
+  // ── Derive contract info (active loan > active owner > fallback) ──
+  const resolved = useMemo(() => resolveCurrentContract(rawHistory), [rawHistory]);
+  const topContract = resolved.contract as ContractRecord | null;
+  const currentEntryId = topContract?.id ?? null;
+
+  // Display order: current contract pinned on top, others by manual sort_order then date DESC
+  const history = useMemo(() => {
+    const rest = rawHistory.filter(c => c.id !== currentEntryId);
+    rest.sort((a, b) => {
+      const aO = a.sort_order, bO = b.sort_order;
+      if (aO !== null && bO !== null && aO !== bO) return aO - bO;
+      if (aO !== null && bO === null) return -1;
+      if (aO === null && bO !== null) return 1;
+      return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+    });
+    const current = rawHistory.find(c => c.id === currentEntryId);
+    return current ? [current, ...rest] : rest;
+  }, [rawHistory, currentEntryId]);
+
+  const derivedCurrentClub = resolved.status === "free" ? "Livre" : resolved.club;
+  const derivedStart        = topContract?.start_date ?? contractStart;
+  const derivedEnd          = topContract?.end_date   ?? contractEnd;
+  const derivedStatus = history.length > 0 ? resolved.status : contractStatus;
+
   // termination_fee from whichever contract was most recently edited (updated_at) that has the field set
   const latestTerminationFee = useMemo(() => {
     const withFee = history.filter(c => c.termination_fee);
@@ -250,32 +274,27 @@ export function ContractTab({
 
   const handleReorder = async (index: number, dir: "up" | "down") => {
     const swapIdx = dir === "up" ? index - 1 : index + 1;
-    if (swapIdx < 0 || swapIdx >= history.length || reordering) return;
+    // index 0 is the pinned current contract — it can't be moved or displaced
+    if (swapIdx < 1 || index < 1 || swapIdx >= history.length || reordering) return;
     setReordering(true);
     try {
-      const a = history[index];
-      const b = history[swapIdx];
-      const aOrder = a.sort_order ?? index * 10;
-      const bOrder = b.sort_order ?? swapIdx * 10;
-      await Promise.all([
-        supabase.from("player_contract_history").update({ sort_order: bOrder }).eq("id", a.id),
-        supabase.from("player_contract_history").update({ sort_order: aOrder }).eq("id", b.id),
-      ]);
-      queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] });
+      const next = [...history];
+      [next[index], next[swapIdx]] = [next[swapIdx], next[index]];
+      // Rewrite sequential sort_order for the whole list so ordering is deterministic
+      await Promise.all(
+        next.map((c, idx) =>
+          supabase.from("player_contract_history").update({ sort_order: idx * 10 }).eq("id", c.id)
+        )
+      );
+      await queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] });
+    } catch {
+      toast.error("Erro ao reordenar contratos");
     } finally {
       setReordering(false);
     }
   };
 
-  // ── Derive contract info from history (active loan > active owner > fallback) ──
-  const resolved = useMemo(() => resolveCurrentContract(history), [history]);
-  const topContract = resolved.contract;
-  const derivedCurrentClub = resolved.status === "free" ? "Livre" : resolved.club;
-  const derivedStart        = topContract?.start_date ?? contractStart;
-  const derivedEnd          = topContract?.end_date   ?? contractEnd;
 
-  const derivedStatus = history.length > 0 ? resolved.status : contractStatus;
-  const currentEntryId = topContract?.id ?? null;
 
 
   const statusCfg = getStatusCfg(derivedStatus);
