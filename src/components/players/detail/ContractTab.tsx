@@ -217,7 +217,7 @@ export function ContractTab({
     window.open(data.signedUrl, "_blank");
   };
 
-  const { data: history = [], isLoading } = useQuery({
+  const { data: rawHistory = [], isLoading } = useQuery({
     queryKey: ["player-contract-history", playerId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -226,19 +226,34 @@ export function ContractTab({
         .eq("player_id", playerId)
         .eq("is_archived", false);
       if (error) throw error;
-      const rows = (data ?? []) as ContractRecord[];
-
-      // Auto-initialize sort_order for contracts that don't have one (by start_date DESC)
-      // Always sort by start_date DESC — keeps date order consistent with /dashboard/contratos
-      // sort_order is used only as tiebreaker when dates are equal
-      return rows.sort((a, b) => {
-        const dateDiff = new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
-        if (dateDiff !== 0) return dateDiff;
-        if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
-        return 0;
-      });
+      return (data ?? []) as ContractRecord[];
     },
   });
+
+
+  // ── Derive contract info (active loan > active owner > fallback) ──
+  const resolved = useMemo(() => resolveCurrentContract(rawHistory), [rawHistory]);
+  const topContract = resolved.contract as ContractRecord | null;
+  const currentEntryId = topContract?.id ?? null;
+
+  // Display order: current contract pinned on top, others by manual sort_order then date DESC
+  const history = useMemo(() => {
+    const rest = rawHistory.filter(c => c.id !== currentEntryId);
+    rest.sort((a, b) => {
+      const aO = a.sort_order, bO = b.sort_order;
+      if (aO !== null && bO !== null && aO !== bO) return aO - bO;
+      if (aO !== null && bO === null) return -1;
+      if (aO === null && bO !== null) return 1;
+      return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+    });
+    const current = rawHistory.find(c => c.id === currentEntryId);
+    return current ? [current, ...rest] : rest;
+  }, [rawHistory, currentEntryId]);
+
+  const derivedCurrentClub = resolved.status === "free" ? "Livre" : resolved.club;
+  const derivedStart        = topContract?.start_date ?? contractStart;
+  const derivedEnd          = topContract?.end_date   ?? contractEnd;
+  const derivedStatus = history.length > 0 ? resolved.status : contractStatus;
 
   // termination_fee from whichever contract was most recently edited (updated_at) that has the field set
   const latestTerminationFee = useMemo(() => {
@@ -259,32 +274,27 @@ export function ContractTab({
 
   const handleReorder = async (index: number, dir: "up" | "down") => {
     const swapIdx = dir === "up" ? index - 1 : index + 1;
-    if (swapIdx < 0 || swapIdx >= history.length || reordering) return;
+    // index 0 is the pinned current contract — it can't be moved or displaced
+    if (swapIdx < 1 || index < 1 || swapIdx >= history.length || reordering) return;
     setReordering(true);
     try {
-      const a = history[index];
-      const b = history[swapIdx];
-      const aOrder = a.sort_order ?? index * 10;
-      const bOrder = b.sort_order ?? swapIdx * 10;
-      await Promise.all([
-        supabase.from("player_contract_history").update({ sort_order: bOrder }).eq("id", a.id),
-        supabase.from("player_contract_history").update({ sort_order: aOrder }).eq("id", b.id),
-      ]);
-      queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] });
+      const next = [...history];
+      [next[index], next[swapIdx]] = [next[swapIdx], next[index]];
+      // Rewrite sequential sort_order for the whole list so ordering is deterministic
+      await Promise.all(
+        next.map((c, idx) =>
+          supabase.from("player_contract_history").update({ sort_order: idx * 10 }).eq("id", c.id)
+        )
+      );
+      await queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] });
+    } catch {
+      toast.error("Erro ao reordenar contratos");
     } finally {
       setReordering(false);
     }
   };
 
-  // ── Derive contract info from history (active loan > active owner > fallback) ──
-  const resolved = useMemo(() => resolveCurrentContract(history), [history]);
-  const topContract = resolved.contract;
-  const derivedCurrentClub = resolved.status === "free" ? "Livre" : resolved.club;
-  const derivedStart        = topContract?.start_date ?? contractStart;
-  const derivedEnd          = topContract?.end_date   ?? contractEnd;
 
-  const derivedStatus = history.length > 0 ? resolved.status : contractStatus;
-  const currentEntryId = topContract?.id ?? null;
 
 
   const statusCfg = getStatusCfg(derivedStatus);
@@ -528,11 +538,11 @@ export function ContractTab({
                             <Pencil className="w-3 h-3" />
                           </button>
                         )}
-                        {canEdit && history.length > 1 && (
+                        {canEdit && history.length > 2 && i > 0 && (
                           <div className="flex flex-col" style={{ gap: "1px" }}>
-                            <button onClick={() => handleReorder(i, "up")} disabled={i === 0 || reordering}
+                            <button onClick={() => handleReorder(i, "up")} disabled={i <= 1 || reordering}
                               className="flex items-center justify-center w-5 h-5 transition-colors"
-                              style={{ color: i === 0 ? CARD_BORDER : MUTED, cursor: i === 0 ? "default" : "pointer" }}>
+                              style={{ color: i <= 1 ? CARD_BORDER : MUTED, cursor: i <= 1 ? "default" : "pointer" }}>
                               <ChevronUp className="w-3 h-3" />
                             </button>
                             <button onClick={() => handleReorder(i, "down")} disabled={i === history.length - 1 || reordering}
@@ -540,6 +550,7 @@ export function ContractTab({
                               style={{ color: i === history.length - 1 ? CARD_BORDER : MUTED, cursor: i === history.length - 1 ? "default" : "pointer" }}>
                               <ChevronDown className="w-3 h-3" />
                             </button>
+
                           </div>
                         )}
                       </div>
