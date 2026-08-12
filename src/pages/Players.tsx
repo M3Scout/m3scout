@@ -715,9 +715,8 @@ const Players = () => {
                               {player.age && <span>{player.age} anos</span>}
                               <span>· {player.nationality}</span>
                             </div>
-                            {player.current_club && (
-                              <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(242,237,228,0.22)", marginTop: 2 }}>{player.current_club}</span>
-                            )}
+                            <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(242,237,228,0.22)", marginTop: 2 }}>{player.current_club || "LIVRE NO MERCADO"}</span>
+
                           </div>
                         </div>
 
