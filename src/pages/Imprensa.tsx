@@ -67,7 +67,7 @@ const Imprensa = () => {
         .select("id, title, slug, category, excerpt, publish_date, featured_image_url, card_crop")
         .eq("status", "published")
         .order("publish_date", { ascending: false })
-        .limit(6);
+        .limit(7);
 
       if (error) throw error;
       return (data ?? []).map((item) => ({
@@ -78,7 +78,7 @@ const Imprensa = () => {
   });
 
   const featured = articles?.[0];
-  const grid = articles?.slice(1, 6) ?? [];
+  const grid = articles?.slice(1, 7) ?? [];
 
   const gutter = "clamp(24px, 5.625vw, 72px)";
   const maxW = "1600px";
