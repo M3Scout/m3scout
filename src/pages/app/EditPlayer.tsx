@@ -3,6 +3,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCurrentContract } from "@/lib/currentContract";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
@@ -253,17 +254,15 @@ export default function EditPlayer() {
         return;
       }
 
-      // Derive current_club exactly like the DB trigger: contract marked as
-      // current wins, otherwise the most recent one by start_date.
+      // Derive current_club with the same rules as the DB: active loan wins,
+      // otherwise the active owning contract, otherwise latest contract.
       const { data: contracts } = await supabase
         .from("player_contract_history")
-        .select("club_name, is_current, start_date")
+        .select("club_name, is_current, start_date, end_date, contract_type, is_archived")
         .eq("player_id", id)
-        .eq("is_archived", false)
-        .order("is_current", { ascending: false })
-        .order("start_date", { ascending: false })
-        .limit(1);
-      const derivedClub = contracts?.[0]?.club_name || playerRow.current_club || "";
+        .eq("is_archived", false);
+      const derivedClub = resolveCurrentContract(contracts ?? []).club || playerRow.current_club || "";
+
 
 
       setFormData({
