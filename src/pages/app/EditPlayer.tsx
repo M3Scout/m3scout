@@ -253,15 +253,18 @@ export default function EditPlayer() {
         return;
       }
 
-      // Derive current_club from the first contract in history (lowest sort_order)
+      // Derive current_club exactly like the DB trigger: contract marked as
+      // current wins, otherwise the most recent one by start_date.
       const { data: contracts } = await supabase
         .from("player_contract_history")
-        .select("club_name, sort_order")
+        .select("club_name, is_current, start_date")
         .eq("player_id", id)
         .eq("is_archived", false)
-        .order("sort_order", { ascending: true })
+        .order("is_current", { ascending: false })
+        .order("start_date", { ascending: false })
         .limit(1);
       const derivedClub = contracts?.[0]?.club_name || playerRow.current_club || "";
+
 
       setFormData({
         full_name: playerRow.full_name || "",

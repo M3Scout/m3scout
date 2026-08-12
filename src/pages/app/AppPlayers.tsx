@@ -243,12 +243,15 @@ const AppPlayers = () => {
         };
       });
 
-      // Derive current_club from most recent contract (start_date DESC)
+      // Derive current_club like the DB trigger: contract flagged as current
+      // wins, otherwise most recent by start_date.
       const { data: contractRows } = await supabase
         .from("player_contract_history")
-        .select("player_id, club_name, start_date")
+        .select("player_id, club_name, start_date, is_current")
         .eq("is_archived", false)
+        .order("is_current", { ascending: false })
         .order("start_date", { ascending: false });
+
 
       const currentClubMap: Record<string, string> = {};
       if (Array.isArray(contractRows)) {
