@@ -3005,6 +3005,10 @@ export type Database = {
         Returns: Json
       }
       resolve_current_club: { Args: { p_player_id: string }; Returns: string }
+      resolve_current_contract_status: {
+        Args: { p_player_id: string }
+        Returns: string
+      }
       resume_live_game: { Args: { p_game_id: string }; Returns: Json }
       set_added_time: {
         Args: { p_added_seconds: number; p_game_id: string }
