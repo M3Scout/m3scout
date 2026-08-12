@@ -217,7 +217,7 @@ export function ContractTab({
     window.open(data.signedUrl, "_blank");
   };
 
-  const { data: history = [], isLoading } = useQuery({
+  const { data: rawHistory = [], isLoading } = useQuery({
     queryKey: ["player-contract-history", playerId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -226,19 +226,10 @@ export function ContractTab({
         .eq("player_id", playerId)
         .eq("is_archived", false);
       if (error) throw error;
-      const rows = (data ?? []) as ContractRecord[];
-
-      // Auto-initialize sort_order for contracts that don't have one (by start_date DESC)
-      // Always sort by start_date DESC — keeps date order consistent with /dashboard/contratos
-      // sort_order is used only as tiebreaker when dates are equal
-      return rows.sort((a, b) => {
-        const dateDiff = new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
-        if (dateDiff !== 0) return dateDiff;
-        if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
-        return 0;
-      });
+      return (data ?? []) as ContractRecord[];
     },
   });
+
 
   // termination_fee from whichever contract was most recently edited (updated_at) that has the field set
   const latestTerminationFee = useMemo(() => {
