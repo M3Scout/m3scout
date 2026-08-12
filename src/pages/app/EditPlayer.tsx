@@ -3,6 +3,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCurrentContract } from "@/lib/currentContract";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
