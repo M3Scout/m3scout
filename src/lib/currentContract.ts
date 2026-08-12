@@ -5,8 +5,8 @@
 //    borrowing club (emprestado).
 // 2. Otherwise the ACTIVE owning contract (permanent/youth/any non-loan) wins —
 //    so when a loan expires the athlete automatically returns to the holder club.
-// 3. If nothing is active, fall back to the contract flagged as current, then to
-//    the most recent one by start_date, and the status becomes "free".
+// 3. If nothing is active, there is no current club and the athlete is free.
+//    Expired records remain history only and never keep the CURRENT badge.
 //
 // Archived contracts are always ignored.
 
@@ -22,7 +22,7 @@ export interface ContractLike {
 export type CurrentContractStatus = "emprestado" | "contracted" | "free";
 
 export interface ResolvedContract<T extends ContractLike> {
-  /** Contract that defines the current club (may be an expired one as fallback). */
+  /** Active contract that defines the current club. */
   contract: T | null;
   /** Owning (non-loan) active contract, when the athlete is out on loan. */
   ownerContract: T | null;
@@ -79,6 +79,5 @@ export function resolveCurrentContract<T extends ContractLike>(
     };
   }
 
-  const fallback = list.find((c) => c.is_current) ?? [...list].sort(byStartDesc)[0];
-  return { contract: fallback, ownerContract: null, club: fallback?.club_name ?? null, status: "free" };
+  return { contract: null, ownerContract: null, club: null, status: "free" };
 }

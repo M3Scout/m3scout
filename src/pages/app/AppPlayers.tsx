@@ -245,7 +245,7 @@ const AppPlayers = () => {
       });
 
       // Derive current_club with the same rules as the DB: active loan wins,
-      // otherwise the active owning contract, otherwise latest contract.
+      // otherwise the active owning contract; expired contracts mean Livre.
       const { data: contractRows } = await supabase
         .from("player_contract_history")
         .select("player_id, club_name, start_date, end_date, contract_type, is_current, is_archived")
@@ -260,7 +260,7 @@ const AppPlayers = () => {
       const currentClubMap: Record<string, string> = {};
       for (const [pid, rows] of Object.entries(byPlayer)) {
         const club = resolveCurrentContract(rows ?? []).club;
-        if (club) currentClubMap[pid] = club;
+        currentClubMap[pid] = club ?? "Livre";
       }
 
 

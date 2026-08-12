@@ -240,15 +240,6 @@ export function ContractTab({
     },
   });
 
-  const currentEntry = useMemo(() => {
-    if (history.length === 0) return null;
-    return history.reduce((prev, curr) =>
-      new Date(curr.start_date) > new Date(prev.start_date) ? curr : prev
-    );
-  }, [history]);
-
-  const currentEntryId = currentEntry?.id ?? null;
-
   // termination_fee from whichever contract was most recently edited (updated_at) that has the field set
   const latestTerminationFee = useMemo(() => {
     const withFee = history.filter(c => c.termination_fee);
@@ -288,11 +279,12 @@ export function ContractTab({
   // ── Derive contract info from history (active loan > active owner > fallback) ──
   const resolved = useMemo(() => resolveCurrentContract(history), [history]);
   const topContract = resolved.contract;
-  const derivedCurrentClub = resolved.club ?? currentClub;
+  const derivedCurrentClub = resolved.status === "free" ? "Livre" : resolved.club;
   const derivedStart        = topContract?.start_date ?? contractStart;
   const derivedEnd          = topContract?.end_date   ?? contractEnd;
 
-  const derivedStatus = topContract ? resolved.status : contractStatus;
+  const derivedStatus = history.length > 0 ? resolved.status : contractStatus;
+  const currentEntryId = topContract?.id ?? null;
 
 
   const statusCfg = getStatusCfg(derivedStatus);
