@@ -283,19 +283,15 @@ export function ContractTab({
     }
   };
 
-  // ── Derive all contract info from history (first = most current) ──────────
-  const topContract = history.length > 0 ? history[0] : null;
-  const derivedCurrentClub = topContract?.club_name ?? currentClub;
+  // ── Derive contract info from history (active loan > active owner > fallback) ──
+  const resolved = useMemo(() => resolveCurrentContract(history), [history]);
+  const topContract = resolved.contract;
+  const derivedCurrentClub = resolved.club ?? currentClub;
   const derivedStart        = topContract?.start_date ?? contractStart;
   const derivedEnd          = topContract?.end_date   ?? contractEnd;
 
-  // Status: if top contract exists and end_date hasn't passed → contracted/loan, else free
-  const derivedStatus = (() => {
-    if (!topContract) return contractStatus;
-    const daysLeft = daysUntil(topContract.end_date);
-    if (topContract.end_date && daysLeft !== null && daysLeft < 0) return "free";
-    return topContract.contract_type === "loan" ? "emprestado" : "contracted";
-  })();
+  const derivedStatus = topContract ? resolved.status : contractStatus;
+
 
   const statusCfg = getStatusCfg(derivedStatus);
   const days = daysUntil(derivedEnd);
