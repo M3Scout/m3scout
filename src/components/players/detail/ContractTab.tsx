@@ -538,11 +538,11 @@ export function ContractTab({
                             <Pencil className="w-3 h-3" />
                           </button>
                         )}
-                        {canEdit && history.length > 1 && (
+                        {canEdit && history.length > 2 && i > 0 && (
                           <div className="flex flex-col" style={{ gap: "1px" }}>
-                            <button onClick={() => handleReorder(i, "up")} disabled={i === 0 || reordering}
+                            <button onClick={() => handleReorder(i, "up")} disabled={i <= 1 || reordering}
                               className="flex items-center justify-center w-5 h-5 transition-colors"
-                              style={{ color: i === 0 ? CARD_BORDER : MUTED, cursor: i === 0 ? "default" : "pointer" }}>
+                              style={{ color: i <= 1 ? CARD_BORDER : MUTED, cursor: i <= 1 ? "default" : "pointer" }}>
                               <ChevronUp className="w-3 h-3" />
                             </button>
                             <button onClick={() => handleReorder(i, "down")} disabled={i === history.length - 1 || reordering}
@@ -550,6 +550,7 @@ export function ContractTab({
                               style={{ color: i === history.length - 1 ? CARD_BORDER : MUTED, cursor: i === history.length - 1 ? "default" : "pointer" }}>
                               <ChevronDown className="w-3 h-3" />
                             </button>
+
                           </div>
                         )}
                       </div>
