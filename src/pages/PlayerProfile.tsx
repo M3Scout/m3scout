@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { resolveCurrentContract } from "@/lib/currentContract";
 
 // Premium modular components
 import { AthleteHeroSection } from "@/components/players/public/AthleteHeroSection";
@@ -121,16 +122,18 @@ const PlayerProfile = () => {
         .limit(1) as any);
       const playerRow = Array.isArray(data) ? data[0] ?? null : null;
       if (playerRow) {
-        // Derive current club from most recent contract (same logic as ContractTab)
+        // Resolve by validity: active loan, then active holder contract, otherwise Livre.
         const { data: contracts } = await supabase
           .from("player_contract_history")
-          .select("club_name")
+          .select("club_name, start_date, end_date, contract_type, is_current, is_archived")
           .eq("player_id", playerRow.id)
-          .eq("is_archived", false)
-          .order("start_date", { ascending: false })
-          .limit(1);
-        const derivedClub = contracts?.[0]?.club_name ?? playerRow.current_club;
-        setPlayer({ ...playerRow, current_club: derivedClub });
+          .eq("is_archived", false);
+        const resolved = resolveCurrentContract(contracts ?? []);
+        setPlayer({
+          ...playerRow,
+          current_club: contracts?.length ? resolved.club ?? "Livre" : playerRow.current_club ?? "Livre",
+          contract_status: contracts?.length ? resolved.status : playerRow.contract_status,
+        });
       }
       setLoading(false);
     };
