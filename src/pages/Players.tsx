@@ -323,12 +323,14 @@ const Players = () => {
       if (players.length === 0) return;
       const playerIds = players.map((p) => p.id);
 
-      const [matchPlayersResult, manualStatsResult] = await Promise.allSettled([
+      const [matchPlayersResult, legacyStatsResult, manualStatsResult] = await Promise.allSettled([
         supabase.from("match_players").select(`player_id, started, entered_minute, exited_minute, minutes_played, match:matches!inner (id, season_year, status, competition_id, added_time_first_half, added_time_second_half)`).in("player_id", playerIds).eq("is_removed", false).eq("match.season_year", selectedYear).eq("match.status", "applied"),
-        supabase.from("player_stats").select("player_id, season_year, competition_id, matches, minutes").in("player_id", playerIds).eq("season_year", selectedYear),
+        supabase.from("player_stats").select("player_id, season_year, competition_id, matches, minutes, is_live_correction, is_archived").in("player_id", playerIds).eq("season_year", selectedYear).or("is_archived.is.null,is_archived.eq.false"),
+        supabase.from("manual_player_stats").select("player_id, season_year, competition_id, games, minutes").in("player_id", playerIds).eq("season_year", selectedYear),
       ]);
 
       const matchPlayersData = matchPlayersResult.status === "fulfilled" ? matchPlayersResult.value.data : null;
+      const legacyStatsData = legacyStatsResult.status === "fulfilled" ? legacyStatsResult.value.data : null;
       const manualStatsData = manualStatsResult.status === "fulfilled" ? manualStatsResult.value.data : null;
 
       const liveByPlayerComp = new Map<string, Map<string, { minutes: number; matches: number }>>();
@@ -349,14 +351,34 @@ const Players = () => {
         liveByPlayerComp.set(mp.player_id, perPlayer);
       });
 
-      const manualByPlayerComp = new Map<string, Map<string, { minutes: number; matches: number }>>();
+      // Correções LIVE (is_live_correction) SUBSTITUEM o total live da competição;
+      // as demais linhas manuais (player_stats aditivo + manual_player_stats) SOMAM.
+      const correctionByPlayerComp = new Map<string, Map<string, { minutes: number; matches: number }>>();
+      const additiveByPlayerComp = new Map<string, Map<string, { minutes: number; matches: number }>>();
+
+      const addTo = (
+        target: Map<string, Map<string, { minutes: number; matches: number }>>,
+        playerId: string,
+        compKey: string,
+        matches: number,
+        minutes: number,
+      ) => {
+        const perPlayer = target.get(playerId) || new Map();
+        const current = perPlayer.get(compKey) || { minutes: 0, matches: 0 };
+        perPlayer.set(compKey, { minutes: current.minutes + minutes, matches: current.matches + matches });
+        target.set(playerId, perPlayer);
+      };
+
+      (legacyStatsData || []).forEach((s: any) => {
+        const compKey = s.competition_id ?? "none";
+        addTo(s.is_live_correction ? correctionByPlayerComp : additiveByPlayerComp, s.player_id, compKey, s.matches ?? 0, s.minutes ?? 0);
+      });
+
       (manualStatsData || []).forEach((s: any) => {
         const compKey = s.competition_id ?? "none";
-        const perPlayer = manualByPlayerComp.get(s.player_id) || new Map();
-        const current = perPlayer.get(compKey) || { minutes: 0, matches: 0 };
-        perPlayer.set(compKey, { minutes: current.minutes + (s.minutes ?? 0), matches: current.matches + (s.matches ?? 0) });
-        manualByPlayerComp.set(s.player_id, perPlayer);
+        addTo(additiveByPlayerComp, s.player_id, compKey, s.games ?? 0, s.minutes ?? 0);
       });
+
 
       const ratingsMap = new Map<string, number[]>();
       if (matchPlayersData && matchPlayersData.length > 0) {
