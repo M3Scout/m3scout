@@ -14,6 +14,8 @@ export interface PlayerContractGroup {
   m3_contract_end: string | null;
   club_contracts: ContractWithPlayer[];
   worst_status: "expired" | "expiring" | "active" | "no_end_date";
+  /** id of the contract that defines the current club (null = free) */
+  current_contract_id?: string | null;
 }
 
 const STATUS_PRIORITY: Record<string, number> = {
