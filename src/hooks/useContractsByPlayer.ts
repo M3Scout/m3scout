@@ -155,8 +155,22 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
         if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
         return 0;
       });
-      return { ...g, club_contracts: sorted, worst_status: worstStatus(g.club_contracts) };
+
+      // Pin the resolved current contract (active loan > active owning contract) to the top
+      const resolved = resolveCurrentContract(sorted);
+      const currentId = resolved.contract?.id ?? null;
+      const ordered = currentId
+        ? [...sorted.filter(c => c.id === currentId), ...sorted.filter(c => c.id !== currentId)]
+        : sorted;
+
+      return {
+        ...g,
+        club_contracts: ordered,
+        current_contract_id: currentId,
+        worst_status: worstStatus(g.club_contracts),
+      };
     });
+
 
     // Apply filter: keep athletes that have ≥1 contract matching the filter
     if (filterStatus) {
