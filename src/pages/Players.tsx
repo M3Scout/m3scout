@@ -654,7 +654,7 @@ const Players = () => {
                         <div style={{ fontFamily: MONO, fontSize: 10, color: "#fff", display: "flex", flexWrap: "wrap", gap: "4px 6px" }}>
                           {player.age && <span>{player.age} anos</span>}
                           <span>· {player.nationality}</span>
-                          {player.current_club && <span>· {player.current_club}</span>}
+                          <span>· {player.current_club || "LIVRE NO MERCADO"}</span>
                         </div>
                         <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
                           VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
@@ -715,9 +715,8 @@ const Players = () => {
                               {player.age && <span>{player.age} anos</span>}
                               <span>· {player.nationality}</span>
                             </div>
-                            {player.current_club && (
-                              <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(242,237,228,0.22)", marginTop: 2 }}>{player.current_club}</span>
-                            )}
+                            <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(242,237,228,0.22)", marginTop: 2 }}>{player.current_club || "LIVRE NO MERCADO"}</span>
+
                           </div>
                         </div>
 

@@ -47,7 +47,7 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
 
   const identItems = [
     player.age           ? { label: "Idade",  value: String(player.age),  unit: "anos" } : null,
-    player.current_club  ? { label: "Clube",  value: player.current_club,  unit: null   } : null,
+    { label: "Clube", value: player.current_club || "LIVRE NO MERCADO", unit: null },
     player.height        ? { label: "Altura", value: String(player.height), unit: "cm"  } : null,
     player.dominant_foot ? { label: "Pé",     value: player.dominant_foot,  unit: null   } : null,
   ].filter(Boolean) as { label: string; value: string; unit: string | null }[];
