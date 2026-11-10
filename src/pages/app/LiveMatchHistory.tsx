@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Ic } from "@/components/dash/icons";
+import { Head, View } from "@/components/dash/ui";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -210,71 +212,43 @@ function MatchCard({ match, link, onDelete, onEdit, canDelete = false, index }: 
   const displayTeamName = match.team_name_display || globalTeamName || "Time";
   const displayLogoUrl  = match.team_logo_url     || globalLogoUrl;
 
+  const d = new Date(match.match_date);
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}>
-      <Link
-        to={link}
-        className="block relative rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/25"
-        style={{ background: isLive ? "rgba(236,69,37,0.03)" : "transparent", borderColor: isLive ? "rgba(236,69,37,0.18)" : CARD_BORDER }}
-      >
-        <div className="flex items-center gap-4 p-4">
-          {/* Logos */}
-          <div className="shrink-0 flex items-center gap-2">
-            {displayLogoUrl
-              ? <img src={displayLogoUrl} alt={displayTeamName} className="w-10 h-10 object-contain rounded-lg p-1" style={{ background: "rgba(255,255,255,0.03)" }} loading="lazy" />
-              : <div className="w-10 h-10 rounded-lg flex items-center justify-center font-editorial-mono text-[11px] font-bold" style={{ background: cfg.bg, color: cfg.color }}>{displayTeamName.substring(0, 2).toUpperCase()}</div>
-            }
-            <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>vs</span>
-            {match.opponent_logo_url
-              ? <img src={match.opponent_logo_url} alt={match.opponent_name} className="w-10 h-10 object-contain rounded-lg p-1" style={{ background: "rgba(255,255,255,0.03)" }} loading="lazy" />
-              : <div className="w-10 h-10 rounded-lg flex items-center justify-center font-editorial-mono text-[11px] font-bold" style={{ background: "rgba(255,255,255,0.04)", color: MUTED }}>{match.opponent_name.substring(0, 2).toUpperCase()}</div>
-            }
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="font-display font-semibold text-[13px] truncate" style={{ color: TEXT }}>
-                {displayTeamName} <span style={{ color: MUTED, fontWeight: 400 }}>vs</span> {match.opponent_name}
-              </span>
-              <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 inline-flex items-center gap-1"
-                style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-                {isLive && <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: cfg.color }} />}
-                {cfg.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-editorial-mono text-[10px] flex items-center gap-1" style={{ color: MUTED }}><Trophy className="w-3 h-3" />{competitionName}</span>
-              <span className="font-editorial-mono text-[10px] flex items-center gap-1" style={{ color: MUTED }}><Calendar className="w-3 h-3" />{format(new Date(match.match_date), "dd/MM/yy", { locale: ptBR })}</span>
-              <span className="font-editorial-mono text-[10px] flex items-center gap-1" style={{ color: MUTED }}><Clock className="w-3 h-3" />{format(new Date(match.match_date), "HH:mm")}</span>
-              {match.venue && <span className="hidden sm:flex font-editorial-mono text-[10px] items-center gap-1" style={{ color: MUTED }}><MapPin className="w-3 h-3" />{match.venue}</span>}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="relative z-10 shrink-0" onClick={e => e.stopPropagation()}>
+    <Link to={link} className="gm" style={isLive ? { boxShadow: "inset 0 0 0 1px rgba(255,59,48,.35)" } : undefined} data-i={index}>
+      <div className="team"><Crest name={displayTeamName} logo={displayLogoUrl} c={cfg.color} /><b>{displayTeamName}</b></div>
+      <div className="gm-c"><b>{format(d, "HH:mm")}</b><span>{format(d, "dd/MM/yy", { locale: ptBR })}</span></div>
+      <div className="team r"><Crest name={match.opponent_name} logo={match.opponent_logo_url} c="#3a3a3e" /><b>{match.opponent_name}</b></div>
+      <div className="gm-i">
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="pill c" style={{ ["--c" as string]: cfg.color }}>{isLive && "● "}{cfg.label}</span>
+          <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors duration-150 hover:bg-zinc-800"
-                  style={{ color: MUTED }} onClick={e => { e.preventDefault(); e.stopPropagation(); }} aria-label="Ações">
-                  <MoreVertical className="w-4 h-4" />
-                </button>
+                <button className="rbtn-dots" style={{ width: 28, height: 28, background: "var(--g2)" }} aria-label="Ações"><MoreVertical className="w-3.5 h-3.5" /></button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link to={link} className="flex items-center gap-2 cursor-pointer">
                     {isLive ? <><Play className="w-3.5 h-3.5" />Continuar</> : <><Eye className="w-3.5 h-3.5" />Ver detalhes</>}
                   </Link>
                 </DropdownMenuItem>
-                {onEdit && <DropdownMenuItem onClick={e => { e.preventDefault(); e.stopPropagation(); onEdit(); }} className="cursor-pointer"><Pencil className="w-3.5 h-3.5 mr-2" />Editar</DropdownMenuItem>}
-                {canDelete && onDelete && <DropdownMenuItem onClick={e => { e.preventDefault(); e.stopPropagation(); onDelete(); }} className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"><Trash2 className="w-3.5 h-3.5 mr-2" />Excluir</DropdownMenuItem>}
+                {onEdit && <DropdownMenuItem onClick={onEdit} className="cursor-pointer"><Pencil className="w-3.5 h-3.5 mr-2" />Editar</DropdownMenuItem>}
+                {canDelete && onDelete && <DropdownMenuItem onClick={onDelete} className="text-red-400 focus:text-red-400 cursor-pointer"><Trash2 className="w-3.5 h-3.5 mr-2" />Excluir</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
+          </span>
+        </span>
+        <span>{competitionName}{match.venue ? ` · ${match.venue}` : ""}</span>
+      </div>
+    </Link>
   );
+}
+
+/** escudo: logo do time ou iniciais num círculo colorido */
+function Crest({ name, logo, c }: { name: string; logo?: string | null; c: string }) {
+  if (logo) return <img className="crest-logo" src={logo} alt="" loading="lazy" />;
+  const ini = name.replace(/\b(FC|EC|SAF)\b/g, "").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
+  return <span className="crest" style={{ ["--c" as string]: c }}>{ini}</span>;
 }
 
 // ─── Section card ─────────────────────────────────────────────────────────────
@@ -285,18 +259,12 @@ function MatchSection({ title, icon, accentColor, accentBorder, matches, getMatc
 }) {
   if (matches.length === 0) return null;
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: accentBorder ?? CARD_BORDER }}>
-      <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: CARD_BORDER }}>
-        <div className="flex items-center gap-2.5" style={{ color: accentColor }}>
-          {icon}
-          <span className="font-display font-semibold text-[13px]">{title}</span>
-        </div>
-        <span className="font-editorial-mono text-[10px] tabular-nums" style={{ color: MUTED }}>
-          {matches.length} {matches.length === 1 ? "jogo" : "jogos"}
-        </span>
+    <section className="mt2">
+      <div className="ch">
+        <h2 style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ color: accentColor, display: "flex" }}>{icon}</span>{title}</h2>
+        <span className="pill c" style={{ ["--c" as string]: accentColor }}>{matches.length} {matches.length === 1 ? "jogo" : "jogos"}</span>
       </div>
-      <div className="p-3 space-y-2">
+      <div className="games">
         {matches.map((match, i) => (
           <MatchCard key={match.id} match={match} link={getMatchLink(match)} index={i}
             onDelete={onDeleteClick ? () => onDeleteClick(match) : undefined}
@@ -305,7 +273,26 @@ function MatchSection({ title, icon, accentColor, accentBorder, matches, getMatc
           />
         ))}
       </div>
-    </motion.div>
+    </section>
+  );
+}
+
+/** destaque do topo: jogo ao vivo ou o último jogo */
+function HeroCard({ match, live, link }: { match: MatchWithCompetition; live: boolean; link: string }) {
+  const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
+  const team = match.team_name_display || globalTeamName || "Time";
+  const logo = match.team_logo_url || globalLogoUrl;
+  const comp = match.competition?.display_name || match.competition?.name || "Competição";
+  const d = new Date(match.match_date);
+  return (
+    <Link to={link} className="card live-hero" style={{ ["--s" as string]: 1, textDecoration: "none" }}>
+      <div className="team"><Crest name={team} logo={logo} c="#FF3B30" /><b>{team}</b></div>
+      <div className="score">
+        — : —
+        <small>{live ? <span style={{ color: "var(--red)" }}>● Ao vivo agora</span> : "Último jogo"} · {comp} · {format(d, "dd/MM/yy HH:mm", { locale: ptBR })}</small>
+      </div>
+      <div className="team r"><Crest name={match.opponent_name} logo={match.opponent_logo_url} c="#3a3a3e" /><b>{match.opponent_name}</b></div>
+    </Link>
   );
 }
 
@@ -381,42 +368,13 @@ export default function LiveMatchHistory() {
   const getMatchLink = (m: MatchWithCompetition) =>
     m.status === "applied" ? `/dashboard/aovivo/${m.id}/revisao` : `/dashboard/aovivo/${m.id}`;
 
+  const heroMatch = liveMatches[0] ?? [...appliedMatches, ...finishedMatches].sort((x, y) => +new Date(y.match_date) - +new Date(x.match_date))[0];
   return (
-    <div className="space-y-4">
-
-      {/* ── Header ── */}
-      <div className="flex items-end justify-between gap-4">
-        <div className="flex items-center gap-3">
-          {hasLiveMatch && (
-            <div className="relative w-2.5 h-2.5 shrink-0">
-              <span className="absolute inset-0 rounded-full animate-ping opacity-40" style={{ background: ACCENT }} />
-              <span className="relative block w-2.5 h-2.5 rounded-full" style={{ background: ACCENT }} />
-            </div>
-          )}
-          <h1 className="m3-page-title">Jogos ao vivo</h1>
-          {matches.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full font-editorial-mono text-[12px] font-bold text-white" style={{ background: ACCENT }}>
-              {matches.length}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="sm:hidden p-1.5 rounded-lg transition-colors" style={{ color: MUTED }}
-            onClick={() => { setSearchOpen(v => !v); setMobileSearch(""); }} aria-label="Buscar">
-            <Search className="w-4 h-4" />
-          </button>
-          {canLogEvents && (
-            <Link to="/dashboard/aovivo/novo" className="hidden sm:block">
-              <button
-                className="inline-flex items-center gap-1.5 font-editorial-mono text-[10px] uppercase tracking-wider px-4 py-2 rounded-full border transition-colors duration-150 hover:bg-zinc-800/40"
-                style={{ borderColor: "rgba(255,255,255,0.12)", color: TEXT }}
-              >
-                <Plus className="w-3.5 h-3.5" /> Novo jogo
-              </button>
-            </Link>
-          )}
-        </div>
-      </div>
+    <View>
+      <Head title="Jogo ao vivo">
+        {canLogEvents && <Link className="btn r" to="/dashboard/aovivo/novo"><Ic n="plus" />Novo jogo</Link>}
+      </Head>
+      {heroMatch && <HeroCard match={heroMatch} live={heroMatch.status === "live"} link={getMatchLink(heroMatch)} />}
 
       {/* Mobile search */}
       <AnimatePresence>
@@ -451,7 +409,7 @@ export default function LiveMatchHistory() {
         </div>
       ) : (
         <AnimatePresence mode="popLayout">
-          <div className="space-y-4">
+          <div>
             {/* Live — with LiveMatchCard (has timer) */}
             {liveMatches.length > 0 && (
               <motion.div key="live" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
@@ -475,13 +433,13 @@ export default function LiveMatchHistory() {
               </motion.div>
             )}
 
-            <MatchSection key="finished" title="Aguardando Aplicar" icon={<Pause className="w-4 h-4" />}
-              accentColor="#E8C44A" accentBorder="rgba(232,196,74,0.18)"
+            <MatchSection key="finished" title="Aguardando aplicar" icon={<Pause className="w-4 h-4" />}
+              accentColor="#FFD60A"
               matches={finishedMatches} getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch} onEditClick={setEditMatch} canDelete={canDeleteMatches} />
 
             <MatchSection key="applied" title="Histórico" icon={<CheckCircle2 className="w-4 h-4" />}
-              accentColor="#2DCE8A"
+              accentColor="#30D158"
               matches={appliedMatches} getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch} onEditClick={setEditMatch} canDelete={canDeleteMatches} />
 
@@ -517,6 +475,6 @@ export default function LiveMatchHistory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </View>
   );
 }

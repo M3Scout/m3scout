@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,17 +12,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { NewsFilters, type StatusFilter, type SortOption } from "@/components/news/NewsFilters";
-import { NewsCardMobile } from "@/components/news/NewsCardMobile";
-import { NewsTableDesktop } from "@/components/news/NewsTableDesktop";
-import { NewsEmptyState } from "@/components/news/NewsEmptyState";
-import { NewsListSkeleton } from "@/components/news/NewsListSkeleton";
+import { Ic } from "@/components/dash/icons";
+import { Head, Seg, View } from "@/components/dash/ui";
 
+type StatusFilter = "all" | "draft" | "published";
+type SortOption = "newest" | "oldest" | "updated";
 type NewsArticle = {
   id: string;
   title: string;
@@ -40,12 +35,10 @@ const News = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { can } = usePermissions();
-  const isMobile = useIsMobile();
   
   // Filter state
   const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [mobileSearch, setMobileSearch] = useState("");
+  const mobileSearch = "";
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -189,102 +182,78 @@ const News = () => {
     setStatusFilter("all");
   };
 
-  return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        {/* Header */}
-        <header className="flex flex-col gap-2 animate-fade-in">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <h1 className="m3-page-title">Notícias</h1>
-              <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredArticles.length}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
-                <Search size={18} className="text-zinc-400" />
-              </button>
-              <Button asChild className="hidden sm:flex gap-2 shrink-0 bg-[#e63946] hover:bg-[#d62839] text-white rounded-full px-5 h-9 text-sm font-semibold">
-                <Link to="/dashboard/noticias/nova">
-                  <Plus className="w-4 h-4" />
-                  Nova Notícia
-                </Link>
-              </Button>
-            </div>
-          </div>
-          {searchOpen && (
-            <div className="sm:hidden mt-1">
-              <input
-                autoFocus
-                value={mobileSearch}
-                onChange={e => setMobileSearch(e.target.value)}
-                placeholder="Buscar notícia..."
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
-              />
-            </div>
-          )}
-        </header>
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).replace(/\./g, "").replace(/ de /g, " ");
+  const I = (d: string) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: d }} />
+  );
+  const ICON = {
+    ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    eyeoff: '<path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/>',
+    edit: '<path d="M4 20h4L20 8l-4-4L4 16z"/>',
+    copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  };
 
-        {/* Filters */}
-        <div className="hidden sm:block animate-fade-in" style={{ animationDelay: "50ms" }}>
-          <NewsFilters
-            search={search}
-            onSearchChange={setSearch}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
+  return (
+    <>
+      <View>
+        <Head title="Notícias">
+          <Link className="btn r" to="/dashboard/noticias/nova"><Ic n="plus" />Nova notícia</Link>
+        </Head>
+
+        <div className="tools" style={{ ["--s" as string]: 1 }}>
+          <label className="field">
+            <Ic n="search" />
+            <span className="sr">Buscar</span>
+            <input type="search" placeholder="Buscar notícias" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </label>
+          <Seg
+            label="Status"
+            value={statusFilter}
+            onPick={(v) => setStatusFilter(v as StatusFilter)}
+            items={[{ v: "all", label: "Todas" }, { v: "published", label: "Publicadas" }, { v: "draft", label: "Ocultas" }]}
           />
+          <select className="sel" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} aria-label="Ordenar">
+            <option value="newest">Mais recentes</option>
+            <option value="oldest">Mais antigas</option>
+            <option value="updated">Data de publicação</option>
+          </select>
         </div>
 
-        {/* Content */}
-        <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
+        <section className="nl" style={{ ["--s" as string]: 2 }}>
           {isLoading ? (
-            <NewsListSkeleton isMobile={isMobile} />
+            Array.from({ length: 4 }).map((_, i) => <div key={i} className="nr" style={{ height: 110, opacity: 0.4 }} />)
           ) : filteredArticles.length === 0 ? (
-            <NewsEmptyState 
-              hasFilters={hasFilters} 
-              onClearFilters={hasFilters ? handleClearFilters : undefined}
-            />
-          ) : isMobile ? (
-            // Mobile: Cards
-            <div className="space-y-4">
-              {filteredArticles.map((article, index) => (
-                <div
-                  key={article.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <NewsCardMobile
-                    article={article}
-                    onToggleStatus={(id, status) => toggleStatusMutation.mutate({ id, newStatus: status })}
-                    onDuplicate={(a) => duplicateMutation.mutate(a)}
-                    onDelete={handleDelete}
-                    canDelete={canDelete}
-                    isToggling={toggleStatusMutation.isPending}
-                  />
-                </div>
-              ))}
+            <div className="empty">
+              {hasFilters ? "Nenhuma notícia encontrada." : "Nenhuma notícia ainda."}
+              {hasFilters && <button type="button" className="btn sm g" onClick={handleClearFilters}>Limpar filtros</button>}
             </div>
           ) : (
-            // Desktop: Table
-            <NewsTableDesktop
-              articles={filteredArticles}
-              onToggleStatus={(id, status) => toggleStatusMutation.mutate({ id, newStatus: status })}
-              onDuplicate={(a) => duplicateMutation.mutate(a)}
-              onDelete={handleDelete}
-              canDelete={canDelete}
-              isToggling={toggleStatusMutation.isPending}
-            />
+            filteredArticles.map((n) => {
+              const pub = n.status === "published";
+              return (
+                <div className="nr" key={n.id} style={pub ? undefined : { opacity: 0.55 }}>
+                  <span className="im">{n.featured_image_url && <img src={n.featured_image_url} alt="" loading="lazy" />}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <h3><Link to={`/dashboard/noticias/${n.id}/editar`} style={{ textDecoration: "none" }}>{n.title}</Link></h3>
+                    <p>{fmtDate(n.publish_date)}{n.category ? ` · ${n.category}` : ""} · /imprensa/{n.slug}</p>
+                  </div>
+                  <span className="pill c" style={{ ["--c" as string]: pub ? "var(--green)" : "var(--l3)" }}>{pub ? "Publicada" : "Oculta"}</span>
+                  <div className="nr-a">
+                    <a href={`/imprensa/${n.slug}`} target="_blank" rel="noopener noreferrer" aria-label="Abrir no site" title="Abrir no site">{I(ICON.ext)}</a>
+                    <button type="button" aria-label={pub ? "Ocultar" : "Publicar"} title={pub ? "Ocultar" : "Publicar"} disabled={toggleStatusMutation.isPending}
+                      onClick={() => toggleStatusMutation.mutate({ id: n.id, newStatus: pub ? "draft" : "published" })}>{I(pub ? ICON.eyeoff : ICON.eye)}</button>
+                    <button type="button" aria-label="Editar" title="Editar" onClick={() => navigate(`/dashboard/noticias/${n.id}/editar`)}>{I(ICON.edit)}</button>
+                    <button type="button" aria-label="Duplicar" title="Duplicar" onClick={() => duplicateMutation.mutate(n)}>{I(ICON.copy)}</button>
+                    {canDelete && <button className="del" type="button" aria-label="Excluir" title="Excluir" onClick={() => handleDelete(n.id)}>{I(ICON.trash)}</button>}
+                  </div>
+                </div>
+              );
+            })
           )}
-        </div>
-
-        {/* Results count */}
-        {!isLoading && filteredArticles.length > 0 && (
-          <p className="text-xs text-muted-foreground text-center">
-            {filteredArticles.length} {filteredArticles.length === 1 ? "notícia" : "notícias"}
-            {hasFilters && " encontrada(s)"}
-          </p>
-        )}
+        </section>
+      </View>
 
         {/* Delete Dialog */}
         <AlertDialog open={!!deleteId} onOpenChange={() => { setDeleteId(null); setDeleteSlug(""); }}>
@@ -311,8 +280,7 @@ const News = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </TooltipProvider>
+    </>
   );
 };
 

@@ -48,17 +48,14 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
 
   return (
     <div className={cn(
-      "rounded-xl border transition-all duration-200 bg-[#16181a]",
-      expanded
-        ? "border-zinc-700/50"
-        : "border-zinc-700/30 hover:border-zinc-700/50"
-    )}>
+      "transition-all duration-200",
+    )} style={{ borderRadius: 24, background: "var(--g1, #0f0f10)" }}>
       {/* ── Collapsed header ── */}
       <button
-        className="w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-colors duration-200 hover:bg-[#0d0e0f]"
+        className="w-full flex items-center gap-4 px-4 py-4 transition-colors duration-200 hover:bg-white/[0.03]" style={{ borderRadius: 24 }}
         onClick={() => setExpanded(v => !v)}
       >
-        <div className="h-[62px] w-[62px] rounded-lg border border-zinc-800 bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center">
+        <div className="h-[62px] w-[62px] bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center" style={{ borderRadius: 18 }}>
           {group.player_photo_url ? (
             <img src={group.player_photo_url} alt={group.player_name} className="h-full w-full object-cover object-top" />
           ) : (
@@ -173,8 +170,8 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
               const endFormatted = format(new Date(group.m3_contract_end + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR });
 
               return (
-                <div className="rounded-lg border bg-[#0d0e0f] px-3 py-2.5"
-                  style={{ borderColor: `${color}40` }}>
+                <div className="px-4 py-3"
+                  style={{ borderRadius: 18, background: `color-mix(in srgb, ${color} 14%, #161618)` }}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <CalendarClock size={11} style={{ color }} className="shrink-0" />

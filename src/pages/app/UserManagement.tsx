@@ -62,6 +62,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Head, Seg, View } from "@/components/dash/ui";
 
 type AppRole = "admin" | "scout" | "member" | "partner" | "editor" | "viewer" | "player";
 
@@ -750,54 +751,30 @@ export default function UserManagement() {
     toast.success("ID copiado");
   };
 
+  const ROLE_C: Record<string, string> = { admin: "var(--yellow)", editor: "var(--teal)", viewer: "var(--l2)", player: "var(--green)", scout: "var(--purple)" };
   const renderUserRow = (user: UserWithPermissions) => (
-    <div
-      key={user.user_id}
-      className="flex items-center gap-4 px-4 py-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30 hover:border-zinc-700/40 hover:bg-zinc-900/70 transition-all duration-200"
-    >
-      {/* Avatar + Name */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 shrink-0">
-          {user.full_name?.charAt(0).toUpperCase() || "U"}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-bold text-zinc-100 truncate">{user.full_name || "Sem nome"}</p>
-            {user.is_owner && <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-          </div>
-          {user.role === "player" && user.linked_player_name && (
-            <p className="text-[10px] text-zinc-600 truncate">→ {user.linked_player_name}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Role */}
-      <div className="hidden sm:flex w-[80px] shrink-0 justify-center">
-        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium border", ROLE_COLORS[user.role])}>
-          {ROLE_LABELS[user.role]}
+    <tr key={user.user_id}>
+      <td>
+        <span className="who">
+          <span className="av round" style={{ ["--sz" as string]: "44px" }}>{user.full_name?.charAt(0).toUpperCase() || "U"}</span>
+          <span>
+            <b>
+              {user.full_name || "Sem nome"}
+              {user.is_owner && <Crown className="inline w-3.5 h-3.5 ml-1.5" style={{ color: "var(--yellow)", verticalAlign: "-2px" }} />}
+              {user.user_id === currentUser?.id && <small className="you" style={{ marginLeft: 6, fontSize: 12, fontWeight: 500, color: "var(--l3)" }}>você</small>}
+            </b>
+            {user.role === "player" && user.linked_player_name && <span>→ {user.linked_player_name}</span>}
+          </span>
         </span>
-      </div>
-
-      {/* Status */}
-      <div className="hidden sm:flex w-[90px] shrink-0 justify-center">
-        <span className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium border",
-          user.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-            : user.status === "pending" ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-            : "bg-[#e63946]/10 text-[#e63946] border-[#e63946]/20"
-        )}>
-          <span className={cn("w-1.5 h-1.5 rounded-full",
-            user.status === "active" ? "bg-emerald-400" : user.status === "pending" ? "bg-amber-400" : "bg-[#e63946]"
-          )} />
-          {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : "Suspenso"}
+      </td>
+      <td><span className="pill c" style={{ ["--c" as string]: ROLE_C[user.role] ?? "var(--l2)" }}>{ROLE_LABELS[user.role]}</span></td>
+      <td>
+        <span className="pill c" style={{ ["--c" as string]: user.status === "active" ? "var(--green)" : user.status === "pending" ? "var(--orange)" : "var(--red)" }}>
+          ● {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : user.status === "rejected" ? "Recusado" : "Suspenso"}
         </span>
-      </div>
-
-      {/* Last login */}
-      <div className="hidden md:block w-[120px] shrink-0 text-right">
-        <p className="text-[11px] text-zinc-500">{relativeTime(user.last_login_at)}</p>
-      </div>
-
+      </td>
+      <td className="num" style={{ color: "var(--l2)" }}>{relativeTime(user.last_login_at)}</td>
+      <td className="num" style={{ width: 1 }}>
       {/* Actions */}
       {user.status === "pending" ? (
         <div className="flex items-center gap-1.5 shrink-0">
@@ -853,99 +830,52 @@ export default function UserManagement() {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-    </div>
+      </td>
+    </tr>
   );
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="m3-page-title">Usuários</h1>
-          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{users.length}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Mobile: search toggle */}
-          <button
-            className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
-            onClick={() => setSearchOpen(v => !v)}
-            aria-label="Buscar"
-          >
-            <Search className="w-[18px] h-[18px]" />
+    <View>
+      <Head title="Usuários">
+        {pendingCount > 0 && (
+          <button type="button" className="btn g" onClick={() => setStatusFilter("pending")} style={{ color: "var(--orange)" }}>
+            <AlertTriangle className="w-4 h-4" />Pendentes ({pendingCount})
           </button>
-          {pendingCount > 0 && (
-            <Button variant="outline" className="hidden sm:flex border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full text-xs h-8 px-4" onClick={() => setStatusFilter("pending")}>
-              <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />Ver Pendentes ({pendingCount})
-            </Button>
-          )}
-        </div>
+        )}
+      </Head>
+
+      <div className="tools" style={{ ["--s" as string]: 1 }}>
+        <label className="field">
+          <Search className="w-4 h-4" />
+          <span className="sr">Buscar</span>
+          <input type="search" placeholder="Buscar por nome" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </label>
+        <Seg
+          label="Função"
+          value={roleFilter}
+          onPick={setRoleFilter}
+          items={[{ v: "all", label: "Todos" }, { v: "admin", label: "Admin" }, { v: "editor", label: "Editor" }, { v: "viewer", label: "Viewer" }, { v: "player", label: "Jogador" }]}
+        />
+        <select className="sel" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Status">
+          <option value="all">Todos os status</option>
+          <option value="pending">Pendentes</option>
+          <option value="active">Ativos</option>
+          <option value="suspended">Suspensos</option>
+        </select>
       </div>
 
-      {/* Mobile search input */}
-      {searchOpen && (
-        <div className="sm:hidden">
-          <input
-            autoFocus
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Buscar por nome..."
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
-          />
-        </div>
-      )}
-
-      {/* Search and Filters — desktop only */}
-      <div className="hidden sm:flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input placeholder="Buscar por nome..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-full bg-zinc-900 border-zinc-800 text-sm h-9" />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[140px] rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pending">Pendentes</SelectItem>
-            <SelectItem value="active">Ativos</SelectItem>
-            <SelectItem value="suspended">Suspensos</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-full sm:w-[140px] rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
-            <Shield className="w-3.5 h-3.5 mr-2 text-zinc-500" />
-            <SelectValue placeholder="Função" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="editor">Editor</SelectItem>
-            <SelectItem value="viewer">Viewer</SelectItem>
-            <SelectItem value="player">Jogador</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Column headers */}
-      <div className="hidden sm:flex items-center gap-4 px-4 text-[10px] text-zinc-600 uppercase tracking-wider font-medium">
-        <div className="flex-1">Usuário</div>
-        <div className="w-[80px] text-center">Função</div>
-        <div className="w-[90px] text-center">Status</div>
-        <div className="hidden md:block w-[120px] text-right">Último Login</div>
-        <div className="w-8" />
-      </div>
-
-      {/* User list */}
-      {filteredUsers.length === 0 ? (
-        <div className="text-center py-16 rounded-xl bg-zinc-900/30 border border-zinc-800/30">
-          <Users className="w-10 h-10 mx-auto text-zinc-700 mb-3" />
-          <p className="text-sm text-zinc-500">Nenhum usuário encontrado</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filteredUsers.map(renderUserRow)}
-        </div>
-      )}
+      <section className="card pad" style={{ ["--s" as string]: 2 }}>
+        {filteredUsers.length === 0 ? (
+          <div className="empty">Nenhum usuário encontrado.</div>
+        ) : (
+          <div className="scroll-x">
+            <table className="tbl">
+              <thead><tr><th>Usuário</th><th>Função</th><th>Status</th><th className="num">Último login</th><th /></tr></thead>
+              <tbody>{filteredUsers.map(renderUserRow)}</tbody>
+            </table>
+          </div>
+        )}
+      </section>
       {/* Confirm Action Dialog */}
       <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
         <AlertDialogContent>
@@ -1286,6 +1216,6 @@ export default function UserManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </View>
   );
 }

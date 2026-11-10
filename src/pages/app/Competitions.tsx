@@ -60,6 +60,7 @@ import { CompetitionFilters } from "@/components/competitions/CompetitionFilters
 import { CompetitionRowCard, CompetitionMobileCard } from "@/components/competitions/CompetitionRowCard";
 import { getTierFromCoefficient, getTierAdminBadgeClass, getTierThresholdsTooltip } from "@/lib/tierClassification";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { Seg, Title, View } from "@/components/dash/ui";
 
 interface Competition {
   id: string;
@@ -123,6 +124,7 @@ const Competitions = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
+  const [moreFilters, setMoreFilters] = useState(false);
   const [typeFilter, setTypeFilter] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
@@ -593,31 +595,20 @@ const Competitions = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <View>
       {/* Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="m3-page-title">Competições</h1>
-            <span className="inline-flex items-center justify-center min-w-[24px] h-5 px-1.5 rounded-full font-editorial-mono text-[10px] font-bold text-white" style={{ background: "#ec4525" }}>{competitions.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
-              <Search size={18} className="text-zinc-400" />
-            </button>
-            <div className="hidden sm:flex gap-2 flex-wrap">
+      <div>
+        <div className="ph" style={{ ["--s" as string]: 0 }}>
+          <div><Title text="Competições" /></div>
+          <div className="ph-acts">
+            <div style={{ display: "contents" }}>
               <span className="hidden md:inline-flex">
                 <PermissionGate module="competitions" action="delete">
                   {competitions.length > 0 && (
                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                      <Button
-                        variant="outline"
-                        className="text-red-400 border-red-500/30 hover:bg-red-500/10 rounded-full font-editorial-mono text-[11px] tracking-wider"
-                        onClick={() => setDeleteDialogOpen(true)}
-                      >
+                      <button type="button" className="btn g" style={{ color: "var(--red)", width: 44, padding: 0 }} onClick={() => setDeleteDialogOpen(true)} aria-label="Excluir todas as competições" title="Excluir todas as competições">
                         <Trash2 className="w-4 h-4" />
-                        Excluir Todas
-                      </Button>
+                      </button>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -663,24 +654,22 @@ const Competitions = () => {
                 </PermissionGate>
               </span>
               <span className="hidden md:inline-flex">
-                <Link to="/dashboard/competicoes/importar">
-                  <Button variant="outline" className="rounded-full">
-                    <Upload className="w-4 h-4" />
-                    Importar CSV
-                  </Button>
+                <Link to="/dashboard/competicoes/importar" className="btn g">
+                  <Upload className="w-4 h-4" />
+                  Importar CSV
                 </Link>
               </span>
               {filteredCompetitions.length > 0 && (
-                <Button variant="outline" className="hidden md:inline-flex rounded-full" onClick={handleExportCSV}>
+                <button type="button" className="btn g hidden md:inline-flex" onClick={handleExportCSV}>
                   <Download className="w-4 h-4" />
                   Exportar CSV
-                </Button>
+                </button>
               )}
               {isAdmin && (
-                <Button onClick={handleCreate} className="hidden sm:flex bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
+                <button type="button" className="btn r" onClick={handleCreate}>
                   <Plus className="w-4 h-4" />
-                  Nova Competição
-                </Button>
+                  Nova competição
+                </button>
               )}
             </div>
           </div>
@@ -699,39 +688,51 @@ const Competitions = () => {
         )}
       </div>
 
-      {/* Filters - New Component (hidden on mobile, search handled by lupa) */}
-      <div className="hidden sm:block">
-      <CompetitionFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        tierFilter={tierFilter}
-        onTierChange={setTierFilter}
-        typeFilter={typeFilter}
-        onTypeChange={setTypeFilter}
-        countryFilter={countryFilter}
-        onCountryChange={setCountryFilter}
-        stateFilter={stateFilter}
-        onStateChange={setStateFilter}
-        visibilityFilter={visibilityFilter}
-        onVisibilityChange={setVisibilityFilter}
-        coefficientFilter={coefficientFilter}
-        onCoefficientChange={setCoefficientFilter}
-        countries={uniqueCountries}
-        states={uniqueStates}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-      />
+      <div className="tools" style={{ ["--s" as string]: 1 }}>
+        <label className="field">
+          <Search className="w-4 h-4" />
+          <span className="sr">Buscar</span>
+          <input type="search" placeholder="Buscar competição" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </label>
+        <Seg
+          label="Tier"
+          value={tierFilter}
+          onPick={setTierFilter}
+          items={[{ v: "all", label: "Todos" }, { v: "S", label: "Tier S" }, { v: "A", label: "Tier A" }, { v: "B", label: "Tier B" }, { v: "C", label: "Tier C" }, { v: "D", label: "Tier D" }]}
+        />
+        <button type="button" className={`btn ${moreFilters ? "" : "g"}`} onClick={() => setMoreFilters((v) => !v)}>
+          {moreFilters ? "Ocultar filtros" : "Mais filtros"}
+        </button>
       </div>
+      {moreFilters && (
+        <div className="hidden sm:block" style={{ marginBottom: "var(--gap)" }}>
+          <CompetitionFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            tierFilter={tierFilter}
+            onTierChange={setTierFilter}
+            typeFilter={typeFilter}
+            onTypeChange={setTypeFilter}
+            countryFilter={countryFilter}
+            onCountryChange={setCountryFilter}
+            stateFilter={stateFilter}
+            onStateChange={setStateFilter}
+            visibilityFilter={visibilityFilter}
+            onVisibilityChange={setVisibilityFilter}
+            coefficientFilter={coefficientFilter}
+            onCoefficientChange={setCoefficientFilter}
+            countries={uniqueCountries}
+            states={uniqueStates}
+            onClear={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+        </div>
+      )}
 
       {/* Info Banner */}
-      <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: "rgba(59,130,246,0.05)", borderColor: "rgba(59,130,246,0.15)" }}>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(59,130,246,0.12)" }}>
-          <Info className="w-3.5 h-3.5 text-blue-400" />
-        </div>
-        <p className="font-editorial-mono text-[11px]" style={{ color: "#93c5fd" }}>
-          O <span className="text-blue-300 font-semibold">coeficiente</span> de cada competição influencia diretamente o score automático dos atletas.
-          Competições Tier S/A pesam mais na avaliação.
-        </p>
+      <div className="info" style={{ ["--s" as string]: 1, background: "rgba(10,132,255,.1)" }}>
+        <Info className="w-4 h-4" style={{ color: "var(--teal)", flex: "none" }} />
+        <span>O <b style={{ color: "var(--teal)" }}>coeficiente</b> de cada competição entra direto no score automático dos atletas. Competições tier S e A pesam mais na avaliação.</span>
       </div>
 
       {/* Results count */}
@@ -778,7 +779,7 @@ const Competitions = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "grid", gap: "var(--gap)" }}>
           {isMobile ? (
             // Mobile: Card layout
             safeArray(filteredCompetitions).map((comp) => (
@@ -1133,7 +1134,7 @@ const Competitions = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </View>
   );
 };
 

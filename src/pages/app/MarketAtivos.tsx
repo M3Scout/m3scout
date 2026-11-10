@@ -26,6 +26,8 @@ import { computeScoreForAthleteById, recalculateAllActiveMarketScores } from "@/
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { MarketScoreDetailModal } from "@/components/players/MarketScoreDetailModal";
+import { Ic } from "@/components/dash/icons";
+import { Av, Head, Ring, Seg, View, scoreColor, shortPos } from "@/components/dash/ui";
 import { toast } from "sonner";
 
 // ── TYPES ──────────────────────────────────────────────────────────────────────
@@ -92,7 +94,6 @@ export default function MarketAtivos() {
   const queryClient   = useQueryClient();
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteWithScore | null>(null);
   const [search,           setSearch]           = useState("");
-  const [searchOpen,       setSearchOpen]       = useState(false);
   const [positionFilter,   setPositionFilter]   = useState("Todos");
   const [ageRangeIndex,    setAgeRangeIndex]    = useState(0);
   const [minScore,         setMinScore]         = useState(0);
@@ -213,276 +214,93 @@ export default function MarketAtivos() {
   const athletesWithoutScore = athletes.filter(a => !a.score).length;
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
-
+  const ranked = filteredAthletes.filter((a) => a.score).map((a) => a.id);
+  const TREND_I: Record<string, string> = {
+    UP: '<path d="M4 16 10 10l4 4 6-6M15 8h5v5"/>',
+    DOWN: '<path d="m4 8 6 6 4-4 6 6M15 16h5v-5"/>',
+  };
   return (
-    <div className="space-y-4">
+    <View>
+      <Head title="Ativos M3">
+        <button type="button" className="btn g" onClick={handleRecalculateAll} disabled={isRecalculatingAll}>
+          <Ic n="refresh" />
+          {isRecalculatingAll
+            ? recalcProgress && recalcProgress.total > 0 ? `${recalcProgress.current}/${recalcProgress.total}` : "Recalculando…"
+            : "Atualizar"}
+        </button>
+      </Head>
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="m3-page-title">Ativos</h1>
-          <span
-            className="inline-flex items-center justify-center min-w-[24px] h-5 px-1.5 rounded-full font-editorial-mono text-[10px] font-bold text-white"
-            style={{ background: ACCENT }}
-          >
-            {filteredAthletes.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="sm:hidden p-1 transition-colors"
-            onClick={() => setSearchOpen(v => !v)}
-            aria-label="Buscar"
-            style={{ color: MUTED }}
-          >
-            <Search className="w-[18px] h-[18px]" />
-          </button>
-          <button
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full font-editorial-mono text-[11px] tracking-[0.1em] uppercase transition-colors duration-150"
-            onClick={handleRecalculateAll}
-            disabled={isRecalculatingAll}
-            style={{
-              background: "transparent",
-              border: `1px solid ${CARD_BORDER}`,
-              color: isRecalculatingAll ? MUTED : TEXT,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = CARD_BORDER)}
-          >
-            {isRecalculatingAll ? (
-              <><Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {recalcProgress && recalcProgress.total > 0
-                  ? `${recalcProgress.current}/${recalcProgress.total}`
-                  : "Recalculando..."}</>
-            ) : (
-              <><RefreshCw className="w-3.5 h-3.5" /> Atualizar</>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* MOBILE SEARCH */}
-      {searchOpen && (
-        <div className="sm:hidden">
-          <input
-            autoFocus
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar atleta..."
-            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
-            style={{
-              background: CARD_BG,
-              border: `1px solid ${CARD_BORDER}`,
-              color: TEXT,
-            }}
-          />
-        </div>
-      )}
-
-      {/* INFO BANNER */}
       {athletesWithoutScore > 0 && (
-        <div
-          className="rounded-xl border px-4 py-3 flex items-center gap-3"
-          style={{ background: "rgba(232,200,74,0.05)", borderColor: "rgba(232,200,74,0.2)" }}
-        >
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(232,200,74,0.12)" }}>
-            <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
-          </div>
-          <p className="font-editorial-mono text-[11px]" style={{ color: "#c9a83a" }}>
-            {athletesWithoutScore} atleta(s) sem score — abra o perfil para calcular automaticamente.
-          </p>
+        <div className="info" style={{ ["--s" as string]: 1, background: "rgba(255,214,10,.1)" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" /></svg>
+          <span><b style={{ color: "var(--yellow)" }}>{athletesWithoutScore} {athletesWithoutScore === 1 ? "atleta sem score" : "atletas sem score"}</b> — use “Calcular” no card para gerar automaticamente.</span>
         </div>
       )}
 
-      {/* FILTERS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: MUTED }} />
-          <Input
-            placeholder="Buscar atleta..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 rounded-lg h-9 text-[12px] border-0 outline-none focus-visible:ring-0"
-            style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}
-          />
-        </div>
-
-        <div className="hidden sm:block">
-          <Select value={positionFilter} onValueChange={setPositionFilter}>
-            <SelectTrigger className="rounded-lg h-9 text-[12px] border-0 focus:ring-0" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}>
-              <SelectValue placeholder="Posição" />
-            </SelectTrigger>
-            <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
-              {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="hidden sm:block">
-          <Select value={String(ageRangeIndex)} onValueChange={v => setAgeRangeIndex(Number(v))}>
-            <SelectTrigger className="rounded-lg h-9 text-[12px] border-0 focus:ring-0" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}>
-              <SelectValue placeholder="Idade" />
-            </SelectTrigger>
-            <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
-              {AGE_RANGES.map((r, i) => <SelectItem key={i} value={String(i)}>{r.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Select value={String(minScore)} onValueChange={v => setMinScore(Number(v))}>
-          <SelectTrigger className="rounded-lg h-9 text-[12px] border-0 focus:ring-0" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}>
-            <SelectValue placeholder="Score mínimo" />
-          </SelectTrigger>
-          <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
-            {[0,30,50,60,70,80].map(v => <SelectItem key={v} value={String(v)}>Score ≥ {v}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-        <Select value={trendFilter} onValueChange={v => setTrendFilter(v as typeof trendFilter)}>
-          <SelectTrigger className="rounded-lg h-9 text-[12px] border-0 focus:ring-0" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}>
-            <SelectValue placeholder="Tendência" />
-          </SelectTrigger>
-          <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
-            <SelectItem value="ALL">Todas tendências</SelectItem>
-            <SelectItem value="UP"><span className="flex items-center gap-2"><TrendingUp className="w-3 h-3 text-emerald-400" />Em alta</span></SelectItem>
-            <SelectItem value="DOWN"><span className="flex items-center gap-2"><TrendingDown className="w-3 h-3 text-red-400" />Em baixa</span></SelectItem>
-            <SelectItem value="FLAT"><span className="flex items-center gap-2"><Minus className="w-3 h-3 text-zinc-500" />Estável</span></SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="tools" style={{ ["--s" as string]: 1 }}>
+        <label className="field">
+          <Ic n="search" />
+          <span className="sr">Buscar</span>
+          <input type="search" placeholder="Buscar atleta" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </label>
+        <Seg
+          label="Tendência"
+          value={trendFilter}
+          onPick={(v) => setTrendFilter(v as typeof trendFilter)}
+          items={[{ v: "ALL", label: "Todas tendências" }, { v: "UP", label: "Subindo" }, { v: "DOWN", label: "Caindo" }, { v: "FLAT", label: "Estáveis" }]}
+        />
+        <select className="sel" value={positionFilter} onChange={(e) => setPositionFilter(e.target.value)} aria-label="Posição">
+          {POSITIONS.map((pos) => <option key={pos} value={pos}>{pos === "Todos" ? "Todas as posições" : pos}</option>)}
+        </select>
+        <select className="sel" value={String(ageRangeIndex)} onChange={(e) => setAgeRangeIndex(Number(e.target.value))} aria-label="Idade">
+          {AGE_RANGES.map((r, i) => <option key={i} value={String(i)}>{r.label}</option>)}
+        </select>
+        <select className="sel" value={String(minScore)} onChange={(e) => setMinScore(Number(e.target.value))} aria-label="Score mínimo">
+          {[0, 30, 50, 60, 70, 80].map((v) => <option key={v} value={String(v)}>Score ≥ {v}</option>)}
+        </select>
       </div>
 
-      {/* GRID */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[1,2,3,4,5,6].map(i => (
-            <div key={i} className="rounded-xl border p-3.5" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
-              <div className="flex items-center gap-3">
-                <Skeleton className="w-14 h-14 rounded-xl" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32 rounded-lg" />
-                  <Skeleton className="h-3 w-20 rounded-lg" />
-                </div>
-                <Skeleton className="w-10 h-10 rounded-lg" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <section className="as">{[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="asc" style={{ height: 114, opacity: 0.4 }} />)}</section>
       ) : filteredAthletes.length === 0 ? (
-        <div className="rounded-xl border py-12 text-center" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
-          <User className="w-10 h-10 mx-auto mb-3" style={{ color: MUTED }} />
-          <p className="font-editorial-mono text-[11px] uppercase" style={{ color: MUTED }}>
-            Nenhum atleta encontrado com os filtros aplicados
-          </p>
-        </div>
+        <div className="empty">Nenhum atleta encontrado com os filtros aplicados.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredAthletes.map((athlete, index) => {
-            const score     = athlete.score?.score_total ?? 0;
-            const scoreCol  = getScoreColor(score);
-            const hasScore  = athlete.score !== null;
-            const posColor  = getPositionColor(athlete.position);
-            const shortPos  = getShortPosition(athlete.position);
-
+        <section className="as" style={{ ["--s" as string]: 2 }}>
+          {filteredAthletes.map((athlete) => {
+            const sc = athlete.score ? Math.round(athlete.score.score_total) : null;
+            const rk = ranked.indexOf(athlete.id) + 1;
+            const tr = athlete.score?.trend_30d;
             return (
-              <div
-                key={athlete.id}
-                className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors duration-[250ms] hover:bg-zinc-800/30"
-                style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+              <div key={athlete.id} className="asc" role="button" tabIndex={0}
                 onClick={() => setSelectedAthlete(athlete)}
-              >
-                {/* Rank + Photo */}
-                <div className="relative shrink-0">
-                  {index < 10 && hasScore && (
-                    <div
-                      className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center text-white z-10 font-editorial-mono"
-                      style={{ background: ACCENT }}
-                    >
-                      {index + 1}
-                    </div>
-                  )}
-                  <div className="w-14 rounded-xl overflow-hidden flex-shrink-0" style={{ height: 72, background: "#111113" }}>
-                    {athlete.photo_url ? (
-                      <img
-                        src={getOptimizedImageUrl(athlete.photo_url, { width: 400, quality: 85, format: "avif" }) || athlete.photo_url}
-                        alt={athlete.full_name}
-                        className="w-full h-full object-cover object-[center_5%]"
-                        loading="lazy"
-                        decoding="async"
-                        onError={e => { if (athlete.photo_url) (e.target as HTMLImageElement).src = athlete.photo_url; }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-6 h-6" style={{ color: MUTED }} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <h3 className="font-display font-semibold text-[13px] truncate" style={{ color: TEXT }}>
-                      {athlete.full_name}
-                    </h3>
-                    {hasScore && <TrendIcon trend={athlete.score!.trend_30d} />}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("font-editorial-mono text-[10px] font-semibold uppercase tracking-wider", posColor.textClass)}>
-                      {shortPos}
-                    </span>
-                    {athlete.age && (
-                      <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>
-                        {athlete.age}a
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedAthlete(athlete); }}>
+                <span style={{ position: "relative" }}>
+                  <Av name={athlete.full_name} photo={athlete.photo_url} size={68} />
+                  {rk > 0 && rk <= 10 && <span className="rk">{rk}</span>}
+                </span>
+                <span className="who" style={{ flex: 1 }}>
+                  <span>
+                    <b>{athlete.full_name}</b>
+                    <span>{[shortPos(athlete.position), athlete.age ? `${athlete.age}a` : null, athlete.current_club].filter(Boolean).join(" · ")}</span>
+                    {tr && tr !== "FLAT" && (
+                      <span className={`trend ${tr === "UP" ? "up" : "down"}`}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: TREND_I[tr] }} />
+                        {tr === "UP" ? "Subindo" : "Caindo"}
                       </span>
                     )}
-                  </div>
-                  {athlete.current_club && (
-                    <p className="font-editorial-mono text-[10px] truncate mt-0.5" style={{ color: MUTED }}>
-                      {athlete.current_club}
-                    </p>
-                  )}
-                </div>
-
-                {/* Score */}
-                {hasScore ? (
-                  <div className="flex flex-col items-center shrink-0 min-w-[40px]">
-                    <span className="font-display font-bold text-[22px] leading-none tabular-nums" style={{ color: scoreCol.hex }}>
-                      {score.toFixed(0)}
-                    </span>
-                    <span className="font-editorial-mono text-[8px] uppercase tracking-wider mt-1" style={{ color: scoreCol.hex, opacity: 0.6 }}>
-                      {scoreCol.label}
-                    </span>
-                  </div>
+                  </span>
+                </span>
+                {sc != null ? (
+                  <Ring pct={sc} c={scoreColor(sc)} size={68} />
                 ) : (
-                  <button
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg font-editorial-mono text-[10px] uppercase tracking-wider shrink-0 transition-colors duration-150"
-                    style={{
-                      border: `1px dashed ${CARD_BORDER}`,
-                      color: MUTED,
-                      background: "transparent",
-                    }}
-                    onClick={e => handleCalculateScore(e, athlete)}
-                    disabled={calculatingIds.has(athlete.id)}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.color = ACCENT; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = CARD_BORDER; e.currentTarget.style.color = MUTED; }}
-                  >
-                    {calculatingIds.has(athlete.id)
-                      ? <Loader2 className="w-3 h-3 animate-spin" />
-                      : <Sparkles className="w-3 h-3" />}
-                    {calculatingIds.has(athlete.id) ? "..." : "Calcular"}
+                  <button type="button" className="btn sm g" disabled={calculatingIds.has(athlete.id)} onClick={(e) => handleCalculateScore(e, athlete)}>
+                    {calculatingIds.has(athlete.id) ? "Calculando…" : "Calcular"}
                   </button>
                 )}
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* COUNT */}
-      {!isLoading && (
-        <p className="font-editorial-mono text-[10px] uppercase text-center tabular-nums" style={{ color: "rgba(255,255,255,0.18)" }}>
-          {filteredAthletes.length} atleta(s) encontrado(s)
-        </p>
+        </section>
       )}
 
       {selectedAthlete && (
@@ -498,6 +316,6 @@ export default function MarketAtivos() {
           currentClub={selectedAthlete.current_club}
         />
       )}
-    </div>
+    </View>
   );
 }

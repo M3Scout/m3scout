@@ -53,8 +53,8 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
 
   return (
     <div
-      className="group relative flex items-center gap-4 p-3.5 rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/30"
-      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+      className="group relative flex items-center gap-4 transition-colors duration-[250ms] hover:bg-white/[0.03]"
+      style={{ background: "var(--g1, #0f0f10)", borderRadius: 22, padding: "14px 20px 14px 14px" }}
     >
       {/* Tier */}
       <div className="shrink-0">
@@ -64,7 +64,7 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
       {/* Main Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-display font-semibold text-[13px] truncate" style={{ color: TEXT }}>
+          <h3 className="truncate" style={{ color: TEXT, fontSize: 18, fontWeight: 700, letterSpacing: "-.02em" }}>
             {competition.display_name || competition.name}
           </h3>
           {competition.display_name && competition.name !== competition.display_name && (
@@ -158,8 +158,8 @@ export function CompetitionMobileCard({ competition, isAdmin, onEdit, onDelete }
 
   return (
     <div
-      className="p-4 rounded-xl border space-y-3 cursor-pointer transition-colors duration-[250ms]"
-      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+      className="p-4 space-y-3 cursor-pointer transition-colors duration-[250ms]"
+      style={{ background: "var(--g1, #0f0f10)", borderRadius: 22 }}
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-start justify-between gap-3">

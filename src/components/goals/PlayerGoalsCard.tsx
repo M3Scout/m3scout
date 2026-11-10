@@ -1,7 +1,5 @@
 import { useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { User, CheckCircle2, Clock, AlertTriangle, ChevronDown } from "lucide-react";
-import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { Av, Bar, Ring } from "@/components/dash/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,248 +62,81 @@ interface PlayerGoalsCardProps {
   onGoalClick?: (goal: GoalData) => void;
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Visual do painel novo (painel.html) ─────────────────────────────────────
+const STATUS_ICON: Record<GoalStatus, string> = {
+  completed: '<path d="m5 12 5 5 9-10"/>',
+  in_progress: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',
+  exceeded: '<path d="M12 4 2 20h20zM12 10v4M12 17.5v.5"/>',
+};
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "");
 
-const ACCENT = "#ec4525";
-const FG     = "#ededee";
-const MUTED  = "#62616a";
-const BDR    = "rgba(255,255,255,0.07)";
-const BG     = "#0f0e13";
-
-// ─── Circular progress ring ───────────────────────────────────────────────────
-
-function ProgressRing({ pct, color, size = 52 }: { pct: number; color: string; size?: number }) {
-  const r  = (size - 6) / 2;
-  const c  = 2 * Math.PI * r;
-  const offset = c - (Math.min(pct, 100) / 100) * c;
-  return (
-    <svg width={size} height={size} className="rotate-[-90deg]">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={5} />
-      <circle
-        cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={5}
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        style={{ transition: "stroke-dashoffset 0.8s ease" }}
-      />
-    </svg>
-  );
-}
-
-// ─── Status icon ─────────────────────────────────────────────────────────────
-
-function StatusDot({ status, isLimit }: { status: GoalStatus; isLimit: boolean }) {
-  if (status === "exceeded")               return <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />;
-  if (status === "completed" && !isLimit)  return <CheckCircle2  className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-  if (status === "completed" && isLimit)   return <CheckCircle2  className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-  return <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: MUTED }} />;
-}
-
-// ─── Goal row ─────────────────────────────────────────────────────────────────
-
-function GoalRow({ goal, onClick }: { goal: GoalData; onClick?: () => void }) {
-  const cfg = GOAL_TYPE_CONFIG[goal.goal_type] ?? { label: goal.goal_type, icon: "🎯", hex: ACCENT, type: "accumulation" as const };
+function GoalRow({ goal, i, onClick }: { goal: GoalData; i: number; onClick?: () => void }) {
+  const cfg = GOAL_TYPE_CONFIG[goal.goal_type] ?? { label: goal.goal_type, icon: "🎯", hex: "#FF3B30", type: "accumulation" as const };
   const isLimit = cfg.type === "limit";
-
-  const barColor = (() => {
-    if (isLimit) {
-      if (goal.percentage >= 100) return "#ef4444";
-      if (goal.percentage >= 75)  return "#f59e0b";
-      return "#22c55e";
-    }
-    if (goal.percentage >= 100) return "#22c55e";
-    if (goal.percentage >= 75)  return "#3b82f6";
-    if (goal.percentage >= 40)  return cfg.hex;
-    return MUTED;
-  })();
-
+  const unit = (cfg as GoalTypeConfig).unit ?? "";
+  const ok = goal.status === "completed";
+  const over = goal.status === "exceeded";
+  const barC = over ? "var(--red)" : ok ? "var(--green)" : cfg.hex;
   return (
-    <motion.div
-      whileHover={{ backgroundColor: "rgba(255,255,255,0.025)" }}
-      whileTap={{ scale: 0.995 }}
-      onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2.5 -mx-3 rounded-lg cursor-pointer transition-colors"
-    >
-      {/* Category dot */}
-      <div className="w-6 h-6 rounded-md flex items-center justify-center flex-none text-[13px]"
-        style={{ background: `${cfg.hex}12`, border: `1px solid ${cfg.hex}25` }}>
-        {cfg.icon}
-      </div>
-
-      {/* Label + bar */}
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[12px] font-mono leading-none truncate" style={{ color: FG }}>
-            {cfg.label}
-            {isLimit && <span className="ml-1 text-[10px]" style={{ color: MUTED }}>(máx.)</span>}
-          </span>
-          <div className="flex items-center gap-1 flex-none tabular-nums">
-            <span className="text-[13px] font-semibold font-display" style={{ color: FG }}>
-              {goal.currentValue}{(cfg as GoalTypeConfig).unit ?? ""}
-            </span>
-            <span className="text-[11px]" style={{ color: MUTED }}>/</span>
-            <span className="text-[11px]" style={{ color: MUTED }}>{goal.target_value}{(cfg as GoalTypeConfig).unit ?? ""}</span>
-
-          </div>
+    <button type="button" className="gr" style={{ ["--c" as string]: cfg.hex }} onClick={onClick}>
+      <span className="gr-i" aria-hidden="true">{cfg.icon}</span>
+      <div className="gr-b">
+        <div className="gr-h">
+          <span>{cfg.label}{isLimit && <small> (máx.)</small>}</span>
+          <b className="tab">{goal.currentValue}{unit}<small> / {goal.target_value}{unit}</small></b>
         </div>
-        <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(goal.percentage, 100)}%` }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="h-full rounded-full"
-            style={{ background: barColor }}
-          />
-        </div>
+        <Bar w={Math.min(goal.percentage, 100) / 100} c={barC} d={i * 0.04} />
       </div>
-
-      {/* Status */}
-      <StatusDot status={goal.status} isLimit={isLimit} />
-    </motion.div>
+      <span
+        className={`gr-s ${ok ? "ok" : ""}`}
+        style={over ? { background: "rgba(255,59,48,.16)", color: "var(--red)" } : undefined}
+        title={ok ? "Concluída" : over ? "Excedida" : "Em andamento"}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: STATUS_ICON[goal.status] }} />
+      </span>
+    </button>
   );
 }
 
 // ─── Main card ────────────────────────────────────────────────────────────────
-
 export function PlayerGoalsCard({ player, goals, expanded, onToggle, onGoalClick }: PlayerGoalsCardProps) {
   const summary = useMemo(() => {
-    const completed  = goals.filter(g => g.status === "completed").length;
-    const exceeded   = goals.filter(g => g.status === "exceeded").length;
-    const inProgress = goals.filter(g => g.status === "in_progress").length;
-    const avgPct     = goals.length > 0
-      ? Math.round(goals.reduce((s, g) => s + g.percentage, 0) / goals.length)
-      : 0;
+    const completed = goals.filter((g) => g.status === "completed").length;
+    const exceeded = goals.filter((g) => g.status === "exceeded").length;
+    const inProgress = goals.filter((g) => g.status === "in_progress").length;
+    const avgPct = goals.length > 0 ? Math.round(goals.reduce((s, g) => s + Math.min(g.percentage, 100), 0) / goals.length) : 0;
     return { completed, exceeded, inProgress, avgPct, total: goals.length };
   }, [goals]);
 
-  const seasons = useMemo(() =>
-    [...new Set(goals.map(g => g.season_year))].sort((a, b) => b - a),
-    [goals]
-  );
-
-  const ringColor = summary.exceeded > 0 ? "#ef4444"
-    : summary.avgPct >= 100 ? "#22c55e"
-    : summary.avgPct >= 75  ? "#3b82f6"
-    : summary.avgPct >= 40  ? ACCENT
-    : MUTED;
-
-  const topBarColor = summary.exceeded > 0 ? "#ef4444"
-    : summary.completed === summary.total && summary.total > 0 ? "#22c55e"
-    : "transparent";
+  const ringColor = summary.exceeded > 0 ? "var(--red)" : summary.avgPct >= 70 ? "var(--blue)" : summary.avgPct >= 50 ? "var(--red)" : "var(--orange)";
+  const first = player.full_name.split(" ")[0];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="relative rounded-2xl overflow-hidden flex flex-col"
-      style={{ background: BG, border: `1px solid ${BDR}` }}
-    >
-      {/* Top accent line */}
-      {topBarColor !== "transparent" && (
-        <div className="h-[2px]" style={{ background: `linear-gradient(90deg, ${topBarColor}, transparent)` }} />
-      )}
-
-      {/* ── HEADER (clicável) ──────────────────────────────────────────── */}
-      <div
-        className="flex items-start gap-3 p-4 pb-3 cursor-pointer select-none"
-        onClick={onToggle}
-      >
-        {/* Photo */}
-        <div className="relative flex-none">
-          <div className="w-14 h-14 rounded-xl overflow-hidden"
-            style={{ border: `1px solid ${BDR}`, background: "rgba(255,255,255,0.04)" }}>
-            {player.photo_url ? (
-              <img
-                src={getOptimizedImageUrl(player.photo_url, { width: 200, quality: 85, format: "avif" }) || player.photo_url}
-                alt={player.full_name}
-                className="w-full h-full object-cover object-top"
-                onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <User className="w-6 h-6" style={{ color: MUTED }} />
-              </div>
-            )}
+    <article className={`mc ${expanded ? "open" : ""}`}>
+      <button className="mc-h" type="button" aria-expanded={expanded} onClick={onToggle}>
+        <Av name={player.full_name} photo={player.photo_url} size={56} />
+        <span className="who">
+          <span>
+            <b>{first.toUpperCase()}</b>
+            <span>{[cap(player.position), player.age ? `${player.age}a` : null].filter(Boolean).join(" · ")}</span>
+            <span className="mc-st">
+              <span className="pill c" style={{ ["--c" as string]: "var(--green)" }}>✓ {summary.completed}</span>
+              <span className="pill">{summary.inProgress} {summary.inProgress === 1 ? "aberta" : "abertas"}</span>
+              {summary.exceeded > 0 && <span className="pill c" style={{ ["--c" as string]: "var(--red)" }}>{summary.exceeded} excedida{summary.exceeded > 1 ? "s" : ""}</span>}
+            </span>
+          </span>
+        </span>
+        <Ring pct={summary.avgPct} c={ringColor} size={64} />
+        <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      <div className="mc-list">
+        <div>
+          <div className="in-l">
+            {goals.length === 0 ? <div className="empty">Nenhuma meta cadastrada.</div>
+              : goals.map((g, i) => <GoalRow key={g.id} goal={g} i={i} onClick={onGoalClick ? () => onGoalClick(g) : undefined} />)}
           </div>
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0 pt-0.5">
-          {/* Name + counters na mesma linha */}
-          <div className="flex items-center gap-2 min-w-0">
-            <p className="font-display font-bold text-[13px] uppercase leading-tight truncate" style={{ color: FG }}>
-              {player.full_name.split(" ")[0]}
-            </p>
-            <div className="flex items-center gap-1.5 flex-none">
-              {summary.completed > 0 && (
-                <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: "#22c55e" }}>
-                  <CheckCircle2 className="w-2.5 h-2.5" />{summary.completed}
-                </span>
-              )}
-              {summary.inProgress > 0 && (
-                <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: MUTED }}>
-                  <Clock className="w-2.5 h-2.5" />{summary.inProgress}
-                </span>
-              )}
-              {summary.exceeded > 0 && (
-                <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: "#ef4444" }}>
-                  <AlertTriangle className="w-2.5 h-2.5" />{summary.exceeded}
-                </span>
-              )}
-            </div>
-          </div>
-          <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: MUTED }}>
-            {player.position}{player.age ? ` · ${player.age}a` : ""}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            {seasons.map(y => (
-              <span key={y} className="font-mono text-[9px] px-1.5 py-0.5 rounded"
-                style={{ color: MUTED, border: `1px solid ${BDR}`, background: "rgba(255,255,255,0.025)" }}>
-                {y}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Ring + chevron lado a lado */}
-        <div className="flex items-center gap-1.5 flex-none">
-          <div className="relative flex items-center justify-center">
-            <ProgressRing pct={summary.avgPct} color={ringColor} size={48} />
-            <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
-              <span className="font-display font-bold text-[11px] leading-none" style={{ color: ringColor }}>
-                {summary.avgPct}
-              </span>
-              <span className="font-mono text-[8px] leading-none" style={{ color: MUTED }}>%</span>
-            </div>
-          </div>
-          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown className="w-3.5 h-3.5" style={{ color: MUTED }} />
-          </motion.div>
         </div>
       </div>
-
-      {/* ── GOALS LIST (colapsável) ─────────────────────────────────────── */}
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            key="goals"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            style={{ overflow: "hidden" }}
-          >
-            <div className="h-px mx-4" style={{ background: BDR }} />
-            <div className="px-4 py-2">
-              {goals.map(g => (
-                <GoalRow key={g.id} goal={g} onClick={() => onGoalClick?.(g)} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+    </article>
   );
 }

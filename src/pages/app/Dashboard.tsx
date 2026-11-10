@@ -1,7 +1,5 @@
-import DashboardV2 from "@/components/dashboard/v2/DashboardV2";
+import { Overview } from "@/components/dash/views/Overview";
 
-const Dashboard = () => {
-  return <DashboardV2 />;
-};
+const Dashboard = () => <Overview />;
 
 export default Dashboard;

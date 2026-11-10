@@ -6,6 +6,8 @@ import { Eye, Handshake, CheckCircle2, XCircle, Plus, TrendingUp, TrendingDown, 
 import { Target as TargetType, MarketScoreTrend } from "@/types/marketScore";
 import { TargetFormModal } from "@/components/market/TargetFormModal";
 import { TargetDetailModal } from "@/components/market/TargetDetailModal";
+import { Ic } from "@/components/dash/icons";
+import { Head, Kpi, View } from "@/components/dash/ui";
 import { getTargetAlertSeverity, type TargetAlert } from "@/lib/targetInsightsEngine";
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
@@ -28,10 +30,10 @@ type ActivityRow = {
 // ─── Stage config ─────────────────────────────────────────────────────────────
 
 const KANBAN_STAGES = [
-  { key: "MONITORING"  as const, label: "Monitorando", color: "#9B6DFF", Icon: Eye },
-  { key: "NEGOTIATION" as const, label: "Negociação",  color: "#E8C84A", Icon: Handshake },
-  { key: "SIGNED"      as const, label: "Contratado",  color: "#2DCE8A", Icon: CheckCircle2 },
-  { key: "DROPPED"     as const, label: "Descartado",  color: "#e5173f", Icon: XCircle },
+  { key: "MONITORING"  as const, label: "Monitorando", color: "#BF5AF2", Icon: Eye },
+  { key: "NEGOTIATION" as const, label: "Negociação",  color: "#FFD60A", Icon: Handshake },
+  { key: "SIGNED"      as const, label: "Contratado",  color: "#30D158", Icon: CheckCircle2 },
+  { key: "DROPPED"     as const, label: "Descartado",  color: "#FF3B30", Icon: XCircle },
 ] as const;
 type StageKey = typeof KANBAN_STAGES[number]["key"];
 
@@ -87,124 +89,59 @@ function getAge(t: TargetWithScore) {
 
 // ─── Funnel card ──────────────────────────────────────────────────────────────
 
-function FunnelCard({ label, count, loading }: {
+function FunnelCard({ label, count, loading, color }: {
   label: string;
-  count: number; loading: boolean;
+  count: number; loading: boolean; color: string;
 }) {
-  return (
-    <div
-      className="relative rounded-2xl overflow-hidden p-5 flex flex-col gap-3 transition-all duration-300 hover:scale-[1.02]"
-      style={{ background: COLUMN_BG, border: `1px solid ${BDR}` }}
-    >
-      {/* Title */}
-      <span className="font-mono text-[9px] tracking-[0.18em] uppercase" style={{ color: MUTED }}>{label}</span>
-
-      {/* Number */}
-      <div>
-        {loading
-          ? <Skeleton className="h-10 w-10 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }} />
-          : <span className="font-display font-bold leading-none" style={{ fontSize: 44, color: FG }}>{count}</span>
-        }
-      </div>
-    </div>
-  );
+  return <Kpi label={label} value={loading ? "—" : count} hl c={color} />;
 }
 
 // ─── Kanban card visual ───────────────────────────────────────────────────────
 
-function CardVisual({ target, isOverlay = false, alert }: { target: TargetWithScore; isOverlay?: boolean; alert?: TargetAlert }) {
-  const [hovered, setHovered] = useState(false);
-  const t = target as any;
-  const age       = getAge(target);
-  const score     = target.market_score?.score_total ?? null;
-  const sc        = score !== null ? scoreColor(score) : null;
-  const grade     = t.recommendation_grade as string | undefined;
-  const gradeCfg  = grade ? GRADE_COLOR[grade] : null;
-  const alertColor = alert ? ALERT_COLOR[alert.severity] : null;
+const WARN_SVG = '<path d="M12 4 2 20h20zM12 10v4M12 17.5v.5"/>';
 
+function CardVisual({ target, isOverlay = false, alert }: { target: TargetWithScore; isOverlay?: boolean; alert?: TargetAlert }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = target as any;
+  const age = getAge(target);
+  const score = target.market_score?.score_total ?? null;
+  const grade = t.recommendation_grade as string | undefined;
+  const gradeCfg = grade ? GRADE_COLOR[grade] : null;
+  const alertColor = alert ? ALERT_COLOR[alert.severity] : null;
   const avgPillar = (() => {
     const vals = [t.score_physical, t.score_technical, t.score_tactical, t.score_mental].filter((v): v is number => v != null);
-    return vals.length ? vals.reduce((a: number, b: number) => a + b, 0) / vals.length : null;
+    return vals.length ? vals.reduce((x: number, y: number) => x + y, 0) / vals.length : null;
   })();
+  const pos = (target.position ?? "").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 3);
 
   return (
-    <div
-      className="rounded-xl border overflow-hidden transition-all duration-200 group/card"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: isOverlay ? "#1c1a22" : CARD_BG,
-        borderColor: isOverlay
-          ? "rgba(255,255,255,0.2)"
-          : hovered
-            ? HOVER_BORDER
-            : alertColor ? `${alertColor}70` : BDR,
-        boxShadow: isOverlay ? "0 20px 60px rgba(0,0,0,0.9)" : hovered ? `0 0 0 1px ${HOVER_BORDER}` : "none",
-        transform: isOverlay ? "scale(1.05) rotate(1.5deg)" : "none",
-        cursor: isOverlay ? "grabbing" : "grab",
-      }}
+    <article
+      className="tc"
+      style={isOverlay ? { transform: "scale(1.04) rotate(1.5deg)", boxShadow: "0 20px 60px rgba(0,0,0,.8)", cursor: "grabbing" } : alertColor ? { boxShadow: `inset 0 0 0 1px ${alertColor}70` } : undefined}
     >
-
-      <div className="p-3">
-        {/* Top: name + grade (no avatar) */}
-        <div className="flex items-start gap-2.5 mb-3">
-          <div className="flex-1 min-w-0">
-            <p className="font-display font-semibold text-[12px] uppercase leading-tight truncate" style={{ color: FG }}>
-              {target.name}
-            </p>
-            <p className="font-mono text-[9px] mt-0.5 truncate" style={{ color: MUTED }}>
-              {[target.position, age ? `${age}a` : null, target.current_club].filter(Boolean).join(" · ")}
-            </p>
-          </div>
-
-          {/* Alert badge */}
-          {alert && alertColor && (
-            <div title={alert.reason} className="flex-none">
-              <AlertTriangle className="w-3.5 h-3.5" style={{ color: alertColor }} />
-            </div>
-          )}
-
-          {/* Grade badge */}
-          {grade && gradeCfg && (
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center flex-none font-display font-bold text-[11px] leading-none"
-              style={{ background: `${gradeCfg}18`, border: `1px solid ${gradeCfg}40`, color: gradeCfg }}
-            >
-              {grade}
-            </div>
-          )}
+      <div className="tc-h">
+        <div style={{ minWidth: 0 }}>
+          <h4>{target.name}</h4>
+          <p>{[target.position, age ? `${age}a` : null, target.current_club].filter(Boolean).join(" · ")}</p>
         </div>
-
-        {/* Bottom: score + pillars */}
-        <div className="flex items-center gap-2 pt-2.5 border-t" style={{ borderColor: BDR }}>
-          {/* Score */}
-          <div className="flex items-center gap-1.5 flex-none">
-            <div className="w-1.5 h-1.5 rounded-full flex-none" style={{ background: sc ?? MUTED }} />
-            <span className="font-mono text-[11px] font-semibold tabular-nums" style={{ color: sc ?? MUTED }}>
-              {score !== null ? score.toFixed(0) : "—"}
-            </span>
-          </div>
-
-          {/* Pillar avg mini bar */}
-          {avgPillar !== null && (
-            <div className="flex-1 flex items-center gap-1.5">
-              <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-                <div className="h-full rounded-full" style={{ width: `${(avgPillar / 5) * 100}%`, background: `${ACCENT}90` }} />
-              </div>
-              <span className="font-mono text-[9px] tabular-nums" style={{ color: MUTED }}>{avgPillar.toFixed(1)}</span>
-            </div>
-          )}
-
-          {/* Position pill */}
-          <span
-            className="font-mono text-[9px] px-1.5 py-0.5 rounded-md ml-auto flex-none"
-            style={{ color: MUTED, border: `1px solid ${BDR}` }}
-          >
-            {(target.position ?? "").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 3)}
+        {alert && alertColor && (
+          <span title={alert.reason} style={{ display: "flex" }}>
+            <svg className="warn" viewBox="0 0 24 24" fill="none" stroke={alertColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: WARN_SVG }} />
           </span>
-        </div>
+        )}
+        {grade && gradeCfg && <span className="tier" style={{ ["--c" as string]: gradeCfg, width: 26, height: 26, fontSize: 12 }}>{grade}</span>}
       </div>
-    </div>
+      <div className="tc-f">
+        <b style={{ ["--c" as string]: score !== null ? scoreColor(score) : "var(--l3)" }}>{score !== null ? score.toFixed(0) : "—"}</b>
+        {avgPillar !== null ? (
+          <>
+            <span className="bar in"><i style={{ ["--w" as string]: (avgPillar / 5).toFixed(3), ["--c" as string]: "var(--red)" }} /></span>
+            <small>{avgPillar.toFixed(1).replace(".", ",")}</small>
+          </>
+        ) : <span style={{ flex: 1 }} />}
+        {pos && <span className="pill">{pos}</span>}
+      </div>
+    </article>
   );
 }
 
@@ -216,7 +153,6 @@ function KanbanCard({ target, onOpenDetail, alert }: { target: TargetWithScore; 
     <div
       ref={setNodeRef} {...attributes} {...listeners}
       onClick={() => onOpenDetail(target)}
-      className="transition-all duration-200 hover:-translate-y-0.5"
       style={{ opacity: isDragging ? 0.25 : 1, touchAction: "none" }}
     >
       <CardVisual target={target} alert={alert} />
@@ -233,41 +169,18 @@ function KanbanColumn({ stageKey, label, color, stageTargets, isLoading, onOpenD
   alertsByTarget: Map<string, TargetAlert>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stageKey });
-
   return (
-    <div
-      className="rounded-2xl border flex flex-col overflow-hidden transition-all duration-200"
-      style={{
-        background: isOver ? `${color}07` : COLUMN_BG,
-        borderColor: isOver ? `${color}50` : BDR,
-      }}
-    >
-      {/* Column header — title only */}
-      <div className="px-3 pt-4 pb-3">
-        <span className="font-display font-bold text-[15px] tracking-[0.06em] uppercase" style={{ color }}>
-          {label}
-        </span>
-      </div>
-
-      {/* Droppable area */}
-      <div
-        ref={setNodeRef}
-        className="flex flex-col gap-2 p-2 flex-1 min-h-[140px] transition-colors duration-150"
-      >
-        {isLoading ? (
-          [1, 2].map(i => <Skeleton key={i} className="h-[72px] w-full rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }} />)
-        ) : stageTargets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 gap-2 py-6">
-            <div className="w-px h-6" style={{ background: BDR }} />
-            <span className="font-mono text-[9px] uppercase text-center leading-loose" style={{ color: isOver ? `${color}80` : "rgba(255,255,255,0.1)" }}>
-              {isOver ? "Soltar aqui" : "Nenhum\ntarget"}
-            </span>
-            <div className="w-px h-6" style={{ background: BDR }} />
-          </div>
-        ) : stageTargets.map(t => (
-          <KanbanCard key={t.id} target={t} onOpenDetail={onOpenDetail} alert={alertsByTarget.get(t.id)} />
-        ))}
-      </div>
+    <div className={`col ${isOver ? "over" : ""}`} ref={setNodeRef} style={{ ["--c" as string]: color }}>
+      <div className="col-h"><b>{label}</b><span>{isLoading ? "" : stageTargets.length}</span></div>
+      {isLoading ? (
+        [1, 2].map((i) => <div key={i} className="tc" style={{ height: 96, opacity: 0.4 }} />)
+      ) : stageTargets.length === 0 ? (
+        <div className="empty" style={{ flex: 1, justifyContent: "center", border: "1px dashed rgba(255,255,255,.12)", borderRadius: 18, background: "transparent", padding: 20, fontSize: 13, color: "var(--l3)" }}>
+          {isOver ? "Soltar aqui" : <>Nenhum target<br />Arraste um card para cá</>}
+        </div>
+      ) : stageTargets.map((t) => (
+        <KanbanCard key={t.id} target={t} onOpenDetail={onOpenDetail} alert={alertsByTarget.get(t.id)} />
+      ))}
     </div>
   );
 }
@@ -402,46 +315,19 @@ export default function MarketTargets() {
   }, [targets, queryClient]);
 
   return (
-    <div className="space-y-5">
+    <View>
+      <Head title="Monitoramento" kicker="Arraste os cards entre as colunas">
+        <button type="button" className="btn r" onClick={() => setFormModalOpen(true)}><Ic n="plus" />Novo target</button>
+      </Head>
 
-      {/* ── HEADER ────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="m3-page-title">
-            <span className="block sm:hidden">Targets</span>
-            <span className="hidden sm:block">Monitoramento</span>
-          </h1>
-          <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full font-mono text-[10px] font-bold text-white" style={{ background: ACCENT }}>
-            {targets.length}
-          </span>
-        </div>
-        <button
-          onClick={() => setFormModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.1em] uppercase text-white transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{ background: ACCENT }}
-          onMouseEnter={e => (e.currentTarget.style.background = "#c9112e")}
-          onMouseLeave={e => (e.currentTarget.style.background = ACCENT)}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Novo Target</span>
-        </button>
-      </div>
-
-      {/* ── FUNNEL STRIP ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {KANBAN_STAGES.map(({ key, label }) => (
-          <FunnelCard
-            key={key}
-            label={label}
-            count={statusCounts[key]}
-            loading={isLoading}
-          />
+      <section className="grid g4" style={{ ["--s" as string]: 1 }}>
+        {KANBAN_STAGES.map(({ key, label, color }) => (
+          <FunnelCard key={key} label={label} count={statusCounts[key]} loading={isLoading} color={color} />
         ))}
-      </div>
+      </section>
 
-      {/* ── KANBAN ────────────────────────────────────────────────────── */}
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="kb mt" style={{ ["--s" as string]: 2 }}>
           {KANBAN_STAGES.map(({ key, label, color }) => (
             <KanbanColumn
               key={key} stageKey={key} label={label} color={color}
@@ -451,130 +337,69 @@ export default function MarketTargets() {
               alertsByTarget={alertsByTarget}
             />
           ))}
-        </div>
+        </section>
         <DragOverlay dropAnimation={null}>
-          {activeTarget ? <div style={{ width: 220 }}><CardVisual target={activeTarget} isOverlay /></div> : null}
+          {activeTarget ? <div className="m3v" style={{ width: 260 }}><CardVisual target={activeTarget} isOverlay /></div> : null}
         </DragOverlay>
       </DndContext>
 
-      {/* ── FOOTER PANELS ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-
-        {/* Atividade Recente — spans 3 kanban columns */}
-        <div className="lg:col-span-3 rounded-2xl border overflow-hidden" style={{ background: COLUMN_BG, borderColor: BDR }}>
-          <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: BDR }}>
-            <span className="font-mono text-[10px] font-semibold" style={{ color: ACCENT }}>01</span>
-            <div className="h-px w-5" style={{ background: BDR }} />
-            <span className="font-mono text-[10px] tracking-[0.14em] uppercase" style={{ color: MUTED }}>Atividade Recente</span>
-          </div>
-          <div className="px-5 py-4 space-y-3">
-            {recentActivity.length === 0 ? (
-              <p className="font-mono text-[10px] uppercase py-4 text-center" style={{ color: "rgba(255,255,255,0.1)" }}>
-                Nenhuma atividade registrada
-              </p>
-            ) : recentActivity.map(obs => {
-              const stageCfg = KANBAN_STAGES.find(s => s.key === obs.targets?.status);
-              const dot = stageCfg?.color ?? MUTED;
-              return (
-                <div key={obs.id} className="flex items-start gap-3 group">
-                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-none" style={{ background: dot }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] leading-snug" style={{ color: MUTED }}>
-                      <span className="font-semibold" style={{ color: FG }}>{obs.targets?.name}</span>
-                      {obs.qualitative_notes
-                        ? <> — <span className="line-clamp-1">{obs.qualitative_notes}</span></>
-                        : <> — Observação registrada</>
-                      }
-                    </p>
-                    {obs.performance_rating && (
-                      <div className="flex items-center gap-1 mt-1">
-                        {Array.from({ length: 5 }).map((_, i) => {
-                          const full = obs.performance_rating! / 2;
-                          const fill = full >= i + 1 ? "#ec4525" : full >= i + 0.5 ? "#ec452580" : "rgba(255,255,255,0.1)";
-                          return <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: fill }} />;
-                        })}
-                        <span className="font-mono text-[9px] ml-1" style={{ color: MUTED }}>{obs.performance_rating}/10</span>
-                      </div>
-                    )}
-                  </div>
-                  <span className="font-mono text-[10px] flex-none mt-0.5" style={{ color: "rgba(255,255,255,0.18)" }}>
-                    {timeAgo(obs.created_at)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Market Score Ranking — spans 1 kanban column (Descartado) */}
-        <div className="lg:col-span-1 rounded-2xl border overflow-hidden" style={{ background: COLUMN_BG, borderColor: BDR }}>
-          <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: BDR }}>
-            <span className="font-mono text-[10px] font-semibold" style={{ color: ACCENT }}>02</span>
-            <div className="h-px w-5" style={{ background: BDR }} />
-            <span className="font-mono text-[10px] tracking-[0.14em] uppercase" style={{ color: MUTED }}>Market Score</span>
-          </div>
-          <div className="px-5 py-4 space-y-3">
-            {top5.length === 0 ? (
-              <p className="font-mono text-[10px] uppercase py-4 text-center" style={{ color: "rgba(255,255,255,0.1)" }}>
-                Sem scores calculados
-              </p>
-            ) : top5.map((t, i) => {
-              const score = t.market_score!.score_total;
-              const bar   = scoreColor(score);
-              const trend = t.market_score!.trend_30d;
-              const grade = (t as any).recommendation_grade as string | undefined;
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => handleOpenDetail(t)}
-                  className="group flex items-center gap-3 py-2.5 -mx-2.5 px-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-white/[0.03]"
-                  style={{ border: "1px solid transparent" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = BDR)}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
-                >
-                  {/* Rank */}
-                  <span className="font-mono text-[10px] w-4 text-left flex-none" style={{ color: i === 0 ? ACCENT : MUTED }}>
-                    {i + 1}
-                  </span>
-
-                  {/* Name + bar */}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-display font-semibold text-[11px] uppercase truncate flex-1" style={{ color: FG }}>
-                        {t.name}
-                      </span>
-                      {grade && GRADE_COLOR[grade] && (
-                        <span className="font-mono text-[9px] px-1 rounded" style={{ color: GRADE_COLOR[grade], background: `${GRADE_COLOR[grade]}15` }}>
-                          {grade}
-                        </span>
+      <section className="hello mt2" style={{ ["--s" as string]: 3 }}>
+        <div className="card pad">
+          <div className="ch"><h2>Atividade recente</h2></div>
+          {recentActivity.length === 0 ? <p style={{ color: "var(--l3)", margin: 0 }}>Nenhuma atividade registrada.</p> : (
+            <div className="squad">
+              {recentActivity.map((obs) => {
+                const stageCfg = KANBAN_STAGES.find((st) => st.key === obs.targets?.status);
+                return (
+                  <div key={obs.id} style={{ display: "grid", gridTemplateColumns: "10px minmax(0,1fr) auto", gap: 12, alignItems: "start" }}>
+                    <span style={{ width: 10, height: 10, marginTop: 6, borderRadius: "50%", background: stageCfg?.color ?? "var(--l3)" }} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 15 }}>
+                        <b>{obs.targets?.name}</b>
+                        <span style={{ color: "var(--l2)" }}> · {obs.qualitative_notes || "Observação registrada"}</span>
+                      </p>
+                      {obs.performance_rating != null && (
+                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--l3)" }}>Nota {obs.performance_rating}/10</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-                        <div className="h-full rounded-full" style={{ width: `${score}%`, background: `linear-gradient(90deg, ${bar}80, ${bar})` }} />
-                      </div>
-                    </div>
+                    <span style={{ fontSize: 13, color: "var(--l3)", whiteSpace: "nowrap" }}>{timeAgo(obs.created_at)}</span>
                   </div>
-
-                  {/* Score + trend */}
-                  <div className="flex flex-col items-end flex-none gap-0.5">
-                    <span className="font-display font-bold text-[14px] tabular-nums" style={{ color: bar }}>
-                      {score.toFixed(0)}
-                    </span>
-                    {trend === "UP"     && <TrendingUp   className="w-3 h-3 text-emerald-400" />}
-                    {trend === "DOWN"   && <TrendingDown  className="w-3 h-3 text-red-400" />}
-                    {trend === "FLAT" && <Minus         className="w-3 h-3" style={{ color: MUTED }} />}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+        <div className="card pad">
+          <div className="ch"><h2>Market score</h2></div>
+          {top5.length === 0 ? <p style={{ color: "var(--l3)", margin: 0 }}>Sem scores calculados.</p> : (
+            <ol className="rank">
+              {top5.map((t, i) => {
+                const score = t.market_score!.score_total;
+                const trend = t.market_score!.trend_30d;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const grade = (t as any).recommendation_grade as string | undefined;
+                return (
+                  <li key={t.id}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); handleOpenDetail(t); }}>
+                      <span className="n">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="who"><span><b>{t.name}</b><span>{[t.position, t.current_club].filter(Boolean).join(" · ")}</span></span></span>
+                      <span className="sc">
+                        {grade && GRADE_COLOR[grade] && <span className="tier" style={{ ["--c" as string]: GRADE_COLOR[grade], width: 26, height: 26, fontSize: 12 }}>{grade}</span>}
+                        <b className="tab" style={{ color: scoreColor(score) }}>{score.toFixed(0)}</b>
+                        <span style={{ fontSize: 12, color: trend === "UP" ? "var(--green)" : trend === "DOWN" ? "var(--red)" : "var(--l3)" }}>{trend === "UP" ? "▲" : trend === "DOWN" ? "▼" : "–"}</span>
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      </section>
 
       {/* ── MODALS ────────────────────────────────────────────────────── */}
       <TargetFormModal open={formModalOpen} onOpenChange={handleCloseForm} target={editTarget} onSuccess={handleSuccess} />
       <TargetDetailModal open={detailModalOpen} onOpenChange={setDetailModalOpen} target={selectedTarget} onEdit={handleEdit} onSuccess={handleSuccess} onSelectTarget={handleSelectTargetById} />
-    </div>
+    </View>
   );
 }

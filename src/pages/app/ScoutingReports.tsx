@@ -1,29 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
-import { ReportCard, ReportCardSkeleton } from "@/components/scouting/ReportCard";
 import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { 
-  Search, 
-  Plus,
-  FileText, 
-  ClipboardList,
-  Calendar,
-} from "lucide-react";
-import { cn, safeArray } from "@/lib/utils";
 import { startOfYear, subDays, isAfter, parseISO } from "date-fns";
+import { Ic } from "@/components/dash/icons";
+import { Head, Seg, View, fmt, scoreColor } from "@/components/dash/ui";
 
 interface ScoutingReportListItem {
   id: string;
@@ -60,8 +43,7 @@ const ScoutingReports = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [mobileSearch, setMobileSearch] = useState("");
+  const mobileSearch = "";
 
   const fetchReports = useCallback(async () => {
     const { data, error } = await supabase
@@ -232,210 +214,90 @@ const ScoutingReports = () => {
   }, [reportsWithInsights, groupBy, scoutNames]);
 
   const totalReports = filteredReports.length;
+  const posName = (p?: string | null) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : "");
+  const fmtDate = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).replace(/\./g, "").replace(/ de /g, " ");
+  const TAG: Record<string, [string, string]> = {
+    first: ["Primeiro relatório", "var(--purple)"],
+    best: ["Melhor nota", "var(--green)"],
+    decline: ["Queda de rendimento", "var(--orange)"],
+    strong_competition: ["Competição forte", "var(--teal)"],
+  };
+
+  const row = (r: (typeof reportsWithInsights)[number]) => (
+    <div className="rr-wrap" key={r.id}>
+      <Link className="rr" to={`/dashboard/relatorios/${r.id}`}>
+        <span className="rr-sc tab" style={{ ["--c" as string]: scoreColor(r.final_score) }}>{fmt(r.final_score, 1)}</span>
+        <div>
+          <h3>{r.players?.full_name ?? "Atleta"}</h3>
+          <p>{[posName(r.players?.position), r.players?.age ? `${r.players.age} anos` : null, fmtDate(r.match_date), scoutNames[r.scout_id]].filter(Boolean).join(" · ")}</p>
+          <div className="tags">
+            {r.competitions?.name && <span className="pill">{r.competitions.name}</span>}
+            {r.opponent && <span className="pill">vs {r.opponent}</span>}
+            {r.insight && <span className="pill c" style={{ ["--c" as string]: TAG[r.insight][1] }}>{TAG[r.insight][0]}</span>}
+          </div>
+        </div>
+        <span className="lnk" style={{ color: "var(--l3)" }}><Ic n="arrow" /></span>
+      </Link>
+      {canDeleteReport() && (
+        <button type="button" className="rr-del" aria-label="Excluir relatório" onClick={() => setDeleteDialogOpen(r.id)}>
+          <Ic n="x" />
+        </button>
+      )}
+      <DeleteReportDialog
+        reportId={r.id}
+        onDeleted={handleReportDeleted}
+        open={deleteDialogOpen === r.id}
+        onOpenChange={(open) => { if (!open) setDeleteDialogOpen(null); }}
+      />
+    </div>
+  );
 
   return (
-    <div className="space-y-5 pb-12">
-      {/* Header */}
-      <header className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="m3-page-title">Relatórios</h1>
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{totalReports}</span>
+    <View>
+      <Head title="Relatórios">
+        <Link className="btn r" to="/dashboard/relatorios/novo"><Ic n="plus" />Novo relatório</Link>
+      </Head>
+
+      <div className="tools" style={{ ["--s" as string]: 1 }}>
+        <label className="field">
+          <Ic n="search" />
+          <span className="sr">Buscar</span>
+          <input type="search" placeholder="Buscar atleta, competição ou scout" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </label>
+        <select className="sel" value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)} aria-label="Período">
+          <option value="all">Todo o período</option>
+          <option value="7days">Últimos 7 dias</option>
+          <option value="30days">Últimos 30 dias</option>
+          <option value="season">Temporada atual</option>
+        </select>
+        <Seg
+          label="Agrupar"
+          value={groupBy}
+          onPick={(v) => setGroupBy(v as GroupBy)}
+          items={[{ v: "none", label: "Todos" }, { v: "player", label: "Por atleta" }, { v: "competition", label: "Por competição" }, { v: "scout", label: "Por scout" }]}
+        />
+      </div>
+
+      <section style={{ ["--s" as string]: 2 }}>
+        {loading ? (
+          <div className="rl">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="rr" style={{ height: 108, opacity: 0.4 }} />)}</div>
+        ) : totalReports === 0 ? (
+          <div className="empty">
+            {reports.length === 0 ? "Nenhum relatório ainda." : "Nenhum relatório encontrado."}
+            {reports.length === 0 && <Link className="btn r sm" to="/dashboard/relatorios/novo"><Ic n="plus" />Criar o primeiro</Link>}
           </div>
-          <div className="flex items-center gap-2">
-            <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
-              <Search size={18} className="text-zinc-400" />
-            </button>
-            <Link to="/dashboard/relatorios/novo" className="hidden sm:flex">
-              <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
-                <Plus className="w-4 h-4" />
-                Novo Relatório
-              </Button>
-            </Link>
-          </div>
-        </div>
-        {searchOpen && (
-          <div className="sm:hidden mt-1">
-            <input
-              autoFocus
-              value={mobileSearch}
-              onChange={e => setMobileSearch(e.target.value)}
-              placeholder="Buscar atleta, competição ou scout..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
-            />
-          </div>
+        ) : groupBy === "none" ? (
+          <div className="rl">{reportsWithInsights.map(row)}</div>
+        ) : (
+          Object.entries(groupedReports).map(([name, list]) => (
+            <div key={name}>
+              <p className="grp">{name} · {list.length}</p>
+              <div className="rl">{list.map(row)}</div>
+            </div>
+          ))
         )}
-      </header>
-
-      {/* Controls Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-3"
-      >
-        {/* Top row: Search + Period + Count */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <div className="relative flex-1 max-w-md hidden sm:block">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <Input
-              type="text"
-              placeholder="Buscar atleta, competição ou scout..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-zinc-900/50 border-zinc-800/50 focus:border-zinc-700 rounded-full h-9 text-sm"
-            />
-          </div>
-
-          <div className="hidden sm:flex">
-            <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
-              <SelectTrigger className="w-[160px] bg-zinc-900/50 border-zinc-800/50 text-sm h-9 rounded-full">
-                <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-500" />
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800">
-                <SelectItem value="all">Todos os períodos</SelectItem>
-                <SelectItem value="7days">Últimos 7 dias</SelectItem>
-                <SelectItem value="30days">Últimos 30 dias</SelectItem>
-                <SelectItem value="season">Temporada atual</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800/40">
-            <ClipboardList className="w-3.5 h-3.5 text-zinc-600" />
-            <span className="text-xs text-zinc-500 font-medium tabular-nums">
-              {totalReports} relatório{totalReports !== 1 ? "s" : ""}
-            </span>
-          </div>
-        </div>
-
-        {/* Tabs for grouping — underline style on mobile, pills on desktop */}
-        <div className="flex w-full sm:w-auto sm:items-center sm:gap-1 border-b border-zinc-800 sm:border-b-0">
-          <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium mr-2 hidden sm:inline">Agrupar</span>
-          {([
-            { value: "none" as GroupBy, label: "Todos" },
-            { value: "player" as GroupBy, label: "Atleta" },
-            { value: "competition" as GroupBy, label: "Competição" },
-            { value: "scout" as GroupBy, label: "Scout" },
-          ]).map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => setGroupBy(tab.value)}
-              className={cn(
-                "flex-1 sm:flex-none text-xs py-2 sm:py-1.5 sm:px-3 font-medium transition-all duration-200 text-center",
-                "sm:rounded-full",
-                groupBy === tab.value
-                  ? "text-zinc-100 border-b-2 border-[#e63946] sm:border-b-0 sm:bg-zinc-800"
-                  : "text-zinc-500 hover:text-zinc-300 border-b-2 border-transparent sm:border-b-0"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Reports List */}
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <ReportCardSkeleton key={i} index={i} />
-          ))}
-        </div>
-      ) : filteredReports.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center justify-center py-20 px-4"
-        >
-          <div className="w-16 h-16 rounded-2xl bg-zinc-800/60 flex items-center justify-center mb-4">
-            <FileText className="w-8 h-8 text-zinc-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-zinc-300 mb-1">
-            Nenhum relatório encontrado
-          </h3>
-          <p className="text-sm text-zinc-500 text-center max-w-sm mb-6">
-            {searchQuery 
-              ? "Tente ajustar sua busca ou limpar os filtros"
-              : "Comece criando o primeiro relatório de scouting"}
-          </p>
-          {!searchQuery && (
-            <Link to="/dashboard/relatorios/novo">
-              <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
-                <Plus className="w-4 h-4" />
-                Criar Relatório
-              </Button>
-            </Link>
-          )}
-        </motion.div>
-      ) : (
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={groupBy}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="space-y-8"
-          >
-            {Object.entries(groupedReports).map(([groupName, groupReports], groupIndex) => (
-              <motion.div
-                key={groupName}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: groupIndex * 0.05, duration: 0.25 }}
-              >
-                {/* Group header (only show if grouped) */}
-                {groupBy !== "none" && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: groupIndex * 0.05 + 0.1 }}
-                    className="flex items-center gap-3 mb-4"
-                  >
-                    <h2 className="text-lg font-semibold text-zinc-200">
-                      {groupName}
-                    </h2>
-                    <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-full">
-                      {groupReports.length} relatório{groupReports.length !== 1 ? "s" : ""}
-                    </span>
-                  </motion.div>
-                )}
-
-                {/* Reports grid */}
-                <div className="space-y-3">
-                  {safeArray(groupReports).map((report, i) => (
-                    <motion.div 
-                      key={report.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: groupIndex * 0.05 + i * 0.03, duration: 0.2 }}
-                    >
-                      <ReportCard
-                        report={report}
-                        scoutName={scoutNames[report.scout_id] || "Scout"}
-                        canDelete={canDeleteReport()}
-                        onDelete={() => setDeleteDialogOpen(report.id)}
-                        insight={report.insight}
-                        index={i}
-                      />
-                      <DeleteReportDialog
-                        reportId={report.id}
-                        onDeleted={handleReportDeleted}
-                        open={deleteDialogOpen === report.id}
-                        onOpenChange={(open) => {
-                          if (!open) setDeleteDialogOpen(null);
-                        }}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
-      )}
-    </div>
+      </section>
+    </View>
   );
 };
 
