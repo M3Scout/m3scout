@@ -97,6 +97,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
             <div className="divide-y divide-zinc-700/60">
               {group.club_contracts.map(c => {
                 const ti = transferInfo(c);
+                const isCurrent = !!group.current_contract_id && c.id === group.current_contract_id;
                 return (
                   <div key={c.id} className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-[#0d0e0f]">
                     {/* Logo */}
@@ -118,11 +119,17 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
                             <> → {format(new Date(c.end_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</>
                           )}
                         </p>
-                        {c.days_to_expire !== null && c.days_to_expire < 0 && (
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: GREEN }}>
+                            · ATUAL
+                          </span>
+                        )}
+                        {!isCurrent && c.days_to_expire !== null && c.days_to_expire < 0 && (
                           <span className="text-[10px] font-medium" style={{ color: "#ec4525" }}>
                             · FIM
                           </span>
                         )}
+
                         {c.days_to_expire !== null && c.days_to_expire >= 0 && c.days_to_expire <= 90 && (
                           <span className="text-[10px] font-medium tabular-nums" style={{
                             color: c.days_to_expire <= 30 ? "#ec4525" : c.days_to_expire <= 60 ? "#f59e0b" : "#62616a"

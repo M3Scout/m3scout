@@ -38,6 +38,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getPlayStyle } from "@/lib/playStyles";
+import { resolveCurrentContract } from "@/lib/currentContract";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -320,42 +321,36 @@ const PlayerDetail = () => {
     enabled: !!id && !!player,
   });
 
-  const deriveCurrentClub = async (playerId: string, fallback: string | null): Promise<string | null> => {
+  const deriveCurrentContract = async (playerId: string) => {
     const { data } = await supabase
       .from("player_contract_history")
-      .select("club_name")
+      .select("id, club_name, contract_type, start_date, end_date, salary_info, notes, is_current, is_archived")
       .eq("player_id", playerId)
-      .eq("is_archived", false)
-      .order("start_date", { ascending: false })
-      .limit(1);
-    return data?.[0]?.club_name ?? fallback;
+      .eq("is_archived", false);
+    return resolveCurrentContract(data ?? []);
   };
 
   const refetchPlayer = async () => {
     if (!id) return;
-    const [{ data }, contractRes] = await Promise.all([
+    const [{ data }, resolved] = await Promise.all([
       supabase.from("players").select("*").eq("id", id).limit(1),
-      supabase
-        .from("player_contract_history")
-        .select("id, club_name, contract_type, start_date, end_date, salary_info, notes, is_current")
-        .eq("player_id", id)
-        .eq("is_archived", false)
-        .order("start_date", { ascending: false })
-        .limit(1),
+      deriveCurrentContract(id),
     ]);
     const row = Array.isArray(data) ? data[0] ?? null : null;
     if (row) {
-      const club = await deriveCurrentClub(id, row.current_club);
-      setPlayer({ ...(row as Player), current_club: club });
+      setPlayer({
+        ...(row as Player),
+        current_club: resolved.club ?? "Livre",
+        contract_status: resolved.status,
+      });
     }
-    const contract = Array.isArray(contractRes.data) ? contractRes.data[0] ?? null : null;
-    setCurrentContract(contract as ContractRecord | null);
+    setCurrentContract(resolved.contract as ContractRecord | null);
   };
 
   useEffect(() => {
     if (!id) return;
     const fetchData = async () => {
-      const [playerRes, reportsRes, contractRes] = await Promise.all([
+      const [playerRes, reportsRes, resolved] = await Promise.all([
         supabase.from("players").select("*").eq("id", id).limit(1),
         supabase
           .from("scouting_reports")
@@ -363,22 +358,18 @@ const PlayerDetail = () => {
           .eq("player_id", id)
           .order("match_date", { ascending: false })
           .limit(RECENT_REPORTS_LIMIT),
-        supabase
-          .from("player_contract_history")
-          .select("id, club_name, contract_type, start_date, end_date, salary_info, notes, is_current")
-          .eq("player_id", id)
-          .eq("is_archived", false)
-          .order("start_date", { ascending: false })
-          .limit(1),
+        deriveCurrentContract(id),
       ]);
       const row = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
       if (row) {
-        const club = await deriveCurrentClub(id, row.current_club);
-        setPlayer({ ...(row as Player), current_club: club });
+        setPlayer({
+          ...(row as Player),
+          current_club: resolved.club ?? "Livre",
+          contract_status: resolved.status,
+        });
       }
       if (reportsRes.data) setReports(reportsRes.data as ScoutingReport[]);
-      const contract = Array.isArray(contractRes.data) ? contractRes.data[0] ?? null : null;
-      setCurrentContract(contract as ContractRecord | null);
+      setCurrentContract(resolved.contract as ContractRecord | null);
       setLoading(false);
     };
     fetchData();

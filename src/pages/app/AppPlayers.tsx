@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCurrentContract } from "@/lib/currentContract";
 import { logFetchSkipped, logFetchError, logFetchSuccess, isAbortError } from "@/lib/fetchLogger";
 import { useAuth } from "@/hooks/authContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -243,21 +244,25 @@ const AppPlayers = () => {
         };
       });
 
-      // Derive current_club from most recent contract (start_date DESC)
+      // Derive current_club with the same rules as the DB: active loan wins,
+      // otherwise the active owning contract; expired contracts mean Livre.
       const { data: contractRows } = await supabase
         .from("player_contract_history")
-        .select("player_id, club_name, start_date")
-        .eq("is_archived", false)
-        .order("start_date", { ascending: false });
+        .select("player_id, club_name, start_date, end_date, contract_type, is_current, is_archived")
+        .eq("is_archived", false);
+
+      const byPlayer: Record<string, typeof contractRows> = {};
+      for (const c of contractRows ?? []) {
+        if (!c.player_id) continue;
+        (byPlayer[c.player_id] ||= [])!.push(c);
+      }
 
       const currentClubMap: Record<string, string> = {};
-      if (Array.isArray(contractRows)) {
-        for (const c of contractRows) {
-          if (c.player_id && c.club_name && !currentClubMap[c.player_id]) {
-            currentClubMap[c.player_id] = c.club_name;
-          }
-        }
+      for (const [pid, rows] of Object.entries(byPlayer)) {
+        const club = resolveCurrentContract(rows ?? []).club;
+        currentClubMap[pid] = club ?? "Livre";
       }
+
 
       const playersWithClub = playersWithScores.map(p => ({
         ...p,

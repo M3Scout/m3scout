@@ -134,7 +134,7 @@ function Card({ p, i, k, hidden, attr }: { p: Athlete; i: number; k: number; hid
             <div><small>Idade</small><b>{p.age != null ? `${p.age} anos` : "—"}</b></div>
             <div><small>Altura</small><b>{meters(p.height)}</b></div>
             <div><small>Pé</small><b>{p.dominant_foot || "—"}</b></div>
-            <div><small>Clube</small><b>{p.current_club || "—"}</b></div>
+            <div><small>Clube</small><b>{p.current_club || "Livre"}</b></div>
           </div>
           {attr ? (
             <>

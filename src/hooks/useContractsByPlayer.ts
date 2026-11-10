@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContractWithPlayer } from "./useContracts";
+import { resolveCurrentContract } from "@/lib/currentContract";
 
 export interface PlayerContractGroup {
   player_id: string;
@@ -13,6 +14,8 @@ export interface PlayerContractGroup {
   m3_contract_end: string | null;
   club_contracts: ContractWithPlayer[];
   worst_status: "expired" | "expiring" | "active" | "no_end_date";
+  /** id of the contract that defines the current club (null = free) */
+  current_contract_id?: string | null;
 }
 
 const STATUS_PRIORITY: Record<string, number> = {
@@ -155,8 +158,22 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
         if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
         return 0;
       });
-      return { ...g, club_contracts: sorted, worst_status: worstStatus(g.club_contracts) };
+
+      // Pin the resolved current contract (active loan > active owning contract) to the top
+      const resolved = resolveCurrentContract(sorted);
+      const currentId = resolved.contract?.id ?? null;
+      const ordered = currentId
+        ? [...sorted.filter(c => c.id === currentId), ...sorted.filter(c => c.id !== currentId)]
+        : sorted;
+
+      return {
+        ...g,
+        club_contracts: ordered,
+        current_contract_id: currentId,
+        worst_status: worstStatus(g.club_contracts),
+      };
     });
+
 
     // Apply filter: keep athletes that have ≥1 contract matching the filter
     if (filterStatus) {

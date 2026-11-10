@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useComparePlayerStats } from "@/hooks/useComparePlayerStats";
 import { isGoalkeeper } from "@/lib/positionUtils";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { resolveCurrentContract } from "@/lib/currentContract";
 import "@/components/site/m3site.css";
 import "@/components/site/m3pages.css";
 import "@/components/site/m3athlete.css";
@@ -268,15 +269,19 @@ const PlayerProfile = () => {
       const { data } = await (supabase.from("public_players_safe" as any).select("*").eq("slug", slug).limit(1) as any);
       const row = Array.isArray(data) ? data[0] ?? null : null;
       if (row) {
-        // clube atual = contrato mais recente (mesma lógica da aba Contrato)
+        // clube atual por vigência: empréstimo ativo, depois contrato vigente; senão "Livre"
         const { data: contracts } = await supabase
           .from("player_contract_history")
-          .select("club_name")
+          .select("club_name, start_date, end_date, contract_type, is_current, is_archived")
           .eq("player_id", row.id)
-          .eq("is_archived", false)
-          .order("start_date", { ascending: false })
-          .limit(1);
-        if (!cancelled) setPlayer({ ...row, current_club: contracts?.[0]?.club_name ?? row.current_club });
+          .eq("is_archived", false);
+        const resolved = resolveCurrentContract(contracts ?? []);
+        if (!cancelled) {
+          setPlayer({
+            ...row,
+            current_club: contracts?.length ? resolved.club ?? "Livre" : row.current_club ?? "Livre",
+          });
+        }
 
         // números públicos por temporada/competição (view liberada para visitantes)
         const { data: pub } = await supabase.from("unified_player_season_stats").select("*").eq("player_id", row.id);

@@ -3,6 +3,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCurrentContract } from "@/lib/currentContract";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
@@ -253,15 +254,19 @@ export default function EditPlayer() {
         return;
       }
 
-      // Derive current_club from the first contract in history (lowest sort_order)
+      // Derive current_club with the same rules as the DB: active loan wins,
+      // otherwise the active owning contract; expired contracts mean Livre.
       const { data: contracts } = await supabase
         .from("player_contract_history")
-        .select("club_name, sort_order")
+        .select("club_name, is_current, start_date, end_date, contract_type, is_archived")
         .eq("player_id", id)
-        .eq("is_archived", false)
-        .order("sort_order", { ascending: true })
-        .limit(1);
-      const derivedClub = contracts?.[0]?.club_name || playerRow.current_club || "";
+        .eq("is_archived", false);
+      const resolvedContract = resolveCurrentContract(contracts ?? []);
+      const derivedClub = contracts?.length
+        ? resolvedContract.club ?? "Livre"
+        : playerRow.current_club || "Livre";
+
+
 
       setFormData({
         full_name: playerRow.full_name || "",
@@ -297,7 +302,7 @@ export default function EditPlayer() {
         salary_currency: parseCurrencyFromLegacy(playerRow.salary_info),
         release_clause_amount: parseSalaryFromLegacy(playerRow.release_clause),
         release_clause_currency: parseCurrencyFromLegacy(playerRow.release_clause),
-        contract_status: playerRow.contract_status || "contracted",
+        contract_status: contracts?.length ? resolvedContract.status : playerRow.contract_status || "free",
         passports: playerRow.passports || [],
         agent_name: playerRow.agent_name || "",
         agent_contact: playerRow.agent_contact || "",
