@@ -72,7 +72,7 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
 
   return (
     <Link
-      to={`/players/${player.slug}`}
+      to={`/atleta/${player.slug}`}
       className="group block h-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

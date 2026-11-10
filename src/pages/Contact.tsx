@@ -1,384 +1,267 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { submitLead } from "@/lib/leads";
+import "@/components/site/m3site.css";
+import "@/components/site/m3pages.css";
+import { KickTitle } from "@/components/site/KickTitle";
+import { SoccerStrip } from "@/components/site/SoccerStrip";
+import { SplitTitle, usePageFx } from "@/components/site/pageFx";
+import { useInClass } from "@/components/site/shared";
 
-const contactSchema = z.object({
-  name: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo"),
-  email: z.string().trim().email("E-mail inválido").max(255, "E-mail muito longo"),
-  phone: z.string().trim().max(20, "Telefone muito longo").optional(),
-  organization: z.string().trim().max(100, "Nome muito longo").optional(),
-  subject: z.string().trim().min(1, "Assunto é obrigatório").max(200, "Assunto muito longo"),
-  message: z.string().trim().min(1, "Mensagem é obrigatória").max(2000, "Mensagem muito longa"),
-});
+const EMAIL = "contato@m3agency.com.br";
 
-type ContactFormData = z.infer<typeof contactSchema>;
+const ROT_WORDS = [
+  { t: "WhatsApp", c: "#30D158" },
+  { t: "e-mail", c: "#64D2FF" },
+  { t: "Instagram", c: "#FF375F" },
+  { t: "WhatsApp", c: "#30D158" },
+];
 
-const RED = "#E5173F";
-const CREAM = "#F2EDE4";
-const BLACK = "#0A0A0A";
-const WHITE_MUTED = "rgba(242,237,228,0.42)";
-const CREAM_MUTED = "rgba(15,15,15,0.42)";
-const BORDER_DARK = "rgba(242,237,228,0.1)";
-const BORDER_CREAM = "rgba(15,15,15,0.1)";
-const BC = "'Basis Grotesque Pro', sans-serif";
-const B = "'Basis Grotesque Pro', sans-serif";
-const JB = "'Basis Grotesque Pro', sans-serif";
+const Arrow = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
 
-const channels = [
+const CHANNELS = [
   {
-    label: "E-MAIL",
-    value: "contato@m3agency.com.br",
-    cta: "Enviar e-mail",
-    href: "mailto:contato@m3agency.com.br",
-    external: false,
+    k: "E-mail", v: EMAIL, c: "#0A84FF", href: `mailto:${EMAIL}`, cta: "Enviar e-mail", copy: EMAIL, external: false,
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></svg>,
   },
   {
-    label: "WHATSAPP",
-    value: "(67) 9 9110-6060",
-    cta: "Abrir conversa",
-    href: "https://wa.me/556791106060?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M3%20Agency%20e%20gostaria%20de%20falar%20sobre%E2%80%A6",
-    external: true,
+    k: "WhatsApp", v: "(67) 9 9110-6060", c: "#30D158", href: "https://wa.me/5567991106060", cta: "Abrir conversa", copy: "+55 67 99110-6060", external: true,
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2a9.7 9.7 0 0 0-8.3 14.7L2.3 21.8l5-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 5 5 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.5-.2Z" /></svg>,
   },
   {
-    label: "INSTAGRAM",
-    value: "@_m3agency",
-    cta: "Abrir perfil",
-    href: "https://instagram.com/_m3agency",
-    external: true,
+    k: "Instagram", v: "@_m3agency", c: "#FF375F", href: "https://instagram.com/_m3agency", cta: "Abrir perfil", copy: "@_m3agency", external: true,
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" /></svg>,
   },
 ];
 
-const inputStyle: React.CSSProperties = {
-  fontFamily: B,
-  fontWeight: 300,
-  fontSize: 15,
-  color: CREAM,
-  backgroundColor: "transparent",
-  border: "none",
-  outline: "none",
-  width: "100%",
-  caretColor: RED,
-};
+type FieldName = "nome" | "email" | "telefone" | "clube" | "assunto" | "mensagem";
+const REQUIRED: FieldName[] = ["nome", "email", "assunto", "mensagem"];
+const valid = (name: FieldName, v: string) =>
+  name === "email" ? /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) : v.trim().length > 1;
 
-const Contact = () => {
+/* ---------- palavra que gira ---------- */
+function RotWord() {
+  const slotRef = useRef<HTMLSpanElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const slot = slotRef.current, span = spanRef.current;
+    if (!slot || !span) return;
+    const items = span.children.length;
+    let k = 0;
+    const fit = () => { const b = span.children[k] as HTMLElement; slot.style.width = b.scrollWidth + 2 + "px"; };
+    [...span.children].forEach((b) => ((b as HTMLElement).style.width = "max-content"));
+    fit();
+    document.fonts?.ready.then(fit);
+    let reset = 0;
+    const id = window.setInterval(() => {
+      k++;
+      span.style.transition = "";
+      span.style.transform = `translateY(${-k * 1.2}em)`;
+      fit();
+      if (k === items - 1) reset = window.setTimeout(() => { span.style.transition = "none"; span.style.transform = "translateY(0)"; k = 0; }, 800);
+    }, 2200);
+    return () => { window.clearInterval(id); window.clearTimeout(reset); };
+  }, []);
+  return (
+    <span className="rot-slot" ref={slotRef}>
+      <span ref={spanRef}>
+        {ROT_WORDS.map((w, i) => <b key={i} style={{ color: w.c }}>{w.t}</b>)}
+      </span>
+    </span>
+  );
+}
+
+/* ---------- atendimento aberto agora? (horário de Brasília) ---------- */
+function useOpenNow() {
+  const calc = () => {
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", weekday: "short", hour: "numeric", hour12: false })
+        .formatToParts(new Date())
+        .map((x) => [x.type, x.value])
+    );
+    const h = +p.hour % 24;
+    return !["Sat", "Sun"].includes(p.weekday) && h >= 9 && h < 18;
+  };
+  const [open, setOpen] = useState(calc);
+  useEffect(() => { const id = window.setInterval(() => setOpen(calc()), 60000); return () => window.clearInterval(id); }, []);
+  return open;
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [done, setDone] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(value); } catch {
+      const t = document.createElement("textarea"); t.value = value; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove();
+    }
+    setDone(true);
+    window.setTimeout(() => setDone(false), 1600);
+  };
+  return <button className={`pill ghost ${done ? "copied" : ""}`} type="button" onClick={copy}>{done ? "Copiado" : "Copiar"}</button>;
+}
+
+/* ---------- formulário: a bola avança conforme o preenchimento ---------- */
+function ContactForm() {
   const [searchParams] = useSearchParams();
   const playerSlug = searchParams.get("player");
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [hoveredChannel, setHoveredChannel] = useState<number | null>(null);
-  const [hoveredSubmit, setHoveredSubmit] = useState(false);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    if ("scrollRestoration" in history) {
-      history.scrollRestoration = "manual";
-    }
-  }, []);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ContactFormData>({
-    resolver: zodResolver(contactSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      organization: "",
-      subject: playerSlug ? `Interesse no atleta: ${playerSlug}` : "",
-      message: playerSlug
-        ? `Olá, gostaria de receber mais informações sobre o atleta ${playerSlug}.`
-        : "",
-    },
+  const [v, setV] = useState<Record<FieldName, string>>({
+    nome: "", email: "", telefone: "", clube: "",
+    assunto: playerSlug ? `Interesse no atleta: ${playerSlug}` : "",
+    mensagem: playerSlug ? `Olá, gostaria de receber mais informações sobre o atleta ${playerSlug}.` : "",
   });
+  const [bad, setBad] = useState<Set<FieldName>>(() => new Set());
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [kicked, setKicked] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [boxRef, boxIn] = useInClass<HTMLDivElement>();
 
-  const onSubmit = async (data: ContactFormData) => {
-    setIsSubmitting(true);
+  const p = REQUIRED.filter((n) => valid(n, v[n])).length / REQUIRED.length;
+  const net: string[] = [];
+  for (let x = 242; x < 312; x += 12) net.push(`M${x} 84V180`);
+  for (let y = 94; y < 182; y += 12) net.push(`M232 ${y}H310`);
+
+  const set = (n: FieldName) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setV((s) => ({ ...s, [n]: val }));
+    if (valid(n, val)) setBad((b) => { const nb = new Set(b); nb.delete(n); return nb; });
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const wrong = REQUIRED.filter((n) => !valid(n, v[n]));
+    if (wrong.length) {
+      setBad(new Set(wrong));
+      // reinicia o "tremor" dos campos com erro
+      requestAnimationFrame(() => {
+        formRef.current?.querySelectorAll<HTMLElement>(".fld.bad").forEach((f) => { f.style.animation = "none"; void f.offsetWidth; f.style.animation = ""; });
+      });
+      formRef.current?.querySelector<HTMLElement>(`[name="${wrong[0]}"]`)?.focus();
+      return;
+    }
+    setSending(true);
     try {
       await submitLead({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        organization: data.organization,
-        subject: data.subject,
-        message: data.message,
-        playerSlug: playerSlug || undefined,
+        name: v.nome, email: v.email, phone: v.telefone, organization: v.clube,
+        subject: v.assunto, message: v.mensagem, playerSlug: playerSlug || undefined,
       });
-      setIsSubmitted(true);
-      toast.success("Mensagem enviada com sucesso!");
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Erro ao enviar mensagem";
-      toast.error(errorMessage);
+      // chute: a bola entra no gol
+      setKicked(true);
+      window.setTimeout(() => setSent(true), 750);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar mensagem");
     } finally {
-      setIsSubmitting(false);
+      setSending(false);
     }
   };
 
-  const gutter = "clamp(24px, 5.625vw, 72px)";
-  const maxW = "1600px";
+  const again = () => {
+    setV({ nome: "", email: "", telefone: "", clube: "", assunto: "", mensagem: "" });
+    setBad(new Set()); setSent(false); setKicked(false);
+  };
 
-  if (isSubmitted) {
-    return (
-      <div style={{ backgroundColor: BLACK, padding: `136px ${gutter} 80px`, minHeight: "60vh", fontFamily: B }}>
-        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-          <h1 style={{
-            fontFamily: BC,
-            fontWeight: 900,
-            fontSize: "clamp(48px, 8vw, 96px)",
-            lineHeight: 0.87,
-            textTransform: "uppercase",
-            color: CREAM,
-            letterSpacing: "-0.02em",
-            margin: "0 0 32px 0",
-            wordBreak: "normal",
-            overflowWrap: "normal",
-          }}>
-            MENSAGEM<br />
-            <span style={{ fontWeight: 300, fontStyle: "italic", color: RED }}>enviada.</span>
-          </h1>
-          <p style={{ fontFamily: B, fontWeight: 300, fontSize: 16, color: WHITE_MUTED, margin: "0 0 40px 0" }}>
-            Obrigado pelo seu contato. Nossa equipe retornará em breve.
-          </p>
-          <button
-            onClick={() => setIsSubmitted(false)}
-            style={{
-              fontFamily: BC,
-              fontWeight: 700,
-              fontSize: 13,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: CREAM,
-              background: "none",
-              border: "none",
-              borderBottom: `1px solid ${RED}`,
-              paddingBottom: 4,
-              cursor: "pointer",
-              padding: "0 0 4px 0",
-            }}
-          >
-            ENVIAR OUTRA MENSAGEM
-          </button>
+  const fld = (n: FieldName, label: string, opts: { req?: boolean; full?: boolean; type?: string; auto?: string; err?: string; area?: boolean } = {}) => (
+    <div className={`fld ${opts.full ? "full" : ""} ${bad.has(n) ? "bad" : ""}`} key={n}>
+      {opts.area ? (
+        <textarea id={`f-${n}`} name={n} placeholder=" " value={v[n]} onChange={set(n)} required={opts.req} />
+      ) : (
+        <input id={`f-${n}`} name={n} type={opts.type ?? "text"} placeholder=" " autoComplete={opts.auto} value={v[n]} onChange={set(n)} required={opts.req} />
+      )}
+      <label htmlFor={`f-${n}`}>{label} {opts.req && <b>*</b>}</label>
+      {opts.err && <small className="err">{opts.err}</small>}
+    </div>
+  );
+
+  const ballX = 24 + p * 170;
+  return (
+    <div ref={boxRef} className={`fbox rise ${boxIn ? "in" : ""} ${sent ? "sent" : ""}`} style={{ ["--fp" as string]: p }}>
+      <div className="f-side">
+        <SplitTitle text="Envie uma mensagem" id="ft" />
+        <div className="f-goal" aria-hidden="true">
+          <svg viewBox="0 0 320 200">
+            <path className="gl" d="M0 180H320" />
+            <g className="nt"><path d={net.join("")} /></g>
+            <path className="fr" d="M230 182V82H312V182" />
+            <path className="bar-p" style={{ ["--len" as string]: 300 }} d="M10 196H310" />
+            <g
+              className="fb"
+              style={kicked
+                ? { transform: "translate(272px,118px) scale(.75)", transition: "transform .7s cubic-bezier(.2,.7,.3,1)" }
+                : { transform: `translate(${ballX.toFixed(1)}px,166px)` }}
+            >
+              <g transform={`rotate(${(p * 540).toFixed(0)})`}>
+                <circle r="13" fill="#F5F5F7" />
+                <path fill="#111" d="m0-4.6 4.4 3.2-1.7 5.1h-5.4l-1.7-5.1z" />
+                <path fill="none" stroke="#111" strokeWidth="1" d="M0-4.6v-8M4.4-1.4l7.4-2.6M2.7 3.7l4.6 6.1M-2.7 3.7l-4.6 6.1M-4.4-1.4l-7.4-2.6" />
+              </g>
+            </g>
+          </svg>
+          <small>{p === 1 ? "Tudo pronto. Agora é chutar!" : "Preencha para levar a bola até o gol"}</small>
         </div>
       </div>
-    );
-  }
+      <form className="f" ref={formRef} onSubmit={submit} noValidate>
+        {fld("nome", "Nome", { req: true, auto: "name", err: "Informe seu nome." })}
+        {fld("email", "E-mail", { req: true, type: "email", auto: "email", err: "Informe um e-mail válido." })}
+        {fld("telefone", "Telefone", { type: "tel", auto: "tel" })}
+        {fld("clube", "Clube / organização", { auto: "organization" })}
+        {fld("assunto", "Assunto", { req: true, full: true, err: "Conte o motivo do contato." })}
+        {fld("mensagem", "Mensagem", { req: true, full: true, area: true, err: "Escreva sua mensagem." })}
+        <div className="f-foot">
+          <p className="f-note">Sua mensagem chega direto para a equipe da M3. Respondemos pelo e-mail informado.</p>
+          <button className="pill red send" type="submit" disabled={sending}>
+            {sending ? "Enviando…" : "Enviar mensagem"} <Arrow />
+          </button>
+        </div>
+      </form>
+      <div className="f-done" role="status">
+        <h3>Golaço. Mensagem enviada!</h3>
+        <p>Recebemos tudo e vamos responder em breve. Se preferir, escreva direto para <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.</p>
+        <button className="pill ghost" type="button" onClick={again}>Nova mensagem</button>
+      </div>
+    </div>
+  );
+}
+
+const Contact = () => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const open = useOpenNow();
+  usePageFx(rootRef);
 
   return (
-    <div style={{ backgroundColor: BLACK, fontFamily: B }}>
-
-
-      {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `136px ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }} className="hidden md:block">
-        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-
-          <h1 className="hidden md:block" style={{
-            fontFamily: BC,
-            fontWeight: 900,
-            fontSize: "clamp(72px, 10vw, 120px)",
-            lineHeight: 0.87,
-            textTransform: "uppercase",
-            color: CREAM,
-            letterSpacing: "-0.02em",
-            margin: "0 0 40px 0",
-            wordBreak: "normal",
-            overflowWrap: "normal",
-          }}>
-            FALE COM<br />
-            <span style={{ fontFamily: BC, fontWeight: 300, fontStyle: "italic", color: RED }}>A M3.</span>
-          </h1>
-
-        </div>
+    <div className="m3s m3p" ref={rootRef}>
+      <section className="page-h wrap" id="top">
+        <KickTitle as="h1" text="Fale com a M3" red={[2, 3]} />
+        <p className="rot">Chama no <RotWord /> ou mande uma mensagem aqui.</p>
+        <p className={`status ${open ? "open" : ""}`}>
+          <i />
+          <span><b>{open ? "Atendimento aberto agora" : "Fora do horário — respondemos no próximo dia útil"}</b> · seg–sex, 9h–18h (BRT)</span>
+        </p>
       </section>
 
-      {/* S2 CANAIS DIRETOS */}
-      <section style={{ backgroundColor: CREAM, padding: `72px ${gutter}`, borderBottom: `1px solid ${BORDER_CREAM}` }}>
-        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-
-
-          {channels.map((ch, index) => (
-            <a
-              key={ch.label}
-              href={ch.href}
-              target={ch.external ? "_blank" : undefined}
-              rel={ch.external ? "noopener noreferrer" : undefined}
-              onMouseEnter={() => setHoveredChannel(index)}
-              onMouseLeave={() => setHoveredChannel(null)}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_160px] items-center"
-              style={{
-                gap: 16,
-                padding: "24px 0",
-                borderBottom: `1px solid ${BORDER_CREAM}`,
-                backgroundColor: hoveredChannel === index ? "rgba(15,15,15,0.02)" : "transparent",
-                transition: "background-color 0.2s ease",
-                textDecoration: "none",
-              }}
-            >
-              <div>
-                <p style={{ fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: CREAM_MUTED, margin: "0 0 6px 0" }}>
-                  {ch.label}
-                </p>
-                <p style={{ fontFamily: BC, fontWeight: 800, fontSize: 22, color: BLACK, lineHeight: 1, margin: 0 }}>
-                  {ch.value}
-                </p>
+      <section className="wrap" aria-label="Canais de atendimento">
+        <div className="ch-grid">
+          {CHANNELS.map((ch, i) => (
+            <article key={ch.k} className="ch rise tilt" style={{ ["--i" as string]: i, ["--c" as string]: ch.c }}>
+              <div className="ch-ico">{ch.icon}</div>
+              <span className="ch-k">{ch.k}</span>
+              <p className="ch-v">{ch.v}</p>
+              <div className="ch-acts">
+                <a className="pill" href={ch.href} {...(ch.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{ch.cta}</a>
+                <CopyButton value={ch.copy} />
               </div>
-              <div className="sm:text-right">
-                <span style={{
-                  fontFamily: BC,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  letterSpacing: "0.05em",
-                  color: BLACK,
-                  borderBottom: `1px solid ${RED}`,
-                  paddingBottom: 2,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: hoveredChannel === index ? 14 : 8,
-                  transition: "gap 0.2s ease",
-                }}>
-                  {ch.cta} →
-                </span>
-              </div>
-            </a>
+            </article>
           ))}
-
-          <p style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.1em", color: CREAM_MUTED, margin: "20px 0 0 0" }}>
-            Atendimento: seg–sex, 9h–18h (BRT)
-          </p>
         </div>
       </section>
 
-      {/* S3 FORMULÁRIO */}
-      <section style={{ backgroundColor: BLACK, padding: `72px ${gutter} 80px` }}>
-        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div
-              className="grid grid-cols-1 md:grid-cols-2"
-              style={{ gap: 1, backgroundColor: BORDER_DARK, border: `1px solid ${BORDER_DARK}`, marginBottom: 32 }}
-            >
-              {/* Nome */}
-              <div style={{ backgroundColor: BLACK, padding: "20px 24px" }}>
-                <label style={{ display: "block", fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, marginBottom: 10 }}>
-                  NOME <span style={{ color: RED }}>*</span>
-                </label>
-                <input
-                  {...register("name")}
-                  placeholder="Seu nome"
-                  className="m3-form-input"
-                  style={inputStyle}
-                />
-                {errors.name && <p style={{ fontFamily: JB, fontSize: 9, color: RED, margin: "8px 0 0 0" }}>{errors.name.message}</p>}
-              </div>
-
-              {/* E-mail */}
-              <div style={{ backgroundColor: BLACK, padding: "20px 24px" }}>
-                <label style={{ display: "block", fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, marginBottom: 10 }}>
-                  E-MAIL <span style={{ color: RED }}>*</span>
-                </label>
-                <input
-                  type="email"
-                  {...register("email")}
-                  placeholder="seu@email.com"
-                  className="m3-form-input"
-                  style={inputStyle}
-                />
-                {errors.email && <p style={{ fontFamily: JB, fontSize: 9, color: RED, margin: "8px 0 0 0" }}>{errors.email.message}</p>}
-              </div>
-
-              {/* Telefone */}
-              <div style={{ backgroundColor: BLACK, padding: "20px 24px" }}>
-                <label style={{ display: "block", fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, marginBottom: 10 }}>
-                  TELEFONE
-                </label>
-                <input
-                  type="tel"
-                  {...register("phone")}
-                  placeholder="+55 (00) 00000-0000"
-                  className="m3-form-input"
-                  style={inputStyle}
-                />
-              </div>
-
-              {/* Clube / Organização */}
-              <div style={{ backgroundColor: BLACK, padding: "20px 24px" }}>
-                <label style={{ display: "block", fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, marginBottom: 10 }}>
-                  CLUBE / ORGANIZAÇÃO
-                </label>
-                <input
-                  {...register("organization")}
-                  placeholder="Nome do clube ou empresa"
-                  className="m3-form-input"
-                  style={inputStyle}
-                />
-              </div>
-
-              {/* Assunto */}
-              <div className="md:col-span-2" style={{ backgroundColor: BLACK, padding: "20px 24px" }}>
-                <label style={{ display: "block", fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, marginBottom: 10 }}>
-                  ASSUNTO <span style={{ color: RED }}>*</span>
-                </label>
-                <input
-                  {...register("subject")}
-                  placeholder="Qual o motivo do contato?"
-                  className="m3-form-input"
-                  style={inputStyle}
-                />
-                {errors.subject && <p style={{ fontFamily: JB, fontSize: 9, color: RED, margin: "8px 0 0 0" }}>{errors.subject.message}</p>}
-              </div>
-
-              {/* Mensagem */}
-              <div className="md:col-span-2" style={{ backgroundColor: BLACK, padding: "20px 24px" }}>
-                <label style={{ display: "block", fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, marginBottom: 10 }}>
-                  MENSAGEM <span style={{ color: RED }}>*</span>
-                </label>
-                <textarea
-                  {...register("message")}
-                  placeholder="Escreva sua mensagem..."
-                  rows={5}
-                  className="m3-form-input"
-                  style={{ ...inputStyle, resize: "none", display: "block" }}
-                />
-                {errors.message && <p style={{ fontFamily: JB, fontSize: 9, color: RED, margin: "8px 0 0 0" }}>{errors.message.message}</p>}
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              onMouseEnter={() => !isSubmitting && setHoveredSubmit(true)}
-              onMouseLeave={() => setHoveredSubmit(false)}
-              style={{
-                fontFamily: BC,
-                fontWeight: 700,
-                fontSize: 14,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                backgroundColor: RED,
-                color: "#fff",
-                border: "none",
-                padding: "12px 28px",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                opacity: isSubmitting ? 0.7 : 1,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: hoveredSubmit && !isSubmitting ? 18 : 12,
-                transition: "gap 0.2s ease, opacity 0.2s ease",
-              }}
-            >
-              {isSubmitting ? "ENVIANDO..." : "ENVIAR MENSAGEM →"}
-            </button>
-          </form>
-        </div>
+      <section className="wrap form-sec" aria-labelledby="ft">
+        <SoccerStrip kind="cones" color="#30D158" />
+        <ContactForm />
       </section>
-
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useAuth } from "@/hooks/authContext";
 import { PermissionsProvider } from "@/hooks/usePermissions";
@@ -57,6 +57,13 @@ import ComparePlayers from "./pages/app/ComparePlayers";
 
 // Reports Module - static to avoid chunk-load failures after deploys
 import ScoutingReports from "./pages/app/ScoutingReports";
+
+function LegacyPlayerRedirect() {
+  const { slug } = useParams();
+  const { search, hash } = useLocation();
+  return <Navigate to={`/atleta/${slug}${search}${hash}`} replace />;
+}
+
 const NewScoutingReport = lazy(() => import("./pages/app/NewScoutingReport"));
 const EditScoutingReport = lazy(() => import("./pages/app/EditScoutingReport"));
 const ReportDetail = lazy(() => import("./pages/app/ReportDetail"));
@@ -161,7 +168,9 @@ function AppRoutes() {
                 <Route path="/representacao-de-talentos" element={<Suspense fallback={<RouteSuspense />}><RepresentacaoTalentos /></Suspense>} />
                 <Route path="/players" element={<Suspense fallback={<RouteSuspense />}><Players /></Suspense>} />
                 <Route path="/atletas" element={<Suspense fallback={<RouteSuspense />}><Players /></Suspense>} />
-                <Route path="/players/:slug" element={<Suspense fallback={<RouteSuspense />}><PlayerProfile /></Suspense>} />
+                <Route path="/atleta/:slug" element={<Suspense fallback={<RouteSuspense />}><PlayerProfile /></Suspense>} />
+                {/* endereço antigo do perfil — redireciona para /atleta/:slug */}
+                <Route path="/players/:slug" element={<LegacyPlayerRedirect />} />
                 <Route path="/imprensa" element={<Suspense fallback={<RouteSuspense />}><Imprensa /></Suspense>} />
                 <Route path="/imprensa/todas" element={<Suspense fallback={<RouteSuspense />}><ImprensaTodas /></Suspense>} />
                 <Route path="/imprensa/:slug" element={<Suspense fallback={<RouteSuspense />}><NewsDetail /></Suspense>} />

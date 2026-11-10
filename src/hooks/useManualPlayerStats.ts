@@ -9,6 +9,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPublicStatsSources } from "@/lib/publicStatsSources";
 import { toast } from "sonner";
 
 export interface ManualPlayerStats {
@@ -93,14 +94,16 @@ export interface ManualStatsInput {
 interface UseManualPlayerStatsOptions {
   playerId: string;
   enabled?: boolean;
+  /** perfil público: lê pela função get_public_player_stats_sources (somente leitura) */
+  publicSource?: boolean;
 }
 
 /**
  * Hook for fetching and managing manual player stats
  */
-export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlayerStatsOptions) {
+export function useManualPlayerStats({ playerId, enabled = true, publicSource = false }: UseManualPlayerStatsOptions) {
   const queryClient = useQueryClient();
-  const queryKey = ["manual-player-stats", playerId];
+  const queryKey = publicSource ? ["manual-player-stats", playerId, "public"] : ["manual-player-stats", playerId];
 
   // Fetch all manual stats for this player
   const { 
@@ -111,6 +114,9 @@ export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlay
   } = useQuery({
     queryKey,
     queryFn: async (): Promise<ManualPlayerStats[]> => {
+      if (publicSource) {
+        return (await fetchPublicStatsSources(playerId)).manual as unknown as ManualPlayerStats[];
+      }
       const { data, error } = await supabase
         .from("manual_player_stats")
         .select(`

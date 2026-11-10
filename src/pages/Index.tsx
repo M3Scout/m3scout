@@ -1,24 +1,44 @@
-import { lazy, Suspense } from "react";
-import { LandingHero } from "@/components/home/LandingHero";
-import { AthletesHorizontal } from "@/components/home/AthletesHorizontal";
+import { useCallback, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import "@/components/site/m3site.css";
+import { HomeHero } from "@/components/home2/HomeHero";
+import { HomeTalents } from "@/components/home2/HomeTalents";
+import { HomePenalty } from "@/components/home2/HomePenalty";
+import { HomeFeed } from "@/components/home2/HomeFeed";
+import { useHomePlayers } from "@/components/home2/useHomePlayers";
 
-// Below-the-fold: lazy load to reduce initial JS payload
-const AboutSection = lazy(() => import("@/components/home/AboutSection").then(m => ({ default: m.AboutSection })));
-const FeedAndCta = lazy(() => import("@/components/home/FeedAndCta").then(m => ({ default: m.FeedAndCta })));
-const ParallaxTransition = lazy(() => import("@/components/home/ParallaxTransition").then(m => ({ default: m.ParallaxTransition })));
+const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 const Index = () => {
+  const players = useHomePlayers();
+  const navigate = useNavigate();
+  const { hash } = useLocation();
+
+  // vindo de outra página com #talentos / #sobre / #imprensa: rola até a seção
+  useEffect(() => {
+    if (!hash) return;
+    const t = window.setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth" }), 350);
+    return () => window.clearTimeout(t);
+  }, [hash]);
+
+  // Clique num atleta da jogada do hero: abre o perfil se o encontrarmos, senão vai para Talentos
+  const onAthlete = useCallback(
+    (_id: string, name: string) => {
+      const n = norm(name);
+      const p = players.find((pl) => norm(pl.full_name).startsWith(n) || norm(pl.slug ?? "").startsWith(n.replace(/\s+/g, "-")));
+      if (p) navigate(`/atleta/${p.slug}`);
+      else document.getElementById("talentos")?.scrollIntoView({ behavior: "smooth" });
+    },
+    [players, navigate]
+  );
+
   return (
-    <>
-      <LandingHero />
-      <AthletesHorizontal />
-      <Suspense fallback={<div style={{ minHeight: "100vh" }} />}>
-        <ParallaxTransition>
-          <AboutSection />
-        </ParallaxTransition>
-        <FeedAndCta />
-      </Suspense>
-    </>
+    <div className="m3s m3s-home">
+      <HomeHero onAthlete={onAthlete} />
+      <HomeTalents players={players} />
+      <HomePenalty />
+      <HomeFeed />
+    </div>
   );
 };
 

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPublicStatsSources } from "@/lib/publicStatsSources";
 import {
   usePlayerMatchStatsBySeasonCompetition,
 } from "@/hooks/usePlayerMatchStats";
@@ -170,24 +171,27 @@ export function useComparePlayerStats(params: {
   playerId: string | null;
   seasonFilter: string;
   competitionFilter: string;
+  /** perfil público: mesmas fontes, lidas pela função get_public_player_stats_sources */
+  publicSource?: boolean;
 }) {
-  const { playerId, seasonFilter, competitionFilter } = params;
+  const { playerId, seasonFilter, competitionFilter, publicSource = false } = params;
   const enabled = !!playerId;
   const pid = playerId ?? "";
 
   // 1. Live match stats
   const { stats: liveStats, seasons, bySeason, isLoading: liveLoading } =
-    usePlayerMatchStatsBySeasonCompetition({ playerId: pid, enabled });
+    usePlayerMatchStatsBySeasonCompetition({ playerId: pid, enabled, publicSource });
 
   // 2. Manual stats
   const { manualStats, isLoading: manualLoading } =
-    useManualPlayerStats({ playerId: pid, enabled });
+    useManualPlayerStats({ playerId: pid, enabled, publicSource });
 
   // 3. Legacy player_stats table
   const { data: rawPlayerStats = [], isLoading: psLoading } = useQuery({
-    queryKey: ["compare-player-stats-legacy", pid],
+    queryKey: ["compare-player-stats-legacy", pid, publicSource ? "public" : "auth"],
     enabled,
     queryFn: async () => {
+      if (publicSource) return (await fetchPublicStatsSources(pid)).player_stats;
       const { data, error } = await supabase
         .from("player_stats")
         .select("*, competition:competitions(id, name, display_name)")

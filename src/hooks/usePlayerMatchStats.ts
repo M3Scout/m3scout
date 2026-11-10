@@ -10,6 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPublicStatsSources } from "@/lib/publicStatsSources";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 import { calculateDerivedBallActions } from "@/lib/derivedBallActions";
 import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
@@ -763,13 +764,30 @@ export interface MatchRowPreview {
 export function usePlayerMatchStatsBySeasonCompetition({
   playerId,
   enabled = true,
+  publicSource = false,
 }: {
   playerId: string;
   enabled?: boolean;
+  /** perfil público: lê as mesmas linhas pela função get_public_player_stats_sources */
+  publicSource?: boolean;
 }) {
   const { data: matchesData, isLoading, error, refetch } = useQuery({
-    queryKey: ["player-match-stats-by-season-comp", playerId],
+    queryKey: ["player-match-stats-by-season-comp", playerId, publicSource ? "public" : "auth"],
     queryFn: async () => {
+      if (publicSource) {
+        const src = await fetchPublicStatsSources(playerId);
+        const typedPublic = src.match_players as unknown as MatchPlayerWithMatch[];
+        if (typedPublic.length === 0) {
+          return { matchPlayers: [], matchStats: {}, presenceMinutesByMatch: {} };
+        }
+        const publicStatsMap: Record<string, MatchPlayerStats> = {};
+        src.match_player_stats.forEach((stat) => { publicStatsMap[stat.match_id] = stat as MatchPlayerStats; });
+        return {
+          matchPlayers: typedPublic,
+          matchStats: publicStatsMap,
+          presenceMinutesByMatch: computePresenceMinutesByMatch(src.presence as unknown as PresenceRow[]),
+        };
+      }
       // Get all match_players entries for this player (only finished/applied matches)
       const { data: matchPlayers, error: mpError } = await supabase
         .from("match_players")

@@ -5,7 +5,7 @@
 //
 // Usage: /functions/v1/og-player?slug=gustavo-ribeiro-de-oliveira
 //
-// The hosting layer rewrites /players/:slug -> this function when the
+// The hosting layer rewrites /atleta/:slug (and legacy /players/:slug) -> this function when the
 // incoming User-Agent matches a known social crawler.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       photo_url: string | null;
     } | null;
 
-    const canonicalUrl = `${SITE_URL}/players/${slug}`;
+    const canonicalUrl = `${SITE_URL}/atleta/${slug}`;
 
     if (!player) {
       const html = renderHtml({

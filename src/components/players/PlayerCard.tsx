@@ -29,7 +29,7 @@ export function PlayerCard({
   autoRating,
 }: PlayerCardProps) {
   // Public routes use slug for SEO-friendly URLs, app routes use id for reliability
-  const href = isPublic ? `/players/${slug}` : `/dashboard/atletas/${id}`;
+  const href = isPublic ? `/atleta/${slug}` : `/dashboard/atletas/${id}`;
 
   return (
     <Link to={href} className="group block">
