@@ -21,7 +21,6 @@ import {
   UserCog,
   User,
   Gamepad2,
-  FlaskConical,
   type LucideIcon,
 } from "lucide-react";
 import { useState, useEffect, useMemo, memo } from "react";
@@ -69,7 +68,6 @@ const internalNavGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/aovivo", label: "Jogo Ao Vivo", module: "live_match", icon: Radio },
       { href: "/dashboard/competicoes", label: "Competições", module: "competitions", icon: Trophy },
-      { href: "/dashboard/laboratorio", label: "Lab. Tático", module: "players", icon: FlaskConical },
     ]
   },
   {
@@ -110,7 +108,6 @@ const playerNavGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/aovivo", label: "Meus Jogos", module: "live_match", icon: Gamepad2 },
       { href: "/dashboard/competicoes", label: "Competições", module: "competitions", icon: Trophy },
-      { href: "/dashboard/laboratorio", label: "Lab. Tático", module: "app", icon: FlaskConical },
     ]
   }
 ];

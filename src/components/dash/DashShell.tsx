@@ -32,7 +32,6 @@ const INTERNAL: NavGroup[] = [
   { label: "Contexto esportivo", items: [
     { href: "/dashboard/aovivo", label: "Jogo ao vivo", module: "live_match", icon: "live", tile: "#FF3B30" },
     { href: "/dashboard/competicoes", label: "Competições", module: "competitions", icon: "trophy", tile: "#FFB800" },
-    { href: "/dashboard/laboratorio", label: "Lab. Tático", module: "players", icon: "lab", tile: "#34C759" },
   ] },
   { label: "Negócios", items: [
     { href: "/dashboard/noticias", label: "Notícias", module: "news", icon: "news", tile: "#8E8E93" },
@@ -58,7 +57,6 @@ const PLAYER: NavGroup[] = [
   { label: "Jogos", items: [
     { href: "/dashboard/aovivo", label: "Meus jogos", module: "live_match", icon: "live", tile: "#FF3B30" },
     { href: "/dashboard/competicoes", label: "Competições", module: "competitions", icon: "trophy", tile: "#FFB800" },
-    { href: "/dashboard/laboratorio", label: "Lab. Tático", module: "app", icon: "lab", tile: "#34C759" },
   ] },
 ];
 
